@@ -16,7 +16,9 @@ Batch transpilation of Python source files from English into Chinese (zh), Amhar
 - Filtered Python files from `../data-pipeline/`
 - Language packs: `legesher-i18n-python-zh`, `legesher-i18n-python-am`, `legesher-i18n-python-ur`
 
-## Quick Start
+## Suggested Entrypoints
+
+These scripts are suggested starting points — adapt as needed:
 
 ```bash
 # Run batch transpilation (after filtered files are ready)

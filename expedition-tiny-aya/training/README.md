@@ -12,14 +12,16 @@ QLoRA fine-tuning of Tiny Aya (3.35B params) on T4 GPUs across 4 experimental co
 
 ## Conditions
 
-| Config File | Condition | Data Source |
+| Suggested Config | Condition | Data Source |
 | --- | --- | --- |
-| `configs/condition_1_en.yaml` | English code | The Stack Python subset |
-| `configs/condition_2_multi.yaml` | Multilingual transpiled code | Legesher-transpiled zh/am/ur |
-| `configs/condition_3_nl.yaml` | NL text control | CC-100/OSCAR volume-matched |
-| `configs/condition_4_native.yaml` | Native code | Human-written native code |
+| `condition_1_en.yaml` | English code | The Stack Python subset |
+| `condition_2_multi.yaml` | Multilingual transpiled code | Legesher-transpiled zh/am/ur |
+| `condition_3_nl.yaml` | NL text control | CC-100/OSCAR volume-matched |
+| `condition_4_native.yaml` | Native code | Human-written native code |
 
-## Quick Start
+## Suggested Entrypoints
+
+These scripts are suggested starting points — adapt as needed:
 
 ```bash
 # Train a single condition

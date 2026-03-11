@@ -1,0 +1,1372 @@
+"ID","Team","Title","Description","Status","Estimate","Priority","Project ID","Project","Creator","Assignee","Labels","Cycle Number","Cycle Name","Cycle Start","Cycle End","Created","Updated","Started","Triaged","Completed","Canceled","Archived","Due Date","Parent issue","Initiatives","Project Milestone ID","Project Milestone","SLA Status","UUID","Time in status (minutes)","Related to","Blocked by","Duplicate of"
+"CORE-1128","Core","[i18n:packs] Create Sinhala (si) Python language pack using Tiny Aya translation model","Create the Sinhala (si) Python language pack for use in the Expedition Tiny Aya hackathon.
+
+**Steps:**
+
+1. Create directory: `libs/i18n/language-packs/python/si/`
+2. Follow structure of existing packages (e.g., `ar/` or `es/`)
+3. Create translation YAML files for each Python version (3.10-3.14)
+4. Add package metadata: `pyproject.toml`, `CHANGELOG.md`, `README.md`, `__init__.py`
+5. Update root `pyproject.toml` (uv.sources + workspace members)
+6. Run `uv sync` to install in development mode
+7. Validate with `legesher-i18n validate`
+
+**Sinhala details:**
+
+* ISO 639-1: `si`
+* Script: Sinhala
+* RTL: No
+
+**Note:** Sinhala is NOT supported by Tiny Aya, but the language pack is still useful for Legesher's broader language coverage.
+
+**Blocking:** Stress test (CORE-1000) depends on this pack being created.","🏗️ In Progress",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:i18n",17,"[Cycle 17] Revenue + Community Infra","2026-03-08T20:00:00.000Z","2026-03-22T20:00:00.000Z","2026-03-02T03:26:40.670Z","2026-03-10T15:35:50.596Z","2026-03-10T05:23:17.836Z",,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"b728202c-c125-4611-91e5-07a697e8006c",770,"","",
+"CORE-1071","Core","[i18n:packs] Create Urdu (ur) Python language pack using Tiny Aya translation model","Create a new Urdu (ur) Python language pack for Legesher. Urdu uses Nastaliq script (RTL).
+
+**Steps:**
+
+1. Create directory: `libs/i18n/language-packs/python/ur/`
+2. Use Tiny Aya translation model to generate keyword and builtin translations
+3. Create YAML files for Python 3.10-3.14 with version inheritance
+4. Add package metadata: `pyproject.toml`, `CHANGELOG.md`, `README.md`, `__init__.py`
+5. Update root `pyproject.toml` (workspace members + uv sources)
+6. Run `uv sync` and validate with `legesher-i18n validate`
+
+**Note:** RTL script — verify transpiler handles RTL identifiers correctly.
+
+**Blocking:** Required before transpilation (#3) and bulk processing (#15). Urdu is not in the current 26 language packs.
+
+**Fallback:** If pack can't be created in time, use Arabic (ar) which already exists and is also RTL.","🏗️ In Progress",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:i18n",17,"[Cycle 17] Revenue + Community Infra","2026-03-08T20:00:00.000Z","2026-03-22T20:00:00.000Z","2026-03-02T03:26:25.783Z","2026-03-10T15:48:25.335Z","2026-03-10T05:23:30.113Z",,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"3d30edcd-845b-4f43-a41d-2b827add6ad7",770,"","CORE-972",
+"CORE-1103","Core","[core:research] The Stack Dataset — Non-English Content Analysis for Expedition Tiny Aya","## Overview
+
+Research and analysis of non-English content in Hugging Face's The Stack dataset to support the Expedition Tiny Aya proposal (CORE-1078). This work establishes the empirical foundation for why multilingual code datasets don't exist and why Legesher is uniquely positioned to create them.
+
+## Key Findings
+
+### The Stack Dataset (Hugging Face)
+
+* **The Stack v1**: 6.4 TB, 358 programming languages — all with English keywords
+* **The Stack v2**: 619 programming languages — actively filtered out non-English Markdown from PRs
+* **Python subset**: \~96% of comments/docstrings are English, \~4% across \~40 detected languages
+* **GitHub Issues subset**: 54 GB / 31M rows, described as ""mostly in English""
+* **Critical gap**: No public dataset contains code where keywords are non-English
+
+### Stanford Study — ""Human Languages in Source Code"" (2019)
+
+* Analyzed 2.9M Java repos from 1.1M GitHub users
+* 12.7% of GitHub users write non-English commit messages
+* 93% of Chinese projects have ASCII-only identifiers, yet 99% have non-ASCII comments
+* Only 0.6% of Arabic/Hebrew repos have native-script identifiers (1 file with 1 Arabic identifier)
+* Proves developers want native-language coding but are blocked by tooling
+
+### Non-English Programming Languages
+
+* **1C:Enterprise** (Russian): 5M users, 80-90% of Russian companies — proves non-English code works at enterprise scale
+* **Wenyan** (Classical Chinese): 20.1k GitHub stars
+* **Qalb** (Arabic): Academic project demonstrating RTL programming
+* None exist for open-source Python — Legesher fills this gap
+
+## Documents Created
+
+* `research/proposal.md` — Updated PRD with Section 1.5 (Background & Prior Work)
+* `research/stack-dataset-non-english-analysis.md` — Standalone research brief (shareable)
+* `research/analyze_stack_languages.py` — Python script to run language detection on The Stack
+* `research/requirements.txt` — Script dependencies
+
+## Sources
+
+ 1. [The Stack v1](<https://huggingface.co/datasets/bigcode/the-stack>) — Kocetkov et al., [arXiv:2211.15533](<https://arxiv.org/abs/2211.15533>), 2022
+ 2. [The Stack v2](<https://huggingface.co/datasets/bigcode/the-stack-v2>) — Lozhkov et al., [arXiv:2402.19173](<https://arxiv.org/abs/2402.19173>), 2024
+ 3. [Human Languages in Source Code](<https://arxiv.org/abs/1909.04556>) — Piech et al., Stanford, 2019 ([ACM L@S 2020](<https://dl.acm.org/doi/10.1145/3386527.3405916>))
+ 4. [The Stack GitHub Issues](<https://huggingface.co/datasets/bigcode/the-stack-github-issues>) — 31M rows
+ 5. [The Stack Metadata](<https://huggingface.co/datasets/bigcode/the-stack-metadata>)
+ 6. [BigCode Analysis Repo](<https://github.com/bigcode-project/bigcode-analysis>) — comment extraction tools
+ 7. [1C:Enterprise](<https://1csoftware.com/>) / [Wikipedia](<https://en.wikipedia.org/wiki/1C:Enterprise>)
+ 8. [Wenyan Lang](<https://github.com/wenyan-lang/wenyan>) — Classical Chinese PL
+ 9. [Qalb](<https://github.com/nasser/--->) — Arabic PL
+10. [Non-English PLs — Wikipedia](<https://en.wikipedia.org/wiki/Non-English-based_programming_languages>)","🏗️ In Progress",13,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, biz:partnerships, pkg:core, platform:huggingface",17,"[Cycle 17] Revenue + Community Infra","2026-03-08T20:00:00.000Z","2026-03-22T20:00:00.000Z","2026-03-02T03:26:33.859Z","2026-03-06T18:50:10.599Z","2026-03-06T18:16:23.993Z",,,,,,"CORE-1078","",,,,"75997d08-385d-435e-817b-285e556670ec",5757,"","",
+"CORE-1078","Core","[core:research] Expedition Tiny Aya — ""Does Multilingual Code Improve Multilingual Models?""","## Overview
+
+Research proposal for Cohere Labs' **Expedition Tiny Aya** program (March 10 – April 23, 2026). Testing whether multilingual code — Python transpiled into non-English languages via Legesher — improves Tiny Aya's performance on non-code tasks (reasoning, world knowledge, instruction following) in those languages.
+
+**Core question:** If English code makes models better at English reasoning (\~8% improvement per Cohere's ""To Code or Not to Code"" 2024 paper), does multilingual code do the same for other languages?
+
+**Partners:** Code Division, Naamal
+**Team size:** 5–7 people
+**Timeline:** March 10 – April 23, 2026 (2-week hackathon + 4-week publication phase)
+
+## What We Ship
+
+* Open multilingual code datasets on HuggingFace (first of their kind)
+* Controlled experiment results across 3+ languages and 4 training conditions
+* Regional variant analysis (Earth/Fire/Water vs. Global Tiny Aya models)
+* Blog post or paper extending Cohere's published work
+
+## Target Languages
+
+* **Arabic (ar)** — Semitic, RTL, root-based morphology ✅ Pack exists (94.5% coverage)
+* **Hindi (hi)** — Indo-Aryan, Devanagari, SOV word order ✅ Pack exists (95.6% coverage)
+* **Third language TBD** — ⚠️ Swahili does NOT exist in Legesher. Candidates: Turkish (tr), Korean (ko), Chinese (zh)
+
+## Training Conditions (4 conditions × base + regional variants)
+
+1. **Baseline** — Tiny Aya base, no fine-tuning
+2. **English code** — LoRA fine-tune on English Python code from The Stack
+3. **Multilingual code** — LoRA fine-tune on Legesher-transpiled Python code (per language)
+4. **Multilingual NL text** — LoRA fine-tune on equivalent natural language text (control)
+
+## Key Decision Points
+
+| When | Decision |
+| -- | -- |
+| Pre-hackathon (stress test) | Is Legesher ready for batch? ≥90% success → proceed |
+| Day 5 (data handoff) | Any language below 80% success rate? |
+| Day 8 (first results) | Does multilingual code outperform baseline? |
+| Day 15 (hackathon wrap) | What's the publication story? |
+
+## Legesher Readiness Assessment
+
+See attached document for full analysis. Key findings:
+
+* ✅ Core transpiler is production-ready (\~140μs/file)
+* ✅ Arabic and Hindi language packs exist with 94-96% coverage
+* ⚠️ No batch processing infrastructure (sequential only, no parallelization)
+* ⚠️ No HuggingFace Datasets integration (`datasets` library not in dependencies)
+* ❌ Swahili language pack does not exist — must substitute
+* ❌ 1,000-file stress test on The Stack not yet run
+
+## Weekend Priorities (March 7-9)
+
+- [ ] Run 1,000-file stress test from The Stack
+- [ ] Choose third language (not Swahili)
+- [ ] Sharpen research question (pre-training vs fine-tuning framing)
+- [ ] Generate 50-100 sample transpiled files per language for champion review
+- [ ] Prototype batch processing wrapper
+
+## Related Issues
+
+* CORE-648: CohereForAI partnership exploration
+* CORE-513: Cohere LLM research
+* CORE-640: HuggingFace organization setup
+* CORE-487: Phase 4 custom translation model","🏗️ In Progress",13,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, biz:partnerships, pkg:core, platform:huggingface",17,"[Cycle 17] Revenue + Community Infra","2026-03-08T20:00:00.000Z","2026-03-22T20:00:00.000Z","2026-03-02T03:26:27.298Z","2026-03-06T18:16:09.112Z","2026-03-06T18:14:07.154Z",,,,,,,"",,,,"436ef098-9a95-4db5-966a-a49e85e5de34",5759,"CORE-648, CORE-513, CORE-487, CORE-640","",
+"CORE-972","Core","[research:infra] Re-import Expedition Tiny Aya issues from hackathon workspace back into Legesher Linear","After the hackathon wraps (March 24), export all completed issues from the separate Expedition Tiny Aya Linear workspace and import them back into the Legesher workspace for long-term tracking.
+
+**Steps:**
+
+1. In the hackathon workspace: Settings → Administration → Import/Export → Export CSV
+2. In the Legesher workspace: Import via CLI using the ""Linear"" CSV option
+3. Reassign imported issues to the Expedition Tiny Aya project
+4. Re-wire milestone assignments and any dependency relationships
+5. Verify all issue history, comments, and status transferred correctly
+6. Archive or delete the hackathon workspace once import is confirmed
+
+**Why:** Keep all research work logged in the main Legesher workspace for future reference, publication tracking, and Phase 3 planning.
+
+**Deadline:** Complete by end of March 2026.","🛑 Blocked",2,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:ci-cd",,,,,"2026-03-02T03:25:58.302Z","2026-03-10T15:53:06.703Z",,,,,,"2026-03-30T20:00:00.000Z",,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"d16ac407-3afa-45dc-b75f-86e5fab92a49",147,"","",
+"CORE-799","Core","[core:tree-sitter] UTF-8 encoding error on files with non-UTF-8 bytes in string literals","## Context
+
+Discovered during CORE-685 stress test (10-file smoke test against The Stack dataset).
+
+## Problem
+
+TreeSitterTranslator.translate_code() throws InvalidCodeError on Python files that contain non-UTF-8 bytes (e.g., 0x9f) inside string literals or comments. The same files translate successfully with TokenTranslator.
+
+Error: Failed to translate code: utf-8 codec can not decode byte 0x9f in position 894: invalid start byte
+
+Tree-sitter is a C library that processes raw bytes. When it reconstructs the source after AST manipulation, it re-encodes the byte buffer and chokes on bytes that are not valid UTF-8, even though Python ast.parse() accepts them.
+
+## Impact
+
+* 1/10 files (10%) in smoke test. Need 1000-file run for real error rate.
+* Token backend works as fallback, so not a blocker for Tiny Aya, but limits tree-sitter reliability at scale.
+
+## Suggested fixes
+
+1. Pre-filter: Validate all bytes are valid UTF-8 before passing to tree-sitter, fallback to token backend if not
+2. Sanitize: Replace non-UTF-8 bytes in non-code regions before tree-sitter processing, restore after
+3. Catch and fallback: Catch encoding error in TreeSitterTranslator and fall back to TokenTranslator automatically
+
+## Related
+
+* CORE-685: Stress test that surfaced this
+* libs/core/legesher_core/tree_sitter/translator.py","🛑 Blocked",,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:core",,,,,"2026-03-02T03:25:09.646Z","2026-03-09T01:44:21.511Z",,,,,,,,"",,,,"cad7b026-7559-42df-9088-c8ea238095ce",2855,"CORE-704, CORE-1107","",
+"CORE-1187","Core","[research:native] Design coding exercises for native contributors — 3 tiers (basic, applied, domain-specific)","Design a set of coding exercises that native-language developers can complete using Legesher.
+
+**3 Tiers:**
+
+**Tier 1: Basic (10-20 lines)**
+
+* FizzBuzz, factorial, palindrome check, list sorting
+* Tests fundamental keyword usage
+
+**Tier 2: Applied (20-50 lines)**
+
+* File parser, simple API client, data transformer, calculator
+* Tests natural problem decomposition in native language
+
+**Tier 3: Domain-specific (50-100 lines)**
+
+* Data analysis script, web scraper, simple game, algorithm implementation
+* Tests whether native-language developers structure code differently
+
+**Per exercise:**
+
+* Clear problem statement (in target language)
+* Expected input/output examples
+* Difficulty level
+* Estimated completion time
+
+**Deliverable:** Exercise set document (in English + translations for zh, si, ur)","Backlog",5,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community, contrib:docs",,,,,"2026-03-02T03:26:57.609Z","2026-03-10T04:34:41.582Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"12fab055-41ab-4b1d-96d6-9f9f8e22f324",12406,"","CORE-776",
+"CORE-1000","Core","[research:pre-hack] Stress test Legesher transpiler for Amharic (am) and Urdu (ur) — 1000 files each","Replicate the CORE-685 stress test for the new Amharic and Urdu language packs. Validate that transpilation works at scale before the hackathon begins.
+
+**Targets:**
+
+* 1000 real-world Python files from The Stack per language
+* Measure: success rate, round-trip exact match, throughput, wall time
+* Compare token backend vs tree-sitter backend
+* Document any issues found (like CORE-799, CORE-1160, CORE-1107 from zh stress test)
+
+**Blocked by:** CORE-1128 (am pack) and CORE-1071 (ur pack) creation
+
+**Success criteria:** >95% success rate on both backends for both languages.","Backlog",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, pkg:core",,,,,"2026-03-02T03:26:06.527Z","2026-03-10T15:36:12.430Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"b2efdd5f-2602-4965-bb63-afa7562e7b78",12407,"","CORE-690, CORE-1071, CORE-1128",
+"CORE-973","Core","[research:pre-hack] Download and test evaluation benchmarks (XNLI, XStoryCloze, TyDi QA, MMLU) for zh/am/ur","Download all evaluation benchmarks and verify they work for the target languages before the hackathon.
+
+**Benchmarks:**
+
+* XNLI (cross-lingual natural language inference) — zh, am, ur subsets
+* XStoryCloze (commonsense reasoning) — zh, am, ur subsets
+* TyDi QA (question answering) — check language availability
+* MMLU (translated subsets) — zh, am, ur
+
+**Note:** Amharic benchmark availability may be more limited than Chinese/Urdu. Document which benchmarks have am subsets and identify alternatives if needed.
+
+**Steps:**
+
+1. Download each benchmark via HuggingFace Datasets API
+2. Verify target language subsets exist and are usable
+3. Run baseline inference with Tiny Aya base to confirm pipeline works
+4. Record baseline numbers for comparison
+
+**Deliverable:** All benchmarks downloaded, verified, baseline numbers recorded.","Backlog",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:58.452Z","2026-03-10T08:11:55.736Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"0ea02890-068e-45dd-b996-865dd7f44eb2",12407,"","",
+"CORE-945","Core","[research:infra] Pool Kaggle GPU access — collect accounts from 5-7 crew, document T4 hour budget (300-420 hrs target)","Pool Kaggle free tier GPU access across the team to maximize available compute hours.
+
+**Steps:**
+
+1. Collect Kaggle account usernames from all 5-7 team members
+2. Verify each account has GPU quota available (30 hrs/week T4)
+3. Calculate total available T4 hours for the 2-week hackathon (target: 300-420 hrs)
+4. Create a shared spreadsheet tracking GPU hour usage per person per day
+5. Define allocation plan: which conditions get which accounts
+6. Document how to share notebooks/data across accounts
+
+**Budget estimate:** 5 accounts × 30 hrs/week × 2 weeks = 300 hrs; 7 accounts = 420 hrs","Backlog",2,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:50.175Z","2026-03-09T20:50:07.840Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"2ebea0c1-4b0e-465f-856a-d25ede64a55d",12407,"","",
+"CORE-893","Core","[research:infra] Set up experiment tracking — W&B project or HuggingFace hub for training run logging","Set up centralized experiment tracking so all training runs are logged consistently.
+
+**Options (pick one):**
+
+* Weights & Biases (W&B) project — better visualizations, free for academics
+* HuggingFace Hub — simpler, integrates with transformers trainer
+
+**Requirements:**
+
+1. All team members can log runs
+2. Track: loss curves, eval metrics, hyperparameters, adapter configs
+3. Compare runs across conditions (Cond 1-4) and languages (zh/si/ur)
+4. Track compute usage per run
+5. Document how to log a run (code snippet for team)
+
+**Deliverable:** Working experiment tracking with documentation that any team member can follow.","Backlog",2,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:37.663Z","2026-03-09T20:50:20.216Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"3626ffbf-7a77-48f8-b69a-3e348a5feb81",12408,"","",
+"CORE-816","Core","[research:pre-hack] Review Legesher keyword mappings for Chinese, Amharic, and Urdu — flag issues","Language champions review the keyword and builtin translations for all three target languages before training data is generated.
+
+**Review checklist per language:**
+
+* Are keyword translations natural and idiomatic?
+* Are there ambiguous translations that could confuse developers?
+* Are builtins translated consistently?
+* For RTL languages (Urdu): do translations read correctly in RTL context?
+* For CJK (Chinese): are translations appropriately concise?
+* For Ge'ez script (Amharic): are translations natural in Ethiopic script?
+
+**Deliverable:** Review report per language with flagged issues and suggested corrections.","Backlog",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, pkg:i18n",,,,,"2026-03-02T03:25:14.691Z","2026-03-10T08:11:02.971Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"0fe3b137-8580-43ee-a532-232ade58fad0",12408,"","",
+"CORE-776","Core","[research:native] Define ""native code"" criteria — what qualifies, what doesn't, quality rubric","Define clear criteria for what constitutes ""native code"" for this research.
+
+**Native code = code written by developers who think in the target language**, using Legesher to write Python with native-language keywords.
+
+**Qualification criteria:**
+
+1. Written by a developer who is a native/fluent speaker of the target language
+2. Written from scratch (not transpiled from English)
+3. Developer used Legesher to write with native-language keywords
+4. Code demonstrates natural problem-solving patterns (not translated English logic)
+
+**Disqualification:**
+
+* Code translated word-by-word from an English solution
+* Auto-generated code
+* Copy-pasted code with keywords swapped
+
+**Quality rubric (1-5 scale):**
+
+1. Clearly translated from English
+2. Mostly English-logic with native keywords
+3. Mix of native and English patterns
+4. Mostly native thinking patterns
+5. Fully native — reflects how a native speaker would approach the problem
+
+**Deliverable:** Written criteria document, shareable with contributors and reviewers.","Backlog",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community, contrib:docs",,,,,"2026-03-02T03:25:01.398Z","2026-03-10T04:34:35.885Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"12169e3f-1284-4838-b1f5-66d25c17da51",12408,"","",
+"CORE-760","Core","[research:pre-hack] Set up training environment — test QLoRA config on Tiny Aya with dummy data","Set up the QLoRA fine-tuning environment and validate it works before the hackathon starts.
+
+**Steps:**
+
+1. Install dependencies: transformers, peft, bitsandbytes, datasets, accelerate
+2. Download Tiny Aya base model (3.35B params)
+3. Configure QLoRA 4-bit quantization (\~5.4GB VRAM, fits on T4)
+4. Run a test fine-tune on dummy data (100 examples, 1 epoch) to verify pipeline works end-to-end
+5. Document the exact environment setup, dependencies, and config for the team
+6. Test on Kaggle T4 notebook to confirm it works within free tier
+
+**Success criteria:** Complete training loop runs without errors, adapter saves correctly, inference works with merged adapter.","Backlog",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:57.752Z","2026-03-09T20:49:29.462Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"0cf276b0-b8a3-4a0c-a62d-fc7f75c83c30",12408,"","",
+"CORE-754","Core","[research:infra] Set up shared HuggingFace organization — repos for datasets, models, and experiment tracking","Create a shared HuggingFace organization for the Expedition Tiny Aya team.
+
+**Repos to create:**
+
+* Dataset repos (one per language per condition)
+* Model repos (one per adapter/condition)
+* Experiment tracking repo (logs, configs, results)
+
+**Steps:**
+
+1. Create HF organization (e.g., `legesher-research` or `expedition-tiny-aya`)
+2. Invite all 7 team members
+3. Set up repo templates for datasets and models
+4. Configure access permissions (write for team, read for public)
+5. Document organization structure and naming conventions","Backlog",2,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:56.227Z","2026-03-09T20:50:49.079Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"1709c003-2e67-4656-b79b-49689ca01cf2",12408,"","",
+"CORE-743","Core","[research:infra] Set up team communication channels — Discord/Slack workspace, daily standup cadence","Set up communication infrastructure for the 7-person hackathon team.
+
+**Steps:**
+
+1. Create Discord server or Slack workspace for the team
+2. Set up channels: #general, #data-pipeline, #training, #evaluation, #native-code, #standup
+3. Invite all team members
+4. Define daily standup cadence (async or sync, what time zone)
+5. Create standup template: what I did, what I'm doing, blockers
+6. Pin key links: HuggingFace org, Linear board, shared docs, compute tracker","Backlog",1,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:24:52.867Z","2026-03-09T20:50:25.621Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"36e43ab1-199c-4b8a-9203-7d3e914b97fc",12408,"","",
+"CORE-690","Core","[i18n:packs] Create Amharic (am) Python language pack using Tiny Aya translation model","Create the Amharic (am) Python language pack for use in the Expedition Tiny Aya hackathon.
+
+**Why Amharic:** Amharic is supported by Tiny Aya and maps to the **Earth** regional variant (Africa/West Asia). Combined with Chinese (zh → Water) and Urdu (ur → Fire), this gives us coverage across all 3 Tiny Aya regional variants.
+
+**Steps:**
+
+1. Create directory: `libs/i18n/language-packs/python/am/`
+2. Follow structure of existing packages (e.g., `ar/` or `es/`)
+3. Create translation YAML files for each Python version (3.10-3.14)
+4. Add package metadata: `pyproject.toml`, `CHANGELOG.md`, `README.md`, `__init__.py`
+5. Update root `pyproject.toml` (uv.sources + workspace members)
+6. Run `uv sync` to install in development mode
+7. Validate with `legesher-i18n validate`
+
+**Amharic details:**
+
+* ISO 639-1: `am`
+* Script: Ge'ez (Ethiopic)
+* RTL: No
+* Tiny Aya variant: Earth (Africa/West Asia)
+
+**Blocking:** Stress test and bulk transpilation depend on this pack being created.","Backlog",3,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, pkg:i18n",,,,,"2026-03-02T03:17:18.269Z","2026-03-10T15:48:19.235Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"cbe8a7b6-0d1f-4e6c-a32d-0e5696e98f61",12416,"","CORE-972",
+"CORE-1186","Core","[research:data] Filter and clean NL text to match domain distribution of transpiled code","Filter and clean the NL text corpora to create a fair control condition.
+
+**Filters:**
+
+1. Language verification (remove misclassified text)
+2. Quality filters (min length, remove boilerplate, deduplicate)
+3. Domain matching: try to match the domain distribution of code-adjacent text (technical, documentation-like) rather than random web crawl
+4. Remove offensive/inappropriate content
+5. UTF-8 validation
+
+**Output:** Clean NL text corpora per language, ready for tokenization.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:57.446Z","2026-03-10T04:34:20.031Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"1047efb8-4288-4ff0-aa85-0e4e9801e1ff",12406,"","CORE-712",
+"CORE-1152","Core","[research:eval] Build evaluation pipeline — run benchmarks per adapter per language automatically","Build an automated evaluation pipeline that can run all benchmarks for any adapter on any language.
+
+**Pipeline requirements:**
+
+1. Input: adapter path (HF hub or local), language code, benchmark list
+2. Load base model + merge adapter
+3. Run each benchmark and collect scores
+4. Output: JSON results file with all metrics
+5. Support batch mode: evaluate multiple adapters in sequence
+6. Logging: track compute time per benchmark
+
+**Benchmarks to support:**
+
+* XNLI (NLI accuracy)
+* XStoryCloze (commonsense accuracy)
+* TyDi QA (F1, EM)
+* MMLU (accuracy per subject)
+* MultiNRC, AI4Math (added later)
+
+**Deliverable:** Reusable evaluation script that any team member can run.","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:48.525Z","2026-03-10T04:35:23.273Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"090d5c8b-50bd-4de3-8b33-208e8e91d298",12406,"","",
+"CORE-1146","Core","[research:review] Review 50-file transpilation sample for Chinese (zh) — quality check and feedback","Language champion reviews a 50-file sample of Chinese transpiled code for quality.
+
+**Review criteria:**
+
+* Are keywords translated correctly and naturally?
+* Does the transpiled code read logically in Chinese?
+* Are there awkward or confusing translations?
+* Do variable names / string literals remain correct?
+* Are comments handled appropriately?
+
+**Process:**
+
+1. Sample 50 files from the transpiled Chinese corpus
+2. Review each file, annotating issues
+3. Categorize issues: critical (wrong translation), moderate (awkward), minor (style)
+4. Provide feedback to pack maintainer for corrections
+5. Estimate overall quality score (1-5)
+
+**Deliverable:** Review report with annotated issues and quality score.","Backlog",2,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, contrib:localization",,,,,"2026-03-02T03:26:47.028Z","2026-03-10T04:33:49.162Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"0e39edf7-855d-4c3f-95cc-d7212a18d7ea",12406,"","CORE-1088",
+"CORE-1120","Core","[research:native] Coordinate with Code Division / Naamal — recruit 3-5 developers per language","Reach out to Code Division and Naamal to recruit native-language developers.
+
+**Target:** 3-5 developers per language (zh, si, ur) = 9-15 total contributors
+
+**Code Division:** Organization focused on inclusive tech education
+**Naamal:** Organization working with South Asian developer communities
+
+**Outreach steps:**
+
+1. Prepare partnership pitch (share contributor guide + exercise set)
+2. Contact organizations, explain research goals
+3. Ask them to recruit developers from their communities
+4. Provide Legesher installation support if needed
+5. Set up communication channel for contributors (Discord?)
+
+**Deliverable:** Confirmed partnerships with committed developer counts per language.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"biz:partnerships, contrib:community",,,,,"2026-03-02T03:26:38.377Z","2026-03-09T20:56:16.293Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"15837aca-666a-44bf-897e-b6503536d32b",12407,"","",
+"CORE-1118","Core","[research:infra] Create shared documentation hub — access matrix, role assignments, links to all resources","Create a single source of truth document that every team member can reference.
+
+**Contents:**
+
+1. **Team roster:** Name, role, timezone, contact info
+2. **Access matrix:** Who has access to what (HuggingFace, Kaggle, W&B, GitHub, Linear)
+3. **Role assignments:** What each person is responsible for (per plan)
+4. **Key links:** All shared resources in one place
+5. **Timeline:** Day-by-day schedule with milestones and deadlines
+6. **Decision log:** Track key decisions as they're made
+
+**Format:** Notion page, Google Doc, or HackMD — whatever the team prefers.","Backlog",2,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:docs",,,,,"2026-03-02T03:26:37.937Z","2026-03-09T20:50:31.416Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"5396141d-20ac-4a76-a8cc-2afd45a83dcb",12407,"","",
+"CORE-1112","Core","[research:eval] Evaluate Conditions 1-2 adapters — first results checkpoint (Day 8)","Run evaluation on the first two trained adapters to get initial signal on the hypothesis.
+
+**Evaluate:**
+
+* Condition 1 adapter (English code) on all benchmarks for zh/si/ur
+* Condition 2 adapter (multilingual transpiled code) on all benchmarks for zh/si/ur
+
+**Key question:** Does Condition 2 outperform Condition 1 on target-language benchmarks? This is the first signal on whether multilingual code matters.
+
+**Deliverable:** Comparison table + brief analysis for midpoint sync (#62).
+
+**This is the Day 8 checkpoint** — results inform whether to adjust the remaining training schedule.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:35.888Z","2026-03-10T04:35:23.119Z",,,,,,,,"","f955c7b3-4ee2-4351-b8b6-ac279d3a6373","First Results",,"0b00ceb4-5ebe-4012-bf5b-866327df27cf",12407,"","CORE-1152, CORE-1027, CORE-902",
+"CORE-1110","Core","[research:pipeline] Build batch processing wrapper with error logging, parallelization, retry logic","Build the batch processing infrastructure for running Legesher transpilation at scale.
+
+**Requirements:**
+
+1. Multiprocessing pool (configurable worker count)
+2. Per-file error logging to CSV (file path, error type, traceback)
+3. Retry logic for transient failures (max 3 retries)
+4. Progress bar with ETA
+5. Checkpoint file for resume after interruption
+6. Memory-efficient: process files in batches, don't load all into memory
+
+**Integration:** Works with both the HuggingFace streaming source (#19) and local filtered files (#20).
+
+**Target throughput:** >100 files/sec on consumer hardware.","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"pkg:cli",,,,,"2026-03-02T03:26:35.366Z","2026-03-10T04:33:37.837Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"01b0cac6-35f8-4eef-83c3-4f6ffd64f21c",12407,"","CORE-872",
+"CORE-1088","Core","[research:data] Run bulk transpilation — Chinese (zh), Amharic (am), Urdu (ur) — 50K+ files each","Execute the bulk transpilation pipeline for all three target languages.
+
+**Per language:**
+
+* Source: 50K-100K Python files from The Stack (filtered subset)
+* Transpile: en → zh, en → am, en → ur using Legesher token backend
+* Output: transpiled Python files + metadata
+* Track: success rate, round-trip accuracy, processing time
+
+**Depends on:**
+
+* Batch transpilation wrapper (CORE-976)
+* Filtered Stack subset from Pipeline Engineer (CORE-882, CORE-872)
+* Language packs: CORE-1128 (am), CORE-1071 (ur), zh (existing)
+
+**Order:** zh first (existing pack, most data), then am and ur as packs are validated.
+
+**Deliverable:** 3 transpiled corpora (50K+ files each) ready for packaging as HuggingFace Datasets.","Backlog",8,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, pkg:core",,,,,"2026-03-02T03:26:29.742Z","2026-03-10T15:36:12.434Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"80e57436-d19e-4599-9517-189f1a6ae93c",12407,"","CORE-690, CORE-976, CORE-872, CORE-1000",
+"CORE-1085","Core","[research:pipeline] Package transpiled corpora as HuggingFace Datasets with metadata","Package the transpiled code into HuggingFace Dataset format for training.
+
+**Per dataset:**
+
+* Columns: code (transpiled), code_en (original), language, file_path, license, token_count
+* Split: train (90%), validation (10%)
+* Format: Parquet files for efficient loading
+* One dataset per language (zh, si, ur)
+
+**Steps:**
+
+1. Convert transpiled files to HuggingFace Dataset objects
+2. Add metadata columns
+3. Tokenize with Tiny Aya tokenizer, record token counts
+4. Create train/validation splits
+5. Save as Parquet
+6. Validate: load dataset, check schema, verify sample quality","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:29.166Z","2026-03-10T04:33:43.712Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"023f41b2-9165-4730-8fc0-21ffa16b2fab",12407,"","CORE-1088",
+"CORE-1077","Core","[research:training] Finalize LoRA training configs for all conditions + set up experiment tracking (W&B or HF)","Create and validate the QLoRA training configurations that will be used across all experimental conditions.
+
+**Config parameters to finalize:**
+
+* LoRA rank (r=16 or 32), alpha, dropout
+* Quantization: 4-bit NF4, double quantization
+* Learning rate, scheduler, warmup steps
+* Batch size (constrained by T4 16GB VRAM)
+* Number of epochs / max steps
+* Evaluation frequency
+
+**Conditions to configure:**
+
+1. English code (Condition 1)
+2. Multilingual transpiled code (Condition 2)
+3. NL text control (Condition 3)
+4. Native code (Condition 4, if data available)
+5. Regional variants (Water/Fire base models)
+
+**Deliverable:** Config YAML files for each condition, documented and version-controlled.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:26.917Z","2026-03-10T04:35:16.958Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"02a64b9a-f4ef-44b1-a0e4-85c2de08745b",12407,"","",
+"CORE-1045","Core","[research:native] Validate and quality-review submitted code — is it genuinely native? Meets quality rubric?","Review all submitted native code files against the quality rubric (#47).
+
+**Review process:**
+
+1. AST parse check (automated — already in CI)
+2. Language champion review: is this genuinely native code or translated English?
+3. Quality score (1-5 per rubric)
+4. Flag and return low-quality submissions with feedback
+5. Accept submissions scoring ≥3/5
+
+**Tracking:**
+
+* Accepted vs rejected count per language
+* Common rejection reasons
+* Average quality score per language
+
+**Deliverable:** Validated set of native code files, quality-scored and ready for packaging.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community, contrib:localization",,,,,"2026-03-02T03:26:16.896Z","2026-03-09T20:56:42.352Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"18a34681-95b1-4894-b7c9-2c685ac2dce2",12407,"","",
+"CORE-1027","Core","[research:training] Run Condition 3 — NL text control QLoRA fine-tune (matched token volume)","Fine-tune Tiny Aya with multilingual natural language text as a control condition.
+
+**Setup:**
+
+* Base model: Tiny Aya (3.35B params)
+* Data: NL text in zh + si + ur from CC-100/OSCAR (volume-matched to transpiled code token count)
+* Method: QLoRA 4-bit
+* Hardware: Kaggle T4
+
+**What this tests:** Is the improvement from code specifically, or just from more target-language tokens? If NL text performs equally, the code structure doesn't matter — it's just token exposure.
+
+**Deliverables:**
+
+1. Trained LoRA adapter
+2. Training logs
+3. Comparison: Condition 3 vs Condition 2 isolates code structure from token volume
+
+**Depends on:** NL text datasets (#43-46), training configs (#24)","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:12.903Z","2026-03-10T04:35:16.762Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"0735c69a-87fb-4cbc-a244-ab798da2b5c0",12407,"","CORE-1077, CORE-988, CORE-981",
+"CORE-1019","Core","[research:native] Reach out to Major League Hacking (MLH) — explore partnership for native code hackathon or challenge","Explore a partnership with MLH to amplify the native code collection effort.
+
+**Potential collaborations:**
+
+1. **MLH hackathon challenge:** ""Write Python in your native language"" as a hackathon challenge
+2. **MLH Fellowship:** Connect with fellows who speak target languages
+3. **Community promotion:** MLH newsletter/social media amplification
+4. **Co-branded event:** Joint mini-hackathon focused on multilingual code
+
+**Outreach:**
+
+1. Identify MLH contact (partnerships team)
+2. Prepare partnership proposal with clear ask and value prop
+3. Highlight: first-ever multilingual code dataset, open research, Cohere Labs collaboration
+4. Follow up within 48 hours
+
+**Deliverable:** Partnership proposal sent + response tracked.","Backlog",2,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"biz:partnerships, contrib:community",,,,,"2026-03-02T03:26:10.510Z","2026-03-09T20:56:22.221Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"165c0aef-801b-4a10-b88b-3c6858514741",12407,"","",
+"CORE-1002","Core","[research:native] Create contributor guide — why native code matters, what we're looking for, step-by-step instructions","Write a compelling contributor guide that explains the research and makes contributing easy.
+
+**Contents:**
+
+1. **Why this matters:** Brief explanation of the research question (native vs transpiled code)
+2. **What we're looking for:** Native code = code you'd write naturally, not translated English
+3. **How to contribute:**
+   * Install Legesher (`pip install legesher`)
+   * Choose your language (zh, si, ur)
+   * Pick an exercise from the list
+   * Write your solution naturally
+   * Submit via PR (step-by-step with screenshots)
+4. **FAQ:** Common questions about the process
+5. **Recognition:** How contributors will be credited
+
+**Translations:** Guide should be available in English + zh + si + ur
+
+**Deliverable:** Polished contributor guide, linked from submission repo and [DEV.to](<http://DEV.to>) article.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community, contrib:docs",,,,,"2026-03-02T03:26:06.976Z","2026-03-09T20:55:55.273Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"15731bdd-3c61-49e4-bedd-ddd916fde337",12407,"","",
+"CORE-994","Core","[research:native] Collect native code files — ongoing intake, target 150-500 files across zh/si/ur","Ongoing collection of native code files throughout the hackathon.
+
+**Targets:**
+
+* 150-500 files total across all 3 languages
+* Per language: 50-170 files
+* Per contributor: 50-100 files (3-5 developers per language)
+
+**Tracking:**
+
+* Daily count of submissions per language
+* Quality quick-check (does it parse? is it obviously translated?)
+* Contributor engagement (are people completing exercises?)
+* Blockers (installation issues, exercise clarity)
+
+**Escalation:** If submissions are slow:
+
+* Reach out to individual contributors
+* Simplify exercises
+* Offer more support channels
+* Consider paying contributors
+
+**Deliverable:** Running tally of collected files, reported at daily standups.","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:26:05.447Z","2026-03-10T04:34:47.096Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"17e7e95e-59fe-4221-95e0-dc051b0c5d7c",12407,"","",
+"CORE-988","Core","[research:data] Package volume-matched NL datasets as HuggingFace Datasets","Package the volume-matched NL text into HuggingFace Dataset format, matching the schema of the transpiled code datasets.
+
+**Per dataset:**
+
+* Columns: text, language, source_corpus, token_count
+* Split: train (90%), validation (10%)
+* Format: Parquet
+* One dataset per language (zh, si, ur)
+
+**Validation:**
+
+* Confirm token counts match transpiled code datasets exactly
+* Verify dataset loads correctly
+* Sample and inspect quality
+
+**Deliverable:** 3 HuggingFace Datasets (zh, si, ur NL text) ready for Condition 3 training.","Backlog",2,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:03.754Z","2026-03-10T04:34:30.531Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"1080c1b7-d37c-4d12-8225-bdc65a38818e",12407,"","CORE-828",
+"CORE-987","Core","[research:infra] Follow up on compute grant applications (fal, Lambda Labs, Prime Intellect) submitted March 6","Follow up on compute grant applications submitted on March 6 for the hackathon.
+
+**Applications:**
+
+* [fal.ai](<http://fal.ai>) — GPU credits for fine-tuning
+* Lambda Labs — cloud GPU access
+* Prime Intellect — distributed compute credits
+
+**Steps:**
+
+1. Check email for responses from each provider
+2. Follow up with any that haven't responded
+3. If approved, document: how many GPU hours, what hardware, access credentials
+4. Share access with Training Engineer
+5. Update compute budget plan with any additional resources","Backlog",1,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"biz:applications",,,,,"2026-03-02T03:26:03.476Z","2026-03-09T20:50:13.417Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"343938a5-787e-49db-8ecf-1c3bf9867986",12407,"","",
+"CORE-981","Core","[research:review] Final review sign-off on all 3 language transpilations before training","Language champions provide final sign-off that transpilation quality is sufficient for training.
+
+**Sign-off criteria:**
+
+* All critical issues from reviews (#39, #40) have been addressed
+* Quality score ≥3/5 for each language
+* No systematic translation errors remaining
+* Language champions are confident the data is representative
+
+**Deliverable:** Written sign-off per language — ""approved for training"" or ""needs more fixes"" with specific blockers.
+
+**This is a gate:** Training should not begin on a language until sign-off is received.","Backlog",1,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, contrib:localization",,,,,"2026-03-02T03:26:01.874Z","2026-03-10T04:33:58.621Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"0fa42203-42cb-48ec-b748-3d4a40f54fe1",12407,"","CORE-932, CORE-1146",
+"CORE-976","Core","[research:data] Build batch transpilation wrapper around Legesher for The Stack processing","Build a batch processing wrapper around the existing `legesher translate` CLI for processing The Stack at scale.
+
+**Existing capability:** `legesher translate src/ --from en --to zh` handles directories recursively.
+
+**New wrapper needs:**
+
+1. Parallelization (multiprocessing pool for multiple files simultaneously)
+2. HuggingFace streaming integration (read from The Stack without downloading full dataset)
+3. Error handling with per-file logging (don't stop on individual failures)
+4. Progress tracking (files processed, success rate, throughput)
+5. Resume capability (skip already-processed files)
+6. Output: transpiled files + metadata CSV (original path, language, success/failure, error details)
+
+**Target:** Process 50K-100K files per language at >100 files/sec throughput.
+
+**Reference:** Stress test (CORE-685) showed 156 files/sec on token backend, 133 files/sec on tree-sitter.","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, pkg:cli",,,,,"2026-03-02T03:25:59.062Z","2026-03-10T04:35:04.631Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"78dc96a8-62d9-4ddc-9558-f56ed9dbb240",12407,"","",
+"CORE-959","Core","[research:demo] Prepare 5-minute demo/talk for hackathon presentation to mentors","Prepare the 5-minute demo/talk for the Cohere Labs Phase 2 hackathon wrap-up presentation.
+
+**Structure (5 minutes):**
+
+1. Problem statement: why multilingual code matters (30 sec)
+2. Approach: Legesher transpilation + Tiny Aya fine-tuning (60 sec)
+3. Data pipeline: The Stack → transpiled code → training (60 sec)
+4. Results: key findings from evaluation (90 sec)
+5. Native code collection: community participation results (30 sec)
+6. Next steps / Phase 3 publication plan (30 sec)
+
+**Deliverables:**
+
+* Slide deck (5-7 slides)
+* Demo script with timing
+* Backup: pre-recorded demo video in case of technical issues
+
+**Note:** This presentation is considered for Phase 3 (publication) advancement.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:25:54.491Z","2026-03-10T04:34:57.956Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"c3abf491-df4c-4f5f-81e5-bab9f2907bd5",12407,"","CORE-1151",
+"CORE-946","Core","[research:milestone] Kickoff sync — review roles, confirm timeline, share access","Day 1 kickoff meeting for the full hackathon team.
+
+**Agenda:**
+
+1. Introductions and role assignments
+2. Walk through the 2-week timeline and milestones
+3. Share all access: HuggingFace org, Kaggle accounts, experiment tracker, GitHub repos, comms channels
+4. Review each role's Week 1 deliverables
+5. Confirm daily standup cadence
+6. Q&A and blockers
+
+**Deliverable:** Team is aligned, has access, and knows their Day 1 tasks.","Backlog",1,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:25:50.613Z","2026-03-09T20:57:39.541Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"192a33de-d767-4e76-82aa-4432e730d6ea",12407,"","",
+"CORE-934","Core","[research:training] Run Condition 2 — Multilingual transpiled code QLoRA fine-tune (zh, si, ur) on Tiny Aya base","Fine-tune Tiny Aya base with multilingual transpiled Python code (all 3 target languages combined).
+
+**Setup:**
+
+* Base model: Tiny Aya (3.35B params)
+* Data: Transpiled Python code in zh + si + ur (combined, volume-matched to Condition 1)
+* Method: QLoRA 4-bit
+* Hardware: Kaggle T4
+
+**What this tests:** The core hypothesis — does multilingual code (transpiled) improve target-language reasoning?
+
+**Deliverables:**
+
+1. Trained LoRA adapter
+2. Training logs to experiment tracker
+3. Training report
+
+**Depends on:** Transpiled datasets (#15, #22), training configs (#24)
+
+**This is the most important condition** — the primary comparison point against Condition 1 (English code).","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:47.932Z","2026-03-09T20:52:48.749Z",,,,,,,,"","f955c7b3-4ee2-4351-b8b6-ac279d3a6373","First Results",,"06d84a9b-fd59-490a-ad00-618589781015",12407,"","",
+"CORE-932","Core","[research:review] Review 50-file transpilation samples for Amharic (am) and Urdu (ur)","Language champions review 50-file samples of Amharic and Urdu transpiled code.
+
+**Same review criteria as Chinese review (CORE-1146) but with additional attention to:**
+
+* Amharic: Ge'ez (Ethiopic) script rendering, compound word handling, unique script considerations
+* Urdu: RTL layout, Nastaliq script rendering, mixed LTR/RTL content
+
+**Process:** Same as CORE-1146 — sample, review, annotate, categorize, score.
+
+**Deliverable:** Review reports for both languages with annotated issues and quality scores.","Backlog",2,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"area:translation, contrib:localization",,,,,"2026-03-02T03:25:47.556Z","2026-03-10T08:11:27.008Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"0f1c7691-f690-4a45-a058-2f73a3575781",12407,"","CORE-1088",
+"CORE-930","Core","[research:milestone] Midpoint sync — review first results, does multilingual code outperform baseline?","Day 8 midpoint sync to review first experimental results.
+
+**Agenda:**
+
+1. Review Condition 1 vs Condition 2 evaluation results
+2. Key question: does multilingual transpiled code outperform English code?
+3. If yes: continue as planned
+4. If no/unclear: discuss adjustments (different hyperparameters? more data? different benchmarks?)
+5. Training progress update: which conditions are complete, which are in progress
+6. Native code collection status: enough for Condition 4?
+7. Compute budget check: on track or need to reallocate?
+
+**Decision points:**
+
+* Adjust training schedule if needed
+* Decide on Condition 4 feasibility
+* Prioritize remaining evaluation runs
+
+**Deliverable:** Midpoint assessment + any schedule adjustments.","Backlog",1,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:25:47.197Z","2026-03-09T20:57:41.572Z",,,,,,,,"","f955c7b3-4ee2-4351-b8b6-ac279d3a6373","First Results",,"198ca7e5-e028-4873-9842-91612c4d0bef",12407,"","",
+"CORE-918","Core","[research:native] Set up code submission repository on GitHub — templates, CI validation, contributor guide","Create a public GitHub repository for native code submissions.
+
+**Repo structure:**
+
+```
+native-code-collection/
+├── README.md (contributor guide)
+├── CONTRIBUTING.md (submission instructions)
+├── LICENSE (Apache 2.0)
+├── exercises/ (exercise descriptions per tier)
+├── submissions/
+│   ├── zh/ (Chinese submissions)
+│   ├── am/ (Amharic submissions)
+│   └── ur/ (Urdu submissions)
+├── .github/
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   └── workflows/
+│       └── validate.yml (CI validation)
+└── scripts/
+    └── validate.py (submission validation)
+```
+
+**CI validation checks:**
+
+* File is valid Python (parses with AST)
+* Uses Legesher keywords in target language
+* Includes required metadata (contributor ID, language, exercise tier)
+* Passes basic quality checks
+
+**Deliverable:** Public GitHub repo ready for contributors.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:code, contrib:community",,,,,"2026-03-02T03:25:44.363Z","2026-03-10T08:12:05.125Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"14a5c1e1-0b8c-4c22-ae19-451422c980b6",12407,"","",
+"CORE-902","Core","[research:training] Run Condition 1 — English code QLoRA fine-tune on Tiny Aya base","Fine-tune Tiny Aya base model with English Python code using QLoRA.
+
+**Setup:**
+
+* Base model: Tiny Aya (3.35B params)
+* Data: English Python code from The Stack (volume-matched)
+* Method: QLoRA 4-bit (NF4), \~5.4GB VRAM
+* Hardware: Kaggle T4
+
+**What this tests:** Replicates the ""To Code or Not to Code"" finding — does English code improve reasoning?
+
+**Deliverables:**
+
+1. Trained LoRA adapter (saved to HuggingFace)
+2. Training logs (loss curves, eval metrics) logged to experiment tracker
+3. Training report: total tokens, compute hours, final loss
+
+**Depends on:** English code dataset (#25), training configs (#24)","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:39.555Z","2026-03-10T04:35:16.766Z",,,,,,,,"","f955c7b3-4ee2-4351-b8b6-ac279d3a6373","First Results",,"06c05171-cc35-4b9f-a922-4717c55ed028",12408,"","CORE-1077, CORE-803, CORE-981",
+"CORE-882","Core","[research:pipeline] Pull Python subset from The Stack via HuggingFace streaming API","Stream the Python subset from The Stack v1 via HuggingFace Datasets streaming API.
+
+**Steps:**
+
+1. Set up HuggingFace streaming for `bigcode/the-stack` Python subset
+2. Stream and save Python files locally (target: 100K-200K files to select from)
+3. Track metadata: file size, repo origin, license
+4. Implement checkpoint/resume for long-running streaming
+5. Estimate total size and validate against available storage
+
+**Note:** Do NOT download the full 6TB dataset — use streaming to pull only the Python subset.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:34.375Z","2026-03-10T04:33:33.147Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"008bb658-7732-48fb-9488-3872f9c0d35f",12408,"","",
+"CORE-872","Core","[research:pipeline] Build filtering pipeline — AST parse, dedup, length filters, license checks","Build a filtering pipeline to select high-quality Python files from The Stack for transpilation.
+
+**Filters:**
+
+1. **AST parseable:** File must parse as valid Python (reject syntax errors)
+2. **Deduplication:** Remove near-duplicates (MinHash or exact hash)
+3. **Length filters:** Min 10 lines, max 1000 lines (focus on meaningful code)
+4. **License check:** Only permissive licenses (MIT, Apache 2.0, BSD)
+5. **Quality heuristics:** Reject auto-generated code, config files, test boilerplate
+6. **Encoding:** Must be valid UTF-8
+
+**Output:** Filtered dataset of 50K-100K high-quality Python files ready for transpilation.
+
+**Deliverable:** Filtering script + report on filtering statistics (how many rejected at each stage).","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:31.443Z","2026-03-10T04:33:37.890Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"00ccf07f-606b-47e6-844f-5a1040dc8a9e",12408,"","CORE-882",
+"CORE-854","Core","[research:milestone] Data handoff sync — verify all 4 training datasets, confirm token counts, green-light training","Day 5 (Friday March 14) sync to verify all datasets are ready for training.
+
+**Checklist:**
+
+- [ ] Transpiled code datasets (zh, si, ur) — packaged and validated
+- [ ] English code dataset — volume-matched, packaged
+- [ ] NL text datasets (zh, si, ur) — volume-matched, packaged
+- [ ] Native code collection — status update (may not be complete)
+- [ ] Language champion sign-off received for all 3 languages
+- [ ] Token counts confirmed and matched across conditions
+- [ ] All datasets uploaded to HuggingFace
+
+**Decision:** Green-light training to begin on Monday, or identify blockers.
+
+**Deliverable:** Go/no-go decision for each training condition.","Backlog",1,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:25:26.158Z","2026-03-09T20:57:40.472Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"196c6a3d-b047-4400-ad06-c5c381d2b6c3",12408,"","",
+"CORE-838","Core","[research:native] Package native code as HuggingFace Dataset with metadata (language, exercise tier, contributor ID)","Package validated native code files as a HuggingFace Dataset.
+
+**Schema:**
+
+* code: the native code file content
+* language: zh/si/ur
+* exercise_tier: 1/2/3
+* exercise_id: which exercise was completed
+* contributor_id: anonymous contributor identifier
+* quality_score: 1-5 from review
+* time_spent_minutes: self-reported
+* token_count: Tiny Aya tokenizer count
+
+**Format:** Parquet, single dataset with all languages
+
+**Deliverable:** HuggingFace Dataset ready for Condition 4 training (#29).
+
+**Note:** This dataset is independently publishable — the first open-source multilingual native code dataset.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:22.073Z","2026-03-10T04:34:47.040Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"18be40fe-fbab-43ab-91fc-3a08fd86dbd9",12408,"","CORE-994",
+"CORE-828","Core","[research:data] Tokenize NL data using Tiny Aya tokenizer — volume-match to transpiled code token counts","Tokenize the NL text using the same Tiny Aya tokenizer and match token volume to the transpiled code datasets.
+
+**Steps:**
+
+1. Load Tiny Aya tokenizer
+2. Tokenize all cleaned NL text per language
+3. Count total tokens per language
+4. Trim or sample to exactly match transpiled code token counts per language
+5. Verify token distribution is reasonable (not dominated by short/long texts)
+
+**Critical:** Volume matching must be exact (same token count as transpiled code) for the control condition to be valid. The comparison is: ""same number of target-language tokens, but NL text instead of code.""","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:18.550Z","2026-03-10T04:34:24.890Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"106eb64e-c676-4791-9288-053135e91be6",12408,"","CORE-1186",
+"CORE-818","Core","[research:milestone] Final hackathon sync — review results, decide publication scope","Day 15 (Monday March 24) final sync before the 5-minute demo/talk.
+
+**Agenda:**
+
+1. Review complete evaluation matrix results
+2. Summarize key findings:
+   * Does multilingual code improve Tiny Aya? By how much?
+   * Does native code differ from transpiled?
+   * Regional variant effects?
+   * Cross-lingual transfer?
+3. Review demo/talk slides and script
+4. Decide publication scope for Phase 3:
+   * Full paper? Workshop paper? Blog post?
+   * Which findings are strong enough to publish?
+   * What additional experiments are needed?
+5. Celebrate the team's work!
+
+**Deliverable:** Publication decision + polished demo ready for presentation.","Backlog",1,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:25:15.240Z","2026-03-09T20:57:42.447Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"19dd2ba8-833c-4624-a3a1-75d0d9ebf1a4",12408,"","",
+"CORE-815","Core","[research:eval] Set up culturally-grounded benchmarks — MultiNRC, AI4Math alongside XNLI/XStoryCloze/TyDi QA","Add culturally-grounded benchmarks beyond the standard multilingual NLU suite.
+
+**Benchmarks to add:**
+
+* **MultiNRC:** Multi-sentence reading comprehension (tests deeper understanding)
+* **AI4Math:** Mathematical reasoning in multiple languages
+* Any other culturally-grounded benchmarks available for zh/si/ur
+
+**Steps:**
+
+1. Download and validate MultiNRC and AI4Math for target languages
+2. Write evaluation harness integrations (compatible with pipeline from #31)
+3. Run on baseline model to establish floor
+4. Document any language coverage gaps
+
+**Why:** Standard benchmarks (XNLI, XStoryCloze) test basic NLU. Culturally-grounded benchmarks test whether the model improves on tasks that require deeper language-specific reasoning.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:14.513Z","2026-03-09T20:53:39.996Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"0aefdc3a-928d-4cad-a068-39fd1996fbbb",12408,"","",
+"CORE-812","Core","[research:native] Design submission flow — file format, metadata requirements, consent/licensing","Design how contributors submit native code files.
+
+**Submission format:**
+
+* Python files (.py) written using Legesher
+* Metadata per file: contributor ID (anonymous), language, exercise tier, time spent
+* Consent form: permission to use code in research + publish as open dataset
+
+**Licensing:**
+
+* Code submitted under Apache 2.0 or CC-BY-4.0
+* Contributors retain copyright
+* Clear terms of use for research purposes
+
+**Flow options:**
+
+1. GitHub PR to submission repo (preferred — built-in CI validation)
+2. Google Form + file upload (lower barrier)
+3. Email submission (fallback)
+
+**Deliverable:** Submission flow document + consent form template + metadata schema.","Backlog",2,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:25:13.690Z","2026-03-10T04:34:41.582Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"14547807-42a1-4835-8fbf-65782c65ec6b",12408,"","CORE-1187",
+"CORE-803","Core","[research:training] Prepare English code dataset — pull English Python from The Stack, tokenize, package","Prepare the English code baseline dataset (Condition 1) that replicates the ""To Code or Not to Code"" paper's approach.
+
+**Steps:**
+
+1. Pull English Python files from The Stack (same source as transpiled data)
+2. Match volume: same number of tokens as the transpiled datasets
+3. Tokenize using Tiny Aya tokenizer
+4. Package as HuggingFace Dataset (same format as transpiled datasets)
+5. Create train/validation splits
+
+**Important:** This must be volume-matched to the transpiled code datasets for fair comparison. Token counts should be equivalent.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:25:10.897Z","2026-03-10T04:35:09.713Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"03c21667-c823-46a2-905d-c9c89c8002e4",12408,"","",
+"CORE-773","Core","[research:native] Write DEV.to article — ""We're building the first multilingual code dataset. Here's how you can help.""","Write and publish a [DEV.to](<http://DEV.to>) article to recruit native code contributors.
+
+**Article structure:**
+
+1. Hook: ""99% of code uses English keywords. We're changing that.""
+2. The problem: all open-source code datasets are English-keyword only
+3. The research: does multilingual code improve AI models?
+4. What we need: developers who speak Chinese, Amharic, or Urdu to write code
+5. How to contribute: link to GitHub repo + exercises
+6. The impact: first multilingual code dataset, open-source, helping under-resourced languages
+
+**Target audience:** Multilingual developers, especially those who speak Chinese, Amharic, or Urdu.
+
+**Deliverable:** Published [DEV.to](<http://DEV.to>) article with call to action.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community, contrib:docs",,,,,"2026-03-02T03:25:00.793Z","2026-03-10T08:12:15.449Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"157b6d86-2f1c-4846-8779-b8cfc16785ea",12408,"","",
+"CORE-717","Core","[research:eval] Run full evaluation matrix — all conditions x all languages x base vs regional variants","Run the complete evaluation matrix once all adapters are trained.
+
+**Matrix:**
+
+* Conditions: Baseline, Cond 1 (English), Cond 2 (transpiled), Cond 3 (NL text), Cond 4 (native, if available)
+* Languages: zh, si, ur
+* Base models: Global, Water (zh), Fire (si, ur)
+* Benchmarks: XNLI, XStoryCloze, TyDi QA, MMLU, MultiNRC, AI4Math
+
+**Total evaluations:** \~5 conditions × 3 languages × 2 bases × 6 benchmarks = \~180 runs
+
+**Deliverable:** Complete results spreadsheet with all numbers, ready for analysis (#36, #37).","Backlog",5,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:43.621Z","2026-03-10T04:35:23.122Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"0b1d3e13-e510-4c10-944e-5e358e2777c4",12408,"","CORE-1152",
+"CORE-712","Core","[research:data] Pull multilingual NL text for zh/am/ur from CC-100 or OSCAR","Pull multilingual natural language text corpora for the NL text control condition (Condition 3).
+
+**Sources (pick best available):**
+
+* CC-100: Common Crawl filtered text in 100+ languages
+* OSCAR: Open Super-large Crawled Aggregated corpus
+* mC4: Multilingual C4
+
+**Per language (zh, am, ur):**
+
+1. Download text corpus via HuggingFace or direct download
+2. Verify language quality (not just language-detected noise)
+3. Target volume: enough text to volume-match the transpiled code token counts
+
+**Note:** Amharic may have smaller corpus availability than Chinese/Urdu. Document actual volume available.
+
+**Deliverable:** Raw NL text files for all 3 languages, ready for filtering and tokenization.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:41.873Z","2026-03-10T08:11:33.994Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"0fad7925-88a9-4abe-b571-134d582712d6",12409,"","",
+"CORE-697","Core","[research:eval] Run baseline evaluation — Tiny Aya base (no fine-tuning) on all benchmarks for zh/si/ur","Establish baseline numbers by evaluating Tiny Aya base model (no fine-tuning) on all benchmarks.
+
+**Run for each language (zh, si, ur):**
+
+* XNLI
+* XStoryCloze
+* TyDi QA
+* MMLU
+
+**Deliverable:** Baseline results table — this is the floor that all conditions must beat to show improvement.
+
+**Note:** Run on both global base AND regional variants (Water for zh, Fire for si/ur) to establish variant baselines too.","Backlog",3,"High","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:38.208Z","2026-03-10T04:35:23.273Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"09a06417-e17c-43ac-a788-4a05ee8c62bd",12409,"","CORE-1152",
+"CORE-1164","Core","[research:review] Spot-check model outputs in target languages + write language-specific notes","During Week 2, language champions spot-check model outputs to provide qualitative feedback.
+
+**Tasks:**
+
+1. Review a sample of model outputs (generations) in each target language
+2. Assess: fluency, cultural awareness, reasoning quality
+3. Compare outputs across conditions (blind if possible)
+4. Write language-specific notes documenting:
+   * Strengths and weaknesses per condition
+   * Common errors or patterns
+   * Qualitative impressions of improvement (or lack thereof)
+
+**Deliverable:** Language-specific notes document per language, ready for inclusion in results summary (#17).","Backlog",3,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:localization",,,,,"2026-03-02T03:26:51.828Z","2026-03-09T20:54:43.113Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"0fa6c062-3830-4383-b581-a3bd67b67a04",12406,"","",
+"CORE-1160","Core","[core:translation] Round-trip adds/removes lines on 4.1% of files","## Context
+
+Discovered in CORE-685 stress test. 41/1000 files where en→zh→en round-trip changes the number of lines. Both backends affected equally. Likely a whitespace/newline normalization issue in the translation engine. Need to investigate whether trailing newlines, blank lines, or line endings are being modified during translation.
+
+## Related
+
+* CORE-685","Backlog",,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:core",,,,,"2026-03-02T03:26:50.795Z","2026-03-09T01:44:22.921Z",,,,,,,,"",,,,"7d091f6c-6f98-432b-aaea-dfa2dcbe5be2",12406,"CORE-685, CORE-696","",
+"CORE-1151","Core","[research:eval] Cross-lingual transfer analysis + results visualizations (bar charts, heatmaps, tables)","Analyze cross-lingual transfer effects and create publication-quality visualizations.
+
+**Cross-lingual transfer tests:**
+
+* Does ur code fine-tuning improve hi performance? (related languages, both on Fire)
+* Does zh code improve ja/ko performance? (CJK family, Water variant)
+* Does training on one language's code help other languages?
+
+**Visualizations to create:**
+
+1. Bar chart: benchmark scores by condition (grouped by language)
+2. Heatmap: condition × language × benchmark scores
+3. Radar chart: multi-dimensional performance comparison
+4. Line chart: training loss curves across conditions
+5. Table: complete results matrix (for paper appendix)
+
+**Tools:** matplotlib, seaborn, or plotly for visualizations
+
+**Deliverable:** Publication-ready figures + cross-lingual transfer analysis writeup.","Backlog",5,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:docs, platform:huggingface",,,,,"2026-03-02T03:26:48.333Z","2026-03-10T04:34:57.972Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"0d12840e-cefa-4b6f-aa3c-9f4b5e312455",12406,"","CORE-717",
+"CORE-1034","Core","[research:training] Set up regional variant experiments — zh→Water, am→Earth, ur→Fire vs Global","Configure experiments comparing Tiny Aya regional variants vs the global base model.
+
+**Regional variant mapping:**
+
+* Chinese (zh) → Tiny Aya Water (Asia-Pacific + Europe)
+* Amharic (am) → Tiny Aya Earth (Africa/West Asia)
+* Urdu (ur) → Tiny Aya Fire (South Asia)
+
+**This gives us coverage across all 3 Tiny Aya regional variants.**
+
+**Experiments:**
+
+1. Fine-tune regional variant with target language code vs fine-tuning global base
+2. Compare: does a region-specific base model benefit more from target-language code?
+3. Cross-lingual transfer: does am code on Earth help other African languages?
+
+**Deliverable:** Configured experiment configs for all 3 language-variant pairs.","Backlog",5,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:26:14.512Z","2026-03-10T08:11:48.134Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"892dce5d-4e9b-4d21-9b4c-f868ee158b6f",12407,"","",
+"CORE-957","Core","[research:pipeline] Upload final datasets to HuggingFace (public) — write dataset cards with documentation","Upload all datasets to the shared HuggingFace organization and write comprehensive dataset cards.
+
+**Per dataset card:**
+
+1. Dataset description and motivation
+2. How it was created (Legesher transpilation pipeline)
+3. Source: The Stack v1 Python subset
+4. Languages covered
+5. Statistics: file count, token count, average file length
+6. Intended use: multilingual code LLM training
+7. Limitations and biases
+8. License information
+9. Citation format
+
+**Datasets to upload:**
+
+* Transpiled code: zh, si, ur (3 datasets)
+* English code baseline (1 dataset)
+* NL text control (3 datasets)
+* Native code (if collected, 1 dataset)
+
+**Note:** These are independently publishable on HuggingFace regardless of experimental results.","Backlog",3,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:docs, platform:huggingface",,,,,"2026-03-02T03:25:53.978Z","2026-03-09T20:52:12.368Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"0268f92a-d8e0-4510-852d-882012e5604b",12407,"","",
+"CORE-942","Core","[research:eval] Set up native speaker evaluation protocol — recruit 3-5 raters/language, 50 outputs, Likert","Design and set up human evaluation protocol using native speakers.
+
+**Protocol:**
+
+1. Select 50 model outputs per language (balanced across conditions)
+2. Recruit 3-5 native speakers per language (zh, si, ur)
+3. Evaluation criteria (Likert scale 1-5):
+   * Fluency: Is the output natural and grammatically correct?
+   * Relevance: Does the output address the prompt?
+   * Cultural appropriateness: Does it reflect the language's cultural context?
+4. Blind evaluation (raters don't know which condition produced the output)
+5. Calculate inter-rater agreement (Cohen's kappa)
+
+**Recruitment:** Through language champions, Code Division/Naamal contacts
+
+**Deliverable:** Evaluation protocol document, recruited raters, evaluation form/spreadsheet.
+
+**Note:** May extend into Phase 3 if rater recruitment takes time.","Backlog",3,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:25:49.388Z","2026-03-09T20:54:13.440Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"0dd2a497-01a2-4630-bf95-1a35c885a45c",12407,"","",
+"CORE-896","Core","[research:native] Share early findings / progress update on DEV.to — build momentum, attract more contributors","Write a follow-up [DEV.to](<http://DEV.to>) article sharing progress and early findings from the native code collection.
+
+**Contents:**
+
+1. Update on collection progress: how many files, how many contributors
+2. Interesting observations: how do native developers write differently?
+3. Highlight a few code examples (with permission)
+4. Preliminary findings from the research (if available)
+5. Call to action: still accepting contributions!
+6. Thank contributors by name/alias
+
+**Timing:** Week 2 (Day 10-14), while collection is still ongoing.
+
+**Purpose:** Build momentum, attract late contributors, and establish the project publicly.
+
+**Deliverable:** Published follow-up [DEV.to](<http://DEV.to>) article.","Backlog",2,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community, contrib:docs",,,,,"2026-03-02T03:25:38.281Z","2026-03-09T20:56:56.029Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"1915f429-0a46-4d7a-8c84-29118f428b54",12408,"","",
+"CORE-858","Core","[research:results] Draft hackathon results summary and preliminary blog post","Compile all experimental results into a coherent summary for the team and public.
+
+**Contents:**
+
+1. Executive summary: did multilingual code improve Tiny Aya?
+2. Per-condition results table (baseline, English code, transpiled, NL text, native)
+3. Per-language breakdown (zh, si, ur)
+4. Regional variant comparison
+5. Key findings and surprises
+6. Limitations and future work
+7. Dataset links (HuggingFace)
+
+**Format:** Blog post draft suitable for [DEV.to](<http://DEV.to>) or project website, plus internal summary for Cohere mentors.","Backlog",3,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:docs",,,,,"2026-03-02T03:25:26.942Z","2026-03-10T04:34:57.972Z",,,,,,,,"","50dafa3b-de1e-4f82-b2b0-5e7f7ea05f74","Hackathon Wrap + Demo",,"9789cd63-49a6-492b-8348-d9913349fe08",12408,"","CORE-1151",
+"CORE-796","Core","[research:infra] Request Cohere API credits for Tiny Aya inference during evaluation (if available)","Check if Cohere provides API credits for Expedition Tiny Aya participants, which could supplement local compute for evaluation.
+
+**Steps:**
+
+1. Check Cohere Labs program documentation for available credits
+2. If available, request credits for the team
+3. Document API access: endpoints, rate limits, available models
+4. Test inference on Tiny Aya via API (if accessible)
+5. Determine if API can be used for evaluation runs to save local GPU hours","Backlog",1,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"biz:partnerships",,,,,"2026-03-02T03:25:08.833Z","2026-03-09T20:50:36.887Z",,,,,,,,"","48dc338a-6f60-4f4c-9323-396a411e30db","Pre-Hackathon Ready",,"7581261c-c8bb-4cf4-9ddf-67d53fef6535",12408,"","",
+"CORE-762","Core","[research:training] Run Condition 4 — Native code QLoRA fine-tune (if sufficient native code collected)","Fine-tune Tiny Aya with natively-written multilingual code (code written by developers who think in the target language).
+
+**Setup:**
+
+* Base model: Tiny Aya (3.35B params)
+* Data: Native code collected from community contributors (#56-57)
+* Method: QLoRA 4-bit
+* Hardware: Kaggle T4
+
+**What this tests:** The most novel question — does code written by native-language thinkers carry different training signals than mechanically transpiled code?
+
+**Contingency:** If insufficient native code collected (target: 150-500 files), this condition may be:
+
+* Run with whatever data is available (even if volume doesn't match)
+* Deferred to Phase 3 (publication phase)
+
+**Deliverables:**
+
+1. Trained LoRA adapter (or documented as insufficient data)
+2. Training logs
+3. Comparison: Condition 4 vs Condition 2 tests transpiled vs native
+
+**Depends on:** Native code collection (#56-57)","Backlog",3,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:58.424Z","2026-03-10T04:35:16.759Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"07c6d366-178a-4327-ab21-66fc30c9feed",12408,"","CORE-1077, CORE-994",
+"CORE-738","Core","[research:native] Social media + community outreach — share call for contributors in language-specific dev communities","Amplify the call for native code contributors through social media and community channels.
+
+**Channels:**
+
+* Twitter/X: Share [DEV.to](<http://DEV.to>) article + tag relevant communities
+* Reddit: r/programming, r/learnpython, language-specific subreddits
+* LinkedIn: Post about the research
+* Discord: Relevant developer community servers
+* Language-specific forums: Chinese dev forums, South Asian developer groups
+
+**Content:**
+
+* Share [DEV.to](<http://DEV.to>) article link
+* Create social media cards/graphics
+* Tag Cohere Labs, Legesher, relevant communities
+
+**Timing:** After [DEV.to](<http://DEV.to>) article (#52) and submission repo (#50) are live.
+
+**Deliverable:** Posts published across 5+ channels, engagement tracked.","Backlog",2,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"contrib:community",,,,,"2026-03-02T03:24:50.970Z","2026-03-09T20:56:29.329Z",,,,,,,,"","62fdb681-fd26-4113-a12e-655217176be6","Data Handoff",,"16c3e3da-87e5-4b8a-9a4c-082b160b96cc",12408,"","",
+"CORE-711","Core","[research:eval] Per-token efficiency analysis — improvement per token of code vs equivalent NL text","Analyze the efficiency of code vs NL text as training data by comparing improvement per token.
+
+**Analysis:**
+
+* Calculate: (benchmark improvement) / (training tokens) for each condition
+* Compare: code tokens vs NL text tokens — which gives more improvement per token?
+* Break down by language: is efficiency different for zh vs si vs ur?
+* Break down by benchmark: which tasks benefit most from code?
+
+**Deliverable:** Efficiency analysis table + visualization showing improvement-per-token curves.
+
+**Why this matters:** Even if total improvement is similar, code may be more token-efficient, meaning you need less data to get the same improvement.","Backlog",3,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:41.694Z","2026-03-10T04:34:52.885Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"0c1e6d7e-2777-45ab-ac47-99798076549d",12409,"","CORE-717",
+"CORE-708","Core","[research:training] Run regional variant training — target language code on Earth/Fire/Water variants","Run QLoRA fine-tuning on Tiny Aya regional variants with target-language transpiled code.
+
+**Experiments:**
+
+1. zh transpiled code on Water variant (Asia-Pacific + Europe)
+2. am transpiled code on Earth variant (Africa/West Asia)
+3. ur transpiled code on Fire variant (South Asia)
+
+**This covers all 3 Tiny Aya regional variants — one language per variant.**
+
+**Cross-lingual transfer test:**
+
+* ur code on Fire → evaluate on hi benchmarks (Urdu → Hindi, same South Asia region)
+* am code on Earth → evaluate on other African language benchmarks if available
+
+**Depends on:** Transpiled datasets (CORE-1088), regional variant setup (CORE-1034), training configs (CORE-1077)
+
+**Deliverable:** 3 regional variant adapters, comparison data vs global base fine-tuning.","Backlog",5,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com",,"platform:huggingface",,,,,"2026-03-02T03:24:40.955Z","2026-03-10T08:14:11.145Z",,,,,,,,"","d5041232-8dd5-4ac1-9a97-dd93c1c77165","All Training Complete",,"08324b05-4868-4685-ad95-cceaece0590e",12409,"","CORE-1077",
+"CORE-704","Core","[i18n:es] Spanish language pack has ~8% lower round-trip accuracy than other languages","## Context
+
+Discovered during CORE-685 cross-language stress test. The same 1000 files from The Stack were tested across 5 languages (ar, es, ja, ru, zh). Spanish is a significant outlier.
+
+## Problem
+
+Spanish round-trip accuracy is \~8% lower than all other tested languages:
+
+| Language | Token RT Exact | Tree-Sitter RT Exact |
+| -- | -- | -- |
+| ar/ja/ru/zh | 93.8% | 95.5% |
+| **es** | **85.8%** | **86.7%** |
+
+That's **80 extra mismatches** (142 vs 62 token, 133 vs 45 tree-sitter).
+
+### Additional anomalies
+
+* **Zero tree-sitter errors** (vs 7 for all other languages) — Spanish translations are ASCII, so byte boundaries don't shift to expose the 0x9f bug (CORE-799)
+* **7 more backend divergences** (30 vs 23) — suggests more files where token and tree-sitter disagree on Spanish translations
+* Some mismatches have `mismatch_first_line=None` — trailing newline detection bug in script (separate issue)
+
+## Likely cause
+
+Translation conflicts in the Spanish language pack — Spanish keywords that collide with common Python identifiers or variable names. For example, if a Spanish keyword maps to a word that also appears as a common variable name in English source code, the reverse translation could pick the wrong one.
+
+## Investigation needed
+
+1. Dump the es language pack keyword/builtin maps and look for English words that are also common Python identifiers
+2. Compare the 80 extra mismatch files: diff the es round-trip output against the original to find which specific tokens are being mis-translated
+3. Check if the issue is forward translation (en→es introduces ambiguity) or reverse translation (es→en picks wrong token)
+
+## Impact
+
+* Spanish should not be used for Tiny Aya training data until this is resolved or understood
+* Other 4 languages (ar, ja, ru, zh) are confirmed safe for dataset generation
+
+## Related
+
+* CORE-685: Stress test that surfaced this
+* CORE-1107: Token scope-unaware builtin translation
+* CORE-799: Tree-sitter 0x9f errors (not triggered by Spanish)","Backlog",,"Medium","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:i18n",,,,,"2026-03-02T03:24:39.868Z","2026-03-09T01:44:21.520Z",,,,,,,,"",,,,"836fbc06-fa60-4879-8113-2fe9b65e8f8d",12409,"CORE-685, CORE-1107, CORE-799","",
+"CORE-1107","Core","[core:token] Token backend translates variable names matching builtins — 1.8% round-trip failure","## Context
+
+Discovered in CORE-685 stress test. 18/1000 files where TokenTranslator translates identifiers that happen to match builtin names (e.g., variables named `type`, `input`, `list`) causing round-trip mismatch. TreeSitterTranslator handles these correctly. Not a bug per se — the forward translation produces working code — but round-trip is lossy. 16 of these 18 files are also backend divergence cases.
+
+## Options
+
+1. Document as known behavior
+2. Add heuristic scope detection to token backend
+3. Recommend tree-sitter for precision-critical use
+
+## Related
+
+* CORE-685
+* CORE-799","Backlog",,"Low","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:core",,,,,"2026-03-02T03:26:34.779Z","2026-03-09T01:44:21.519Z",,,,,,,,"",,,,"2773a00b-c92b-4e4b-97bd-a13000e5284d",12407,"CORE-799, CORE-685, CORE-704","",
+"CORE-696","Core","[research] Fix mismatch_first_line bug in stress test script — splitlines() strips trailing newlines","## Context
+
+Discovered while analyzing CORE-685 cross-language stress test results. The `find_first_diff_line()` function in `research/stress_test_transpiler.py` returns `None` for some round-trip mismatches.
+
+## Problem
+
+`str.splitlines()` strips trailing newlines, so:
+
+* `""hello\n""` → `[""hello""]`
+* `""hello""` → `[""hello""]`
+
+These are different strings but produce identical lists, so the function returns `None` when the only difference is trailing whitespace/newlines.
+
+Observed: 4 out of 5 first AR mismatches have `mismatch_first_line=None`. Several ES mismatches also affected.
+
+## Fix
+
+In `find_first_diff_line()` (line 107 of `research/stress_test_transpiler.py`):
+
+Option A: Use `splitlines(keepends=True)` to preserve line endings
+Option B: Add a trailing newline comparison before the line-by-line check
+
+```python
+def find_first_diff_line(original: str, result: str) -> int | None:
+    orig_lines = original.splitlines(keepends=True)
+    result_lines = result.splitlines(keepends=True)
+    for i, (a, b) in enumerate(zip(orig_lines, result_lines)):
+        if a != b:
+            return i + 1
+    if len(orig_lines) != len(result_lines):
+        return min(len(orig_lines), len(result_lines)) + 1
+    return None
+```
+
+## Impact
+
+Low — this is a diagnostic improvement, not a translation bug. But accurate mismatch reporting helps debug CORE-1160 and CORE-704.
+
+## Related
+
+* CORE-685: Stress test script
+* CORE-1160: Round-trip line count changes
+* CORE-704: Spanish pack investigation","Backlog",,"Low","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:core",,,,,"2026-03-02T03:24:38.006Z","2026-03-09T01:44:22.924Z",,,,,,,,"",,,,"b1cad317-e7d8-4d4f-8bb1-4f10ab6a525b",12409,"CORE-685, CORE-1160","",
+"CORE-685","Core","[research] Transpiler stress test — 1000 files from The Stack","## Goal
+
+Validate Legesher's transpiler can handle real-world Python files at scale before using it to generate multilingual code datasets for the Expedition Tiny Aya research project.
+
+## What
+
+A stress test script (`research/stress_test_transpiler.py`) that:
+
+* Streams 1000 Python files from The Stack (HuggingFace)
+* Translates each with both backends (TokenTranslator + TreeSitterTranslator) to Chinese (zh)
+* Validates round-trip correctness (en → zh → en)
+* Compares backend outputs for divergences
+* Produces a comprehensive report
+
+## Results (2026-03-08)
+
+### Single-Language Summary (zh, 1000 files)
+
+| Metric | Value |
+| -- | -- |
+| Files processed | 1,000 |
+| Total time | 48 seconds |
+| Token backend success | 100% |
+| Token round-trip exact match | 93.8% |
+| Tree-Sitter backend success | 99.3% |
+| Tree-Sitter round-trip exact match | 95.5% |
+| Backend divergences | 23 (2.3%) |
+| Tree-Sitter encoding errors | 7 (0.7%) |
+| Silent failures | 0 |
+
+### Cross-Language Summary (1000 files × 5 languages)
+
+| Language | Token RT Exact | TS RT Exact | TS Errors | Divergences |
+| -- | -- | -- | -- | -- |
+| ar (Arabic) | 93.8% | 95.5% | 7 | 23 |
+| **es (Spanish)** | **85.8%** | **86.7%** | **0** | **30** |
+| ja (Japanese) | 93.8% | 95.5% | 7 | 23 |
+| ru (Russian) | 93.8% | 95.5% | 7 | 23 |
+| zh (Chinese) | 93.8% | 95.5% | 7 | 23 |
+
+4/5 languages produce identical results. Spanish is a significant outlier (CORE-704).
+
+### Key Findings
+
+1. **Token backend: 100% forward-translation success** — no crashes or errors on any of the 1000 files.
+2. **Tree-Sitter backend: 99.3% success** — 7 files failed due to UTF-8 encoding errors on files with non-UTF-8 bytes in string literals (CORE-799). Error is language-dependent — 0 errors with Spanish (ASCII translations).
+3. **Round-trip fidelity (Token):** 93.8% exact match. 6.2% mismatch breakdown:
+   * 4.1% (41 files): Line count changes — whitespace/newline normalization issue affecting both backends equally (CORE-1160).
+   * 1.8% (18 files): Token backend translates variable names matching builtins (e.g., `type`, `input`, `list`) — scope-unaware behavior. Tree-Sitter handles these correctly (CORE-1107).
+   * 0.3% (3 files): Other minor differences.
+4. **Round-trip fidelity (Tree-Sitter):** 95.5% exact match (higher than Token due to scope awareness).
+5. **Backend divergences:** 23 files (2.3%) where Token and Tree-Sitter produce different output. 16 of these overlap with the scope-unaware token translation cases.
+6. **Zero silent failures** — every error was caught and reported.
+7. **Scale validates**: zh-5000 rates within 0.4% of zh-1000. Memory grows sub-linearly.
+
+### Recommendation
+
+**Token backend is ready for 50K–100K scale dataset generation.** Forward translation is 100% reliable, and the round-trip mismatches are well-understood edge cases that don't affect forward translation quality. Tree-Sitter is more precise but the encoding errors need CORE-799 resolved first for full reliability.
+
+### Follow-up Issues
+
+* CORE-799: Tree-Sitter UTF-8 encoding errors (7 files, 0.7%) — language-dependent
+* CORE-1160: Round-trip line count changes (41 files, 4.1%)
+* CORE-1107: Token backend scope-unaware builtin translation (18 files, 1.8%)
+* CORE-704: Spanish language pack \~8% lower round-trip accuracy
+* CORE-696: Stress test script `mismatch_first_line` bug (trailing newline detection)","✅  Done",8,"Urgent","24564913-a69e-4f77-b7a6-699c452232d8","Expedition Tiny Aya","madi@legesher.com","madi@legesher.com","area:translation, pkg:core",16,"[Cycle 16] Prepare for public launch","2026-02-22T20:00:00.000Z","2026-03-08T20:00:00.000Z","2026-03-02T03:17:15.177Z","2026-03-09T20:50:22.524Z","2026-03-08T17:41:10.815Z",,"2026-03-08T19:09:32.440Z",,,,,"",,,,"e4fc6b63-c7c9-4a84-bbe2-5b1b437eb656",2824,"CORE-696, CORE-704, CORE-1107, CORE-1160","",

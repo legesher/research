@@ -24,7 +24,9 @@ Benchmark evaluation across all conditions and languages.
 | AI4Math | Mathematical reasoning | zh, am, ur |
 | HumanEval/MBPP | Code generation (secondary) | zh, am, ur |
 
-## Quick Start
+## Suggested Entrypoints
+
+These scripts are suggested starting points — adapt as needed:
 
 ```bash
 # Run all benchmarks for a condition

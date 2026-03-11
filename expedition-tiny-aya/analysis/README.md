@@ -4,9 +4,9 @@
 
 Jupyter notebooks for deep analysis and figure generation.
 
-## Notebooks
+## Suggested Notebooks
 
-| Notebook | Analysis |
+| Suggested Name | Analysis |
 | --- | --- |
 | `cross_lingual_transfer.ipynb` | Does code in one language help related languages? |
 | `per_token_efficiency.ipynb` | Improvement per token across conditions |

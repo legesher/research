@@ -7,8 +7,8 @@ Collect code written by developers who think in Chinese, Amharic, or Urdu — no
 ## Contents
 
 - `exercises/` — 3-tier coding exercises for contributors
-- `contributor-guide.md` — How to install Legesher, write native code, submit
-- `quality-rubric.md` — 1-5 scoring criteria for reviewing submissions
+- Suggested: `contributor-guide.md` — How to install Legesher, write native code, submit
+- Suggested: `quality-rubric.md` — 1-5 scoring criteria for reviewing submissions
 - `review-log/` — Per-language review tracking
 
 ## Collection Goals

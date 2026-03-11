@@ -5,7 +5,7 @@ Materials for the 5-minute hackathon demo/talk (Day 15).
 ## Contents
 
 - `slides/` — Slide deck files
-- `speaker-notes.md` — Talk script and timing notes
+- Suggested: `speaker-notes.md` — Talk script and timing notes
 
 ## Outline
 
