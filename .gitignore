@@ -1,0 +1,43 @@
+# Claude Code local settings (contains API keys)
+.claude/settings.local.json
+
+# Data files (live on HuggingFace, not in git)
+*.parquet
+*.arrow
+*.bin
+*.safetensors
+*.ckpt
+*.pt
+*.h5
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Environment
+.env
+.venv/
+venv/
+
+# Experiment tracking
+wandb/
+mlruns/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large logs
+*.log
