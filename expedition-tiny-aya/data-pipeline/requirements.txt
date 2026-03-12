@@ -1,0 +1,4 @@
+# Dependencies for data pipeline scripts
+datasets>=2.14.0
+langdetect>=1.0.9
+huggingface_hub>=0.16.0
