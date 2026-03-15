@@ -41,7 +41,8 @@
       881
     ],
     "legesher_core_version": "0.5.1",
-    "python_version": "3.13.9 (main, Oct 14 2025, 21:10:40) [Clang 20.1.4 ]"
+    "python_version": "3.13.9 (main, Oct 14 2025, 21:10:40) [Clang 20.1.4 ]",
+    "dataset": "bigcode/the-stack-dedup"
   },
   "backend_results": {
     "token": {

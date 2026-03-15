@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Stress test Legesher's transpiler on real-world Python files from The Stack.
+"""Stress test Legesher's transpiler on real-world Python files from BigCode datasets.
 
-Streams Python files from Hugging Face's The Stack dataset, translates each
-with both TokenTranslator and TreeSitterTranslator backends, validates
-round-trip correctness, and produces a structured report.
+Streams Python files from HuggingFace BigCode datasets (the-stack-dedup, starcoderdata,
+the-stack, etc.), translates each with both TokenTranslator and TreeSitterTranslator
+backends, validates round-trip correctness, and produces a structured report.
 
 Requirements:
     pip install datasets huggingface_hub psutil
@@ -14,9 +14,11 @@ Usage:
     python stress_test_transpiler.py --sample-size 100 --language zh
     python stress_test_transpiler.py --sample-size 1000 --report results.json
     python stress_test_transpiler.py --backends token --skip-roundtrip
+    python stress_test_transpiler.py --dataset bigcode/starcoderdata --data-dir python
+    python stress_test_transpiler.py --dataset bigcode/the-stack-v2-dedup --config Python
 
-Note: Requires accepting The Stack's terms of use on Hugging Face and being
-logged in via `huggingface-cli login`.
+Note: Requires accepting the dataset's terms of use on HuggingFace and being
+logged in via `huggingface-cli login` or setting HF_TOKEN.
 """
 
 from __future__ import annotations
@@ -75,6 +77,7 @@ class StressTestReport:
     """Full stress test report."""
 
     timestamp: str = ""
+    dataset: str = ""
     language: str = ""
     backends: list[str] = field(default_factory=list)
     sample_size: int = 0
@@ -121,23 +124,31 @@ def stream_python_files(
     sample_size: int,
     min_lines: int,
     max_bytes: int,
+    data_dir: str = "data/python",
+    config_name: str | None = None,
 ):
-    """Stream and filter Python files from The Stack.
+    """Stream and filter Python files from a HuggingFace code dataset.
 
     Yields dicts with content, index, size_bytes, line_count.
     Also returns filter stats via the FilterStats object.
     """
-    print(f"Loading dataset: {dataset_id} (Python subset, streaming)...")
+    if config_name:
+        print(f"Loading dataset: {dataset_id} (config={config_name}, streaming)...")
+    else:
+        print(f"Loading dataset: {dataset_id} (data_dir={data_dir}, streaming)...")
     print(f"Target: {sample_size:,} valid files (min {min_lines} lines, max {max_bytes:,} bytes)\n")
 
     try:
-        ds = load_dataset(
-            dataset_id,
-            data_dir="data/python",
+        load_kwargs: dict = dict(
             split="train",
             streaming=True,
             trust_remote_code=False,  # Security: block remote code execution
         )
+        if config_name:
+            load_kwargs["name"] = config_name
+        else:
+            load_kwargs["data_dir"] = data_dir
+        ds = load_dataset(dataset_id, **load_kwargs)
     except Exception as e:
         print(f"Error loading dataset: {e}", file=sys.stderr)
         print(
@@ -412,7 +423,7 @@ def print_report(
     print("=" * 65)
 
     fs = filter_stats
-    print(f"\n  Dataset:              bigcode/the-stack-dedup (Python)")
+    print(f"\n  Dataset:              {report.dataset} (Python)")
     print(f"  Files processed:      {fs.accepted:,}")
     print(f"  Files streamed:       {fs.total_streamed:,}")
     print(
@@ -445,6 +456,7 @@ def save_report(
     output = {
         "summary": {
             "timestamp": report.timestamp,
+            "dataset": report.dataset,
             "language": report.language,
             "backends": report.backends,
             "sample_size": report.sample_size,
@@ -533,13 +545,25 @@ def main() -> None:
         "--report",
         type=str,
         default=None,
-        help="Path for JSON report (default: research/reports/stress_test_{lang}_{size}.json)",
+        help="Path for JSON report (default: research/reports/stress_test_{dataset}_{lang}_{size}.json)",
     )
     parser.add_argument(
         "--dataset",
         type=str,
         default="bigcode/the-stack-dedup",
         help="Hugging Face dataset ID (default: bigcode/the-stack-dedup)",
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="data/python",
+        help="Dataset subdirectory for Python files (default: data/python)",
+    )
+    parser.add_argument(
+        "--dataset-config",
+        type=str,
+        default=None,
+        help="Dataset config name (e.g., 'Python' for the-stack-v2-dedup). Overrides --data-dir.",
     )
     parser.add_argument(
         "--skip-roundtrip",
@@ -553,11 +577,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Default report path includes language and sample size
+    # Default report path includes dataset, language and sample size
     if args.report is None:
         reports_dir = Path("research/reports")
         reports_dir.mkdir(parents=True, exist_ok=True)
-        args.report = str(reports_dir / f"stress_test_{args.language}_{args.sample_size}.json")
+        # Include dataset short name if not the default
+        dataset_name = args.dataset.split("/")[-1]
+        dataset_slug = f"{dataset_name}_" if dataset_name != "the-stack-dedup" else ""
+        args.report = str(reports_dir / f"stress_test_{dataset_slug}{args.language}_{args.sample_size}.json")
 
     # Determine backends
     if args.backends == "both":
@@ -595,7 +622,9 @@ def main() -> None:
 
     # Process files
     for file_data, filter_stats in stream_python_files(
-        args.dataset, args.sample_size, args.min_lines, args.max_bytes
+        args.dataset, args.sample_size, args.min_lines, args.max_bytes,
+        data_dir=args.data_dir,
+        config_name=args.dataset_config,
     ):
         final_filter_stats = filter_stats
         content = file_data["content"]
@@ -657,6 +686,7 @@ def main() -> None:
     # Build report
     report = StressTestReport(
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        dataset=args.dataset,
         language=args.language,
         backends=backends,
         sample_size=args.sample_size,
