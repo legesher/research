@@ -200,6 +200,12 @@ def _safe_output_path(source: str, input_base: Path, output_base: Path) -> Optio
 # Language code validation pattern (ISO 639-1: 2-3 lowercase letters)
 _LANG_CODE_RE = re.compile(r"^[a-z]{2,3}$")
 
+# HuggingFace dataset ID pattern (org/dataset-name)
+_HF_DATASET_RE = re.compile(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$")
+
+# Maximum number of worker processes
+_MAX_WORKERS = 64
+
 
 def _read_and_validate(source_path: str, backend_label: str) -> tuple[Optional[str], Optional[TranspileResult]]:
     """Read a source file and run size checks + sanitization.
@@ -459,6 +465,8 @@ def _load_checkpoint(checkpoint_path: Path) -> set[str]:
 
 def _append_checkpoint(checkpoint_path: Path, file_path: str) -> None:
     """Append a successfully processed file to checkpoint."""
+    if "\n" in file_path or "\r" in file_path:
+        return  # Skip paths with newlines to prevent checkpoint corruption
     with open(checkpoint_path, "a") as f:
         f.write(file_path + "\n")
 
@@ -557,15 +565,25 @@ def discover_hf_files(
 
     # Content size limit: reject files larger than 10 MB to prevent disk exhaustion
     max_content_bytes = 10 * 1024 * 1024
+    # Aggregate download cap: 5 GB
+    max_total_bytes = 5 * 1024 * 1024 * 1024
+    total_bytes = 0
 
     saved: list[Path] = []
     for i, sample in enumerate(tqdm(ds.take(limit), total=limit, desc="Downloading")):
         content = sample.get("content", "")
+        content_size = len(content.encode("utf-8", errors="replace"))
 
-        # Guard against oversized entries that could exhaust disk
-        if len(content.encode("utf-8", errors="replace")) > max_content_bytes:
+        # Guard against oversized entries
+        if content_size > max_content_bytes:
             print(f"  Skipping oversized entry ({len(content):,} chars)", file=sys.stderr)
             continue
+
+        # Guard against aggregate disk exhaustion
+        total_bytes += content_size
+        if total_bytes > max_total_bytes:
+            print(f"  Stopping: total download size exceeds {max_total_bytes // (1024**3)} GB", file=sys.stderr)
+            break
 
         # Sanitize hexsha: allow only alphanumeric chars to prevent path traversal
         raw_hexsha = sample.get("hexsha", f"file_{i:06d}")
@@ -873,7 +891,7 @@ Examples:
         "--workers", "-w",
         type=int,
         default=max(1, mp.cpu_count() - 1),
-        help=f"Number of worker processes (default: {max(1, mp.cpu_count() - 1)})",
+        help=f"Number of worker processes (default: {max(1, mp.cpu_count() - 1)}, max: {_MAX_WORKERS})",
     )
     parser.add_argument(
         "--batch-size",
@@ -940,6 +958,13 @@ Examples:
     # Validate input
     if not args.input and not args.hf_dataset:
         parser.error("Either provide an input directory or use --hf-dataset")
+
+    if args.workers < 1 or args.workers > _MAX_WORKERS:
+        parser.error(f"--workers must be between 1 and {_MAX_WORKERS}")
+
+    if args.hf_dataset and not _HF_DATASET_RE.match(args.hf_dataset):
+        print(f"Error: Invalid HuggingFace dataset ID: {args.hf_dataset!r}", file=sys.stderr)
+        sys.exit(1)
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
