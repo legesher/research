@@ -1,0 +1,6 @@
+# Dependencies for batch transpilation pipeline
+legesher-core
+legesher-i18n
+tqdm>=4.60.0
+datasets>=2.14.0        # Only needed for --hf-dataset streaming
+huggingface_hub>=0.16.0  # Only needed for --hf-dataset streaming
