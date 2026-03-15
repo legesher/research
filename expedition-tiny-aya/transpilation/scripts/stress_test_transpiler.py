@@ -586,8 +586,8 @@ def main() -> None:
     if args.report is None:
         reports_dir = Path(__file__).resolve().parent.parent / "results" / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
-        # Include dataset short name if not the default
-        dataset_name = args.dataset.split("/")[-1]
+        # Include dataset short name if not the default (sanitize to prevent path traversal)
+        dataset_name = re.sub(r"[^a-zA-Z0-9_-]", "_", args.dataset.split("/")[-1])
         dataset_slug = f"{dataset_name}_" if dataset_name != "the-stack-dedup" else ""
         args.report = str(reports_dir / f"stress_test_{dataset_slug}{args.language}_{args.sample_size}.json")
 
