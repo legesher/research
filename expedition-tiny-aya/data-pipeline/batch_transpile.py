@@ -829,7 +829,7 @@ def save_run_metadata(output_dir: Path, lang: str, stats: BatchStats) -> None:
         "errors_by_type": stats.errors_by_type,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    meta_path = output_dir / f"{lang}_run_metadata.json"
+    meta_path = output_dir / lang / "run_metadata.json"
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
