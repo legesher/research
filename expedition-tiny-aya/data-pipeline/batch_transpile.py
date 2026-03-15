@@ -45,6 +45,7 @@ import csv
 import json
 import multiprocessing as mp
 import os
+import re
 import sys
 import time
 import traceback
@@ -606,10 +607,24 @@ def discover_hf_files(
     source_dir = output_dir / "_source"
     source_dir.mkdir(parents=True, exist_ok=True)
 
+    # Content size limit: reject files larger than 10 MB to prevent disk exhaustion
+    max_content_bytes = 10 * 1024 * 1024
+
     saved: list[Path] = []
     for i, sample in enumerate(tqdm(ds.take(limit), total=limit, desc="Downloading")):
         content = sample.get("content", "")
-        hexpath = sample.get("hexsha", f"file_{i:06d}")
+
+        # Guard against oversized entries that could exhaust disk
+        if len(content.encode("utf-8", errors="replace")) > max_content_bytes:
+            print(f"  Skipping oversized entry ({len(content):,} chars)", file=sys.stderr)
+            continue
+
+        # Sanitize hexsha: allow only alphanumeric chars to prevent path traversal
+        raw_hexsha = sample.get("hexsha", f"file_{i:06d}")
+        hexpath = re.sub(r"[^a-zA-Z0-9_-]", "_", str(raw_hexsha))
+        if not hexpath:
+            hexpath = f"file_{i:06d}"
+
         file_path = source_dir / f"{hexpath}.py"
         file_path.write_text(content, encoding="utf-8")
         saved.append(file_path)
@@ -981,7 +996,10 @@ Examples:
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    languages = [lang.strip() for lang in args.languages.split(",")]
+    languages = [lang.strip() for lang in args.languages.split(",") if lang.strip()]
+    if not languages:
+        print("Error: No valid language codes provided", file=sys.stderr)
+        sys.exit(1)
 
     # Discover files
     if args.hf_dataset:
