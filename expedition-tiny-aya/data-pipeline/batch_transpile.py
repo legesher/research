@@ -558,7 +558,9 @@ def discover_hf_files(
         sys.exit(1)
 
     print(f"Streaming {limit:,} files from {dataset_id}...")
-    ds = load_dataset(dataset_id, data_dir=data_dir, split="train", streaming=True)
+    ds = load_dataset(
+        dataset_id, data_dir=data_dir, split="train", streaming=True, trust_remote_code=False
+    )
 
     source_dir = output_dir / "_source"
     source_dir.mkdir(parents=True, exist_ok=True)
