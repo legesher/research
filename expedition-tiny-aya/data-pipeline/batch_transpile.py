@@ -76,6 +76,11 @@ class TranspileResult:
     elapsed_ms: float = 0.0
     backend: Optional[str] = None
     backends_match: Optional[bool] = None
+    # Per-backend success tracking (only set in "both" mode)
+    token_success: Optional[bool] = None
+    ts_success: Optional[bool] = None
+    token_error: Optional[str] = None
+    ts_error: Optional[str] = None
 
 
 @dataclass
@@ -189,6 +194,74 @@ def _safe_output_path(source: str, input_base: Path, output_base: Path) -> Optio
 
 
 # ---------------------------------------------------------------------------
+# Worker helpers
+# ---------------------------------------------------------------------------
+
+# Language code validation pattern (ISO 639-1: 2-3 lowercase letters)
+_LANG_CODE_RE = re.compile(r"^[a-z]{2,3}$")
+
+
+def _read_and_validate(source_path: str, backend_label: str) -> tuple[Optional[str], Optional[TranspileResult]]:
+    """Read a source file and run size checks + sanitization.
+
+    Returns (source_code, None) on success, or (None, error_result) on failure.
+    """
+    start = time.perf_counter()
+
+    # File size checks
+    try:
+        file_size = os.path.getsize(source_path)
+    except OSError as e:
+        elapsed = (time.perf_counter() - start) * 1000
+        return None, TranspileResult(
+            file_path=source_path, success=False,
+            error_type="OSError", error_message=str(e),
+            elapsed_ms=elapsed, backend=backend_label,
+        )
+
+    if file_size > _worker_max_file_size:
+        elapsed = (time.perf_counter() - start) * 1000
+        return None, TranspileResult(
+            file_path=source_path, success=False,
+            error_type="FileTooLarge",
+            error_message=f"File size {file_size} exceeds max {_worker_max_file_size}",
+            elapsed_ms=elapsed, backend=backend_label,
+        )
+
+    if file_size < _worker_min_file_size:
+        elapsed = (time.perf_counter() - start) * 1000
+        return None, TranspileResult(
+            file_path=source_path, success=False,
+            error_type="FileTooSmall",
+            error_message=f"File size {file_size} below min {_worker_min_file_size}",
+            elapsed_ms=elapsed, backend=backend_label,
+        )
+
+    # Read file
+    try:
+        source_code = Path(source_path).read_text(encoding="utf-8")
+    except UnicodeDecodeError as e:
+        elapsed = (time.perf_counter() - start) * 1000
+        return None, TranspileResult(
+            file_path=source_path, success=False,
+            error_type="UnicodeDecodeError", error_message=str(e),
+            elapsed_ms=elapsed, backend=backend_label,
+        )
+
+    # Sanitize
+    source_code, skip_reason = _sanitize_content(source_code, source_path)
+    if skip_reason is not None:
+        elapsed = (time.perf_counter() - start) * 1000
+        return None, TranspileResult(
+            file_path=source_path, success=False,
+            error_type="Sanitization", error_message=skip_reason,
+            elapsed_ms=elapsed, backend=backend_label,
+        )
+
+    return source_code, None
+
+
+# ---------------------------------------------------------------------------
 # Worker function (runs in child process)
 # ---------------------------------------------------------------------------
 
@@ -217,134 +290,75 @@ def _transpile_file_single(source_path: str, output_path: str) -> TranspileResul
     if _worker_translator is None:
         elapsed = (time.perf_counter() - start) * 1000
         return TranspileResult(
-            file_path=source_path,
-            success=False,
+            file_path=source_path, success=False,
             error_type="InitError",
             error_message="Worker translator not initialized",
-            elapsed_ms=elapsed,
-            backend=_worker_backend,
+            elapsed_ms=elapsed, backend=_worker_backend,
         )
 
-    # File size checks (before reading content)
-    try:
-        file_size = os.path.getsize(source_path)
-    except OSError as e:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="OSError",
-            error_message=str(e),
-            elapsed_ms=elapsed,
-            backend=_worker_backend,
-        )
-
-    if file_size > _worker_max_file_size:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="FileTooLarge",
-            error_message=f"File size {file_size} exceeds max {_worker_max_file_size}",
-            elapsed_ms=elapsed,
-            backend=_worker_backend,
-        )
-
-    if file_size < _worker_min_file_size:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="FileTooSmall",
-            error_message=f"File size {file_size} below min {_worker_min_file_size}",
-            elapsed_ms=elapsed,
-            backend=_worker_backend,
-        )
+    # Read, validate, sanitize
+    source_code, err_result = _read_and_validate(source_path, _worker_backend)
+    if err_result is not None:
+        return err_result
+    assert source_code is not None
 
     last_error = None
     retries = 0
     for attempt in range(1, _worker_max_retries + 1):
         try:
-            source_code = Path(source_path).read_text(encoding="utf-8")
-
-            # Sanitize content
-            source_code, skip_reason = _sanitize_content(source_code, source_path)
-            if skip_reason is not None:
-                elapsed = (time.perf_counter() - start) * 1000
-                return TranspileResult(
-                    file_path=source_path,
-                    success=False,
-                    error_type="Sanitization",
-                    error_message=skip_reason,
-                    elapsed_ms=elapsed,
-                    backend=_worker_backend,
-                )
-
             translated = str(_worker_translator.translate_code(source_code, "en", _worker_backend.replace("-", "_") if _worker_backend == "tree-sitter" else _worker_backend))
 
-            # Empty output detection
             if not translated or not translated.strip():
                 elapsed = (time.perf_counter() - start) * 1000
                 return TranspileResult(
-                    file_path=source_path,
-                    success=False,
+                    file_path=source_path, success=False,
                     error_type="EmptyOutput",
                     error_message="Translation produced empty/whitespace-only output",
-                    elapsed_ms=elapsed,
-                    backend=_worker_backend,
+                    elapsed_ms=elapsed, backend=_worker_backend,
                 )
 
-            # Write output
             out = Path(output_path)
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(translated, encoding="utf-8")
 
             elapsed = (time.perf_counter() - start) * 1000
             return TranspileResult(
-                file_path=source_path,
-                success=True,
-                retries=attempt - 1,
-                elapsed_ms=elapsed,
-                backend=_worker_backend,
-            )
-
-        except UnicodeDecodeError as e:
-            elapsed = (time.perf_counter() - start) * 1000
-            return TranspileResult(
-                file_path=source_path,
-                success=False,
-                error_type="UnicodeDecodeError",
-                error_message=str(e),
-                elapsed_ms=elapsed,
+                file_path=source_path, success=True,
+                retries=attempt - 1, elapsed_ms=elapsed,
                 backend=_worker_backend,
             )
 
         except (TranslationError, SyntaxError) as e:
             elapsed = (time.perf_counter() - start) * 1000
             return TranspileResult(
-                file_path=source_path,
-                success=False,
-                error_type=type(e).__name__,
-                error_message=str(e),
-                elapsed_ms=elapsed,
-                backend=_worker_backend,
+                file_path=source_path, success=False,
+                error_type=type(e).__name__, error_message=str(e),
+                elapsed_ms=elapsed, backend=_worker_backend,
             )
 
-        except Exception as e:
+        except (OSError, IOError) as e:
             last_error = e
             retries = attempt
             continue
 
-    # All retries exhausted
+        except Exception as e:
+            # Non-transient — don't retry
+            elapsed = (time.perf_counter() - start) * 1000
+            return TranspileResult(
+                file_path=source_path, success=False,
+                error_type=type(e).__name__, error_message=str(e),
+                error_traceback=traceback.format_exc(),
+                elapsed_ms=elapsed, backend=_worker_backend,
+            )
+
+    # All retries exhausted (only OSError/IOError reach here)
     elapsed = (time.perf_counter() - start) * 1000
     return TranspileResult(
-        file_path=source_path,
-        success=False,
+        file_path=source_path, success=False,
         error_type=type(last_error).__name__,
         error_message=str(last_error),
         error_traceback=traceback.format_exc(),
-        retries=retries,
-        elapsed_ms=elapsed,
+        retries=retries, elapsed_ms=elapsed,
         backend=_worker_backend,
     )
 
@@ -360,85 +374,28 @@ def _transpile_file_both(
     if _worker_translator is None or _worker_translator_ts is None:
         elapsed = (time.perf_counter() - start) * 1000
         return TranspileResult(
-            file_path=source_path,
-            success=False,
+            file_path=source_path, success=False,
             error_type="InitError",
             error_message="Worker translators not initialized for both-mode",
-            elapsed_ms=elapsed,
-            backend="both",
+            elapsed_ms=elapsed, backend="both",
         )
 
-    # File size checks
-    try:
-        file_size = os.path.getsize(source_path)
-    except OSError as e:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="OSError",
-            error_message=str(e),
-            elapsed_ms=elapsed,
-            backend="both",
-        )
-
-    if file_size > _worker_max_file_size:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="FileTooLarge",
-            error_message=f"File size {file_size} exceeds max {_worker_max_file_size}",
-            elapsed_ms=elapsed,
-            backend="both",
-        )
-
-    if file_size < _worker_min_file_size:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="FileTooSmall",
-            error_message=f"File size {file_size} below min {_worker_min_file_size}",
-            elapsed_ms=elapsed,
-            backend="both",
-        )
-
-    # Read and sanitize once
-    try:
-        source_code = Path(source_path).read_text(encoding="utf-8")
-    except UnicodeDecodeError as e:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="UnicodeDecodeError",
-            error_message=str(e),
-            elapsed_ms=elapsed,
-            backend="both",
-        )
-
-    source_code, skip_reason = _sanitize_content(source_code, source_path)
-    if skip_reason is not None:
-        elapsed = (time.perf_counter() - start) * 1000
-        return TranspileResult(
-            file_path=source_path,
-            success=False,
-            error_type="Sanitization",
-            error_message=skip_reason,
-            elapsed_ms=elapsed,
-            backend="both",
-        )
+    # Read, validate, sanitize (shared with single-backend path)
+    source_code, err_result = _read_and_validate(source_path, "both")
+    if err_result is not None:
+        return err_result
+    assert source_code is not None
 
     # --- Token backend ---
     token_ok = True
     token_result = ""
-    ts_error_msg: Optional[str] = None
+    token_error_msg: Optional[str] = None
     try:
         token_result = str(_worker_translator.translate_code(source_code, "en", "token"))
         if not token_result or not token_result.strip():
             token_ok = False
             token_result = ""
+            token_error_msg = "empty/whitespace-only output"
         else:
             out = Path(token_output_path)
             out.parent.mkdir(parents=True, exist_ok=True)
@@ -446,15 +403,18 @@ def _transpile_file_both(
     except Exception as e:
         token_ok = False
         token_result = ""
+        token_error_msg = str(e)
 
     # --- Tree-sitter backend ---
     ts_ok = True
     ts_result = ""
+    ts_error_msg: Optional[str] = None
     try:
         ts_result = str(_worker_translator_ts.translate_code(source_code, "en", "tree_sitter"))
         if not ts_result or not ts_result.strip():
             ts_ok = False
             ts_result = ""
+            ts_error_msg = "empty/whitespace-only output"
         else:
             out = Path(ts_output_path)
             out.parent.mkdir(parents=True, exist_ok=True)
@@ -468,17 +428,20 @@ def _transpile_file_both(
 
     elapsed = (time.perf_counter() - start) * 1000
 
-    # At least one backend must succeed
     overall_success = token_ok or ts_ok
 
     return TranspileResult(
         file_path=source_path,
         success=overall_success,
         error_type=None if overall_success else "BothFailed",
-        error_message=ts_error_msg if not overall_success else None,
+        error_message=None if overall_success else (token_error_msg or ts_error_msg),
         elapsed_ms=elapsed,
         backend="both",
         backends_match=outputs_match,
+        token_success=token_ok,
+        ts_success=ts_ok,
+        token_error=token_error_msg,
+        ts_error=ts_error_msg,
     )
 
 
@@ -532,35 +495,20 @@ def _init_comparison_csv(path: Path) -> None:
     """Initialize comparison CSV with headers."""
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["file_path", "token_ok", "treesitter_ok", "outputs_match", "treesitter_error"])
+        writer.writerow(["file_path", "token_ok", "treesitter_ok", "outputs_match", "token_error", "treesitter_error"])
 
 
 def _append_comparison_csv(path: Path, result: TranspileResult) -> None:
     """Append a comparison row for a both-mode result."""
-    # Determine per-backend success from the result fields
-    # In both mode, success=True means at least one backend worked
-    token_ok = result.success  # conservative; real detail is in backends_match
-    ts_ok = result.success
-    ts_error = ""
-
-    if result.error_type == "BothFailed":
-        token_ok = False
-        ts_ok = False
-        ts_error = result.error_message or ""
-    elif result.backends_match is False and result.success:
-        # At least one succeeded but they differ — we don't track which failed
-        # in the result, so mark both as OK (outputs just differ)
-        token_ok = True
-        ts_ok = True
-
     with open(path, "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             result.file_path,
-            token_ok,
-            ts_ok,
+            result.token_success if result.token_success is not None else result.success,
+            result.ts_success if result.ts_success is not None else result.success,
             result.backends_match if result.backends_match is not None else "",
-            ts_error,
+            result.token_error or "",
+            result.ts_error or "",
         ])
 
 
@@ -881,7 +829,7 @@ def save_run_metadata(output_dir: Path, lang: str, stats: BatchStats) -> None:
         "errors_by_type": stats.errors_by_type,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    meta_path = output_dir / lang / "run_metadata.json"
+    meta_path = output_dir / f"{lang}_run_metadata.json"
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
@@ -1000,6 +948,10 @@ Examples:
     if not languages:
         print("Error: No valid language codes provided", file=sys.stderr)
         sys.exit(1)
+    for lang in languages:
+        if not _LANG_CODE_RE.match(lang):
+            print(f"Error: Invalid language code: {lang!r} (expected 2-3 lowercase letters)", file=sys.stderr)
+            sys.exit(1)
 
     # Discover files
     if args.hf_dataset:
