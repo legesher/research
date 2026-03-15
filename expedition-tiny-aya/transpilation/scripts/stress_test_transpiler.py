@@ -27,6 +27,7 @@ import argparse
 import ast
 import io
 import json
+import re
 import statistics
 import sys
 import time
@@ -108,9 +109,13 @@ def count_translatable_tokens(
 
 
 def find_first_diff_line(original: str, result: str) -> int | None:
-    """Find the first line number where two strings differ."""
-    orig_lines = original.splitlines()
-    result_lines = result.splitlines()
+    """Find the first line number where two strings differ.
+
+    Uses splitlines(True) to preserve trailing newlines so that a difference
+    in only the final newline is detected (fixes CORE-696).
+    """
+    orig_lines = original.splitlines(True)
+    result_lines = result.splitlines(True)
     for i, (a, b) in enumerate(zip(orig_lines, result_lines)):
         if a != b:
             return i + 1
@@ -579,12 +584,17 @@ def main() -> None:
 
     # Default report path includes dataset, language and sample size
     if args.report is None:
-        reports_dir = Path("research/reports")
+        reports_dir = Path(__file__).resolve().parent.parent / "results" / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
         # Include dataset short name if not the default
         dataset_name = args.dataset.split("/")[-1]
         dataset_slug = f"{dataset_name}_" if dataset_name != "the-stack-dedup" else ""
         args.report = str(reports_dir / f"stress_test_{dataset_slug}{args.language}_{args.sample_size}.json")
+
+    # Validate language code
+    if not re.match(r"^[a-z]{2,3}$", args.language):
+        print(f"Error: Invalid language code: {args.language!r} (expected 2-3 lowercase letters)", file=sys.stderr)
+        sys.exit(1)
 
     # Determine backends
     if args.backends == "both":

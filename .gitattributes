@@ -1,0 +1,2 @@
+# Mark generated JSON reports as generated — hides from GitHub diffs and language stats
+expedition-tiny-aya/transpilation/results/reports/*.json linguist-generated
