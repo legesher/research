@@ -1,0 +1,127 @@
+[
+  {
+    "benchmark": "xnli",
+    "language": "zh",
+    "split": "validation",
+    "n": 50,
+    "metric": "accuracy",
+    "score": 0.32,
+    "samples": [
+      {
+        "gold": "neutral",
+        "pred": "entailment",
+        "raw_output": "entailment."
+      },
+      {
+        "gold": "contradiction",
+        "pred": "entailment",
+        "raw_output": "entailment."
+      },
+      {
+        "gold": "entailment",
+        "pred": "entailment",
+        "raw_output": "entailment"
+      }
+    ]
+  },
+  {
+    "benchmark": "xnli",
+    "language": "ur",
+    "split": "validation",
+    "n": 50,
+    "metric": "accuracy",
+    "score": 0.32,
+    "samples": [
+      {
+        "gold": "neutral",
+        "pred": "contradiction",
+        "raw_output": "contradiction"
+      },
+      {
+        "gold": "contradiction",
+        "pred": "contradiction",
+        "raw_output": "contradiction"
+      },
+      {
+        "gold": "entailment",
+        "pred": "contradiction",
+        "raw_output": "contradiction"
+      }
+    ]
+  },
+  {
+    "benchmark": "xstorycloze",
+    "language": "zh",
+    "split": "train",
+    "n": 50,
+    "metric": "accuracy",
+    "score": 0.72,
+    "samples": [
+      {
+        "gold": 1,
+        "pred": 1,
+        "raw_output": "1"
+      },
+      {
+        "gold": 1,
+        "pred": 1,
+        "raw_output": "1"
+      },
+      {
+        "gold": 2,
+        "pred": 1,
+        "raw_output": "1"
+      }
+    ]
+  },
+  {
+    "benchmark": "global_mmlu",
+    "language": "zh",
+    "split": "test",
+    "n": 50,
+    "metric": "accuracy",
+    "score": 0.36,
+    "samples": [
+      {
+        "gold": "B",
+        "pred": "B",
+        "raw_output": "B"
+      },
+      {
+        "gold": "C",
+        "pred": "D",
+        "raw_output": "D"
+      },
+      {
+        "gold": "D",
+        "pred": "D",
+        "raw_output": "D"
+      }
+    ]
+  },
+  {
+    "benchmark": "global_mmlu",
+    "language": "am",
+    "split": "test",
+    "n": 50,
+    "metric": "accuracy",
+    "score": 0.38,
+    "samples": [
+      {
+        "gold": "B",
+        "pred": "B",
+        "raw_output": "B"
+      },
+      {
+        "gold": "C",
+        "pred": "B",
+        "raw_output": "B"
+      },
+      {
+        "gold": "D",
+        "pred": "C",
+        "raw_output": "C"
+      }
+    ]
+  }
+]

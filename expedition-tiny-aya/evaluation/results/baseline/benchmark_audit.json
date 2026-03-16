@@ -1,0 +1,276 @@
+{
+  "xnli": {
+    "hf_id": "facebook/xnli",
+    "available_configs": [
+      "all_languages",
+      "ar",
+      "bg",
+      "de",
+      "el",
+      "en",
+      "es",
+      "fr",
+      "hi",
+      "ru",
+      "sw",
+      "th",
+      "tr",
+      "ur",
+      "vi",
+      "zh"
+    ],
+    "target_lang_matches": {
+      "zh": [
+        "zh"
+      ],
+      "am": [],
+      "ur": [
+        "ur"
+      ]
+    },
+    "load_checks": {
+      "zh": {
+        "split_loaded": "validation",
+        "num_rows": 2490,
+        "columns": [
+          "premise",
+          "hypothesis",
+          "label"
+        ],
+        "sample": {
+          "premise": "他说，妈妈，我回来了。",
+          "hypothesis": "校车把他放下后，他立即给他妈妈打了电话。",
+          "label": 1
+        }
+      },
+      "ur": {
+        "split_loaded": "validation",
+        "num_rows": 2490,
+        "columns": [
+          "premise",
+          "hypothesis",
+          "label"
+        ],
+        "sample": {
+          "premise": "اور اس نے کہا امّی، میں گھر آگیا ہوں۔",
+          "hypothesis": "اسنے اپنی امی کو فوران فون کیا جیسے ھی سکوول بس نے اسے اتارا",
+          "label": 1
+        }
+      }
+    },
+    "notes": []
+  },
+  "xstorycloze": {
+    "hf_id": "juletxara/xstory_cloze",
+    "available_configs": [
+      "en",
+      "ru",
+      "zh",
+      "es",
+      "ar",
+      "hi",
+      "id",
+      "te",
+      "sw",
+      "eu",
+      "my"
+    ],
+    "target_lang_matches": {
+      "zh": [
+        "zh"
+      ],
+      "am": [],
+      "ur": []
+    },
+    "load_checks": {
+      "zh": {
+        "split_loaded": "train",
+        "num_rows": 360,
+        "columns": [
+          "story_id",
+          "input_sentence_1",
+          "input_sentence_2",
+          "input_sentence_3",
+          "input_sentence_4",
+          "sentence_quiz1",
+          "sentence_quiz2",
+          "answer_right_ending"
+        ],
+        "sample": {
+          "story_id": "138d5bfb-05cc-41e3-bf2c-fa85ebad14e2",
+          "input_sentence_1": "瑞克生长于一个坎坷动荡的家庭。",
+          "input_sentence_2": "他从来没有在家庭中得到有力支持，因此转而投身于了帮派。",
+          "input_sentence_3": "不久前瑞克在一宗抢劫案中中弹。",
+          "input_sentence_4": "这件事让他改过自新、重新做人。",
+          "sentence_quiz1": "他现在很开心。",
+          "sentence_quiz2": "他加入了一个帮派。",
+          "answer_right_ending": 1
+        }
+      }
+    },
+    "notes": []
+  },
+  "tydiqa": {
+    "hf_id": "SEACrowd/tydiqa",
+    "available_configs": [],
+    "target_lang_matches": {
+      "zh": [],
+      "am": [],
+      "ur": []
+    },
+    "load_checks": {
+      "__default__": {
+        "split_loaded": null,
+        "num_rows": 0,
+        "columns": [],
+        "sample": null
+      }
+    },
+    "notes": [
+      "Could not fetch configs: RuntimeError('Dataset scripts are no longer supported, but found tydiqa.py')"
+    ]
+  },
+  "global_mmlu": {
+    "hf_id": "CohereLabs/Global-MMLU",
+    "available_configs": [
+      "am",
+      "ar",
+      "bn",
+      "cs",
+      "de",
+      "el",
+      "en",
+      "es",
+      "fa",
+      "fil",
+      "fr",
+      "ha",
+      "he",
+      "hi",
+      "id",
+      "ig",
+      "it",
+      "ja",
+      "ko",
+      "ky",
+      "lt",
+      "mg",
+      "ms",
+      "ne",
+      "nl",
+      "ny",
+      "pl",
+      "pt",
+      "ro",
+      "ru",
+      "si",
+      "sn",
+      "so",
+      "sr",
+      "sv",
+      "sw",
+      "te",
+      "tr",
+      "uk",
+      "vi",
+      "yo",
+      "zh"
+    ],
+    "target_lang_matches": {
+      "zh": [
+        "zh"
+      ],
+      "am": [
+        "am"
+      ],
+      "ur": []
+    },
+    "load_checks": {
+      "zh": {
+        "split_loaded": "test",
+        "num_rows": 14042,
+        "columns": [
+          "sample_id",
+          "subject",
+          "subject_category",
+          "question",
+          "option_a",
+          "option_b",
+          "option_c",
+          "option_d",
+          "answer",
+          "required_knowledge",
+          "time_sensitive",
+          "reference",
+          "culture",
+          "region",
+          "country",
+          "cultural_sensitivity_label",
+          "is_annotated"
+        ],
+        "sample": {
+          "sample_id": "abstract_algebra/test/0",
+          "subject": "abstract_algebra",
+          "subject_category": "STEM",
+          "question": "求 Q 上给定域扩张 Q(sqrt(2), sqrt(3), sqrt(18)) 的次数。",
+          "option_a": "0",
+          "option_b": "4",
+          "option_c": "2",
+          "option_d": "6",
+          "answer": "B",
+          "required_knowledge": "[]",
+          "time_sensitive": "[]",
+          "reference": "[]",
+          "culture": "[]",
+          "region": "[]",
+          "country": "[]",
+          "cultural_sensitivity_label": "-",
+          "is_annotated": false
+        }
+      },
+      "am": {
+        "split_loaded": "test",
+        "num_rows": 14042,
+        "columns": [
+          "sample_id",
+          "subject",
+          "subject_category",
+          "question",
+          "option_a",
+          "option_b",
+          "option_c",
+          "option_d",
+          "answer",
+          "required_knowledge",
+          "time_sensitive",
+          "reference",
+          "culture",
+          "region",
+          "country",
+          "cultural_sensitivity_label",
+          "is_annotated"
+        ],
+        "sample": {
+          "sample_id": "abstract_algebra/test/0",
+          "subject": "abstract_algebra",
+          "subject_category": "STEM",
+          "question": "የተሰጠውን የመስክ ማራዘሚያ Q(sqrt(2)፣ sqrt(3)፣ sqrt(18)) ከQ በላይ አግኝ።",
+          "option_a": "0",
+          "option_b": "4",
+          "option_c": "2",
+          "option_d": "6",
+          "answer": "B",
+          "required_knowledge": "[]",
+          "time_sensitive": "[]",
+          "reference": "[]",
+          "culture": "[]",
+          "region": "[]",
+          "country": "[]",
+          "cultural_sensitivity_label": "-",
+          "is_annotated": false
+        }
+      }
+    },
+    "notes": []
+  }
+}
