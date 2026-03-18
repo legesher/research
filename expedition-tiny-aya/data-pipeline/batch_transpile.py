@@ -126,7 +126,8 @@ def _init_worker(
     _worker_max_file_size = max_file_size
     _worker_min_file_size = min_file_size
     _worker_validate_syntax = validate_syntax
-    _worker_backend = backend
+    # Normalize once so per-file code doesn't need to handle "tree-sitter" → "tree_sitter"
+    _worker_backend = backend.replace("-", "_") if backend == "tree-sitter" else backend
 
     if backend in ("token", "both"):
         _worker_translator = create_translator_from_language_pack(
@@ -309,10 +310,11 @@ def _transpile_file_single(source_path: str, output_path: str) -> TranspileResul
     assert source_code is not None
 
     last_error = None
+    last_error_tb = ""
     retries = 0
     for attempt in range(1, _worker_max_retries + 1):
         try:
-            translated = str(_worker_translator.translate_code(source_code, "en", _worker_backend.replace("-", "_") if _worker_backend == "tree-sitter" else _worker_backend))
+            translated = str(_worker_translator.translate_code(source_code, "en", _worker_backend))
 
             if not translated or not translated.strip():
                 elapsed = (time.perf_counter() - start) * 1000
@@ -344,6 +346,7 @@ def _transpile_file_single(source_path: str, output_path: str) -> TranspileResul
 
         except (OSError, IOError) as e:
             last_error = e
+            last_error_tb = traceback.format_exc()
             retries = attempt
             continue
 
@@ -363,7 +366,7 @@ def _transpile_file_single(source_path: str, output_path: str) -> TranspileResul
         file_path=source_path, success=False,
         error_type=type(last_error).__name__,
         error_message=str(last_error),
-        error_traceback=traceback.format_exc(),
+        error_traceback=last_error_tb,
         retries=retries, elapsed_ms=elapsed,
         backend=_worker_backend,
     )
@@ -434,7 +437,9 @@ def _transpile_file_both(
 
     elapsed = (time.perf_counter() - start) * 1000
 
-    overall_success = token_ok or ts_ok
+    # Both backends must succeed — if only one passes, --resume would skip
+    # the file permanently, silently dropping the failed backend's attempt
+    overall_success = token_ok and ts_ok
 
     return TranspileResult(
         file_path=source_path,
@@ -463,12 +468,16 @@ def _load_checkpoint(checkpoint_path: Path) -> set[str]:
         return {line.strip() for line in f if line.strip()}
 
 
-def _append_checkpoint(checkpoint_path: Path, file_path: str) -> None:
-    """Append a successfully processed file to checkpoint."""
+def _append_checkpoint(f, file_path: str) -> None:
+    """Append a successfully processed file to checkpoint.
+
+    Args:
+        f: Open file handle (held open for the duration of run_batch).
+    """
     if "\n" in file_path or "\r" in file_path:
         return  # Skip paths with newlines to prevent checkpoint corruption
-    with open(checkpoint_path, "a") as f:
-        f.write(file_path + "\n")
+    f.write(file_path + "\n")
+    f.flush()
 
 
 # ---------------------------------------------------------------------------
@@ -482,17 +491,21 @@ def _init_error_log(error_log_path: Path) -> None:
         writer.writerow(["file_path", "error_type", "error_message", "retries", "traceback"])
 
 
-def _append_error_log(error_log_path: Path, result: TranspileResult) -> None:
-    """Append a failed result to the error CSV."""
-    with open(error_log_path, "a", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            result.file_path,
-            result.error_type,
-            result.error_message,
-            result.retries,
-            result.error_traceback or "",
-        ])
+def _append_error_log(f, result: TranspileResult) -> None:
+    """Append a failed result to the error CSV.
+
+    Args:
+        f: Open file handle (held open for the duration of run_batch).
+    """
+    writer = csv.writer(f)
+    writer.writerow([
+        result.file_path,
+        result.error_type,
+        result.error_message,
+        result.retries,
+        result.error_traceback or "",
+    ])
+    f.flush()
 
 
 # ---------------------------------------------------------------------------
@@ -506,18 +519,22 @@ def _init_comparison_csv(path: Path) -> None:
         writer.writerow(["file_path", "token_ok", "treesitter_ok", "outputs_match", "token_error", "treesitter_error"])
 
 
-def _append_comparison_csv(path: Path, result: TranspileResult) -> None:
-    """Append a comparison row for a both-mode result."""
-    with open(path, "a", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            result.file_path,
-            result.token_success if result.token_success is not None else result.success,
-            result.ts_success if result.ts_success is not None else result.success,
-            result.backends_match if result.backends_match is not None else "",
-            result.token_error or "",
-            result.ts_error or "",
-        ])
+def _append_comparison_csv(f, result: TranspileResult) -> None:
+    """Append a comparison row for a both-mode result.
+
+    Args:
+        f: Open file handle (held open for the duration of run_batch).
+    """
+    writer = csv.writer(f)
+    writer.writerow([
+        result.file_path,
+        result.token_success if result.token_success is not None else result.success,
+        result.ts_success if result.ts_success is not None else result.success,
+        result.backends_match if result.backends_match is not None else "",
+        result.token_error or "",
+        result.ts_error or "",
+    ])
+    f.flush()
 
 
 # ---------------------------------------------------------------------------
@@ -710,38 +727,48 @@ def run_batch(
     print(f"\nTranspiling {len(work_items):,} files to {target_lang} "
           f"[{backend_label}] ({num_workers} workers)")
 
-    with mp.Pool(
-        processes=num_workers,
-        initializer=_init_worker,
-        initargs=(target_lang, backend, max_file_size, min_file_size, validate_syntax, max_retries),
-    ) as pool:
-        for i in range(0, len(work_items), batch_size):
-            batch = work_items[i : i + batch_size]
+    # Hold log file handles open for the run to avoid per-file open/close overhead
+    checkpoint_fh = open(checkpoint_path, "a")
+    error_log_fh = open(error_log_path, "a", newline="")
+    comparison_fh = open(comparison_csv_path, "a", newline="") if (backend == "both" and comparison_csv_path) else None
 
-            results = list(tqdm(
-                pool.imap_unordered(_transpile_file, batch),
-                total=len(batch),
-                desc=f"{target_lang} [{i + 1}–{min(i + len(batch), len(work_items))}]",
-                unit="file",
-            ))
+    try:
+        with mp.Pool(
+            processes=num_workers,
+            initializer=_init_worker,
+            initargs=(target_lang, backend, max_file_size, min_file_size, validate_syntax, max_retries),
+        ) as pool:
+            for i in range(0, len(work_items), batch_size):
+                batch = work_items[i : i + batch_size]
 
-            for result in results:
-                if result.success:
-                    stats.success += 1
-                    _append_checkpoint(checkpoint_path, result.file_path)
-                else:
-                    stats.failed += 1
-                    _append_error_log(error_log_path, result)
-                    err_type = result.error_type or "Unknown"
-                    stats.errors_by_type[err_type] = stats.errors_by_type.get(err_type, 0) + 1
+                results = list(tqdm(
+                    pool.imap_unordered(_transpile_file, batch),
+                    total=len(batch),
+                    desc=f"{target_lang} [{i + 1}–{min(i + len(batch), len(work_items))}]",
+                    unit="file",
+                ))
 
-                if result.retries > 0:
-                    stats.retried += 1
+                for result in results:
+                    if result.success:
+                        stats.success += 1
+                        _append_checkpoint(checkpoint_fh, result.file_path)
+                    else:
+                        stats.failed += 1
+                        _append_error_log(error_log_fh, result)
+                        err_type = result.error_type or "Unknown"
+                        stats.errors_by_type[err_type] = stats.errors_by_type.get(err_type, 0) + 1
 
-                # Write comparison CSV row in both mode
-                if backend == "both":
-                    assert comparison_csv_path is not None
-                    _append_comparison_csv(comparison_csv_path, result)
+                    if result.retries > 0:
+                        stats.retried += 1
+
+                    # Write comparison CSV row in both mode
+                    if backend == "both" and comparison_fh is not None:
+                        _append_comparison_csv(comparison_fh, result)
+    finally:
+        checkpoint_fh.close()
+        error_log_fh.close()
+        if comparison_fh is not None:
+            comparison_fh.close()
 
     stats.elapsed_sec = time.time() - start_time
     return stats
@@ -804,6 +831,7 @@ def _parallel_language_worker(
         )
         result_queue.put((result_lang, result_stats))
     except Exception:
+        traceback.print_exc()
         result_queue.put((lang, BatchStats(total=len(files), failed=len(files))))
 
 
@@ -835,10 +863,16 @@ def print_summary(lang: str, stats: BatchStats) -> None:
     print(f"{'=' * 55}")
 
 
-def save_run_metadata(output_dir: Path, lang: str, stats: BatchStats) -> None:
-    """Save run metadata as JSON sidecar."""
+def save_run_metadata(output_dir: Path, lang: str, stats: BatchStats, backend: str = "token") -> None:
+    """Save run metadata as JSON sidecar.
+
+    In "both" mode, writes to output_dir/{lang}-run_metadata.json (since the
+    per-backend dirs are {lang}-token/ and {lang}-tree-sitter/, not {lang}/).
+    In single-backend mode, writes to output_dir/{lang}/run_metadata.json.
+    """
     meta = {
         "language": lang,
+        "backend": backend,
         "total_files": stats.total,
         "successful": stats.success,
         "failed": stats.failed,
@@ -849,7 +883,10 @@ def save_run_metadata(output_dir: Path, lang: str, stats: BatchStats) -> None:
         "errors_by_type": stats.errors_by_type,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    meta_path = output_dir / lang / "run_metadata.json"
+    if backend == "both":
+        meta_path = output_dir / f"{lang}-run_metadata.json"
+    else:
+        meta_path = output_dir / lang / "run_metadata.json"
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
@@ -1010,6 +1047,17 @@ Examples:
     all_stats: dict[str, BatchStats] = {}
 
     if args.parallel_languages and len(languages) > 1:
+        # Nested multiprocessing (mp.Process → mp.Pool) relies on fork().
+        # On macOS/Windows the default start method is "spawn", which can
+        # deadlock or fail when nesting pools. Warn and suggest Linux.
+        if sys.platform != "linux" and args.backend == "both":
+            print(
+                "Warning: --parallel-languages with --backend both uses nested "
+                "multiprocessing, which may be unstable on macOS/Windows. "
+                "Consider running on Linux or using sequential language processing.",
+                file=sys.stderr,
+            )
+
         # Parallel language processing: one mp.Process per language
         workers_per_lang = max(1, args.workers // len(languages))
         print(f"\nParallel language mode: {len(languages)} languages, "
@@ -1043,7 +1091,7 @@ Examples:
         for lang in languages:
             if lang in all_stats:
                 print_summary(lang, all_stats[lang])
-                save_run_metadata(output_dir, lang, all_stats[lang])
+                save_run_metadata(output_dir, lang, all_stats[lang], backend=args.backend)
     else:
         # Sequential language processing (default)
         for lang in languages:
@@ -1063,7 +1111,7 @@ Examples:
             )
             all_stats[lang] = stats
             print_summary(lang, stats)
-            save_run_metadata(output_dir, lang, stats)
+            save_run_metadata(output_dir, lang, stats, backend=args.backend)
 
     # Overall summary
     if len(languages) > 1:
