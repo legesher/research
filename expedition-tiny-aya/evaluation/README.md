@@ -17,7 +17,7 @@ Benchmark evaluation across 3 langauges and 3 datasets. There are 2 ways to eval
 ## Benchmark Suite
 
 | Benchmark | What It Measures | es | zh | ur
-| --- | --- | --- |
+| --- | --- | --- | --- | --- |
 | MGSM | Multilingual math reasoning on grade-school word problems; evaluates whether the model can reason through quantitative problems and produce the correct final numeric answer language inference | ✓ | ✓ | ✓ |
 | XNLI | Multilingual natural language inference; evaluates whether the model can determine if a hypothesis is entailed by, contradicted by, or neutral with respect to a premise | ✓ | ✓ | ✓ |
 | X-CSQA | Multilingual commonsense reasoning in multiple-choice format; evaluates whether the model can choose the most plausible answer based on everyday world knowledge | ✓ | ✓ | ✓ |
