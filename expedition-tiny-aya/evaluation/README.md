@@ -13,6 +13,8 @@ Benchmark evaluation across 3 langauges and 3 datasets. There are 2 ways to eval
   - `baseline/` — Pre-training scores (Tiny Aya base)
   - `condition-1/` through `condition-4/` — Post-training scores
 - `configs/` — Benchmark suite configuration
+- `README` - You are here
+- `requirements.txt` - Requirements to run the evaluations
 
 ## Benchmark Suite
 
