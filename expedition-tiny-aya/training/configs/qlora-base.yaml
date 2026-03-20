@@ -1,0 +1,117 @@
+# QLoRA Training Config — Language Decoded
+#
+# CRITICAL: This config must be IDENTICAL across all conditions.
+# The ONLY thing that changes between runs is `dataset_config`.
+#
+# Base model: CohereLabs/tiny-aya-base (Cohere2ForCausalLM, 3.35B params)
+# Hardware: Kaggle T4 (16GB VRAM, ~5.4GB used with QLoRA)
+# Method: QLoRA 4-bit (NF4) via bitsandbytes + peft
+#
+# References:
+#   - Unsloth QLoRA hyperparameters guide
+#   - QLoRA paper (Dettmers et al., 2023)
+#   - "To Code or Not to Code" (Aryabumi et al., 2024)
+
+# =============================================================================
+# Model
+# =============================================================================
+model:
+  name: "CohereLabs/tiny-aya-base"
+  tokenizer: "CohereLabs/tiny-aya-base"
+  # Cohere2ForCausalLM architecture:
+  #   36 layers, 16 attention heads, 4 KV heads (GQA)
+  #   hidden_size: 2048, intermediate_size: 11008
+  #   sliding_window: 4096, vocab_size: 262144
+
+# =============================================================================
+# Quantization (BitsAndBytes)
+# =============================================================================
+quantization:
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"          # NormalFloat4 — best for QLoRA
+  bnb_4bit_compute_dtype: "float16"   # T4 doesn't support bfloat16
+  bnb_4bit_use_double_quant: true     # Nested quantization — saves ~0.4GB
+
+# =============================================================================
+# LoRA
+# =============================================================================
+lora:
+  r: 16                                # Rank — 16 is the sweet spot for 3B models on T4
+  alpha: 32                            # Scaling factor — 2x rank is standard
+  dropout: 0.05                        # Light dropout to prevent overfitting
+  target_modules:                      # All linear layers (attention + MLP)
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  bias: "none"                         # No bias adaptation
+  task_type: "CAUSAL_LM"              # Causal language modeling (next token prediction)
+
+# =============================================================================
+# Training
+# =============================================================================
+training:
+  num_epochs: 1                        # Single epoch — standard for continued pre-training
+  per_device_train_batch_size: 2       # Max that fits on T4 with this config
+  per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 8       # Effective batch size = 2 * 8 = 16
+  learning_rate: 5.0e-5                # Conservative for QLoRA continued pre-training
+                                       # Lower than LoRA (2e-4) due to quantization noise
+                                       # Higher than Unsloth's 5e-6 since we have ~50K files
+  lr_scheduler_type: "cosine"          # Cosine decay — smooth annealing
+  warmup_ratio: 0.05                   # 5% warmup — ~308 steps for 49.5K files
+  weight_decay: 0.01                   # Light regularization
+  max_grad_norm: 1.0                   # Gradient clipping
+  fp16: true                           # T4 supports FP16 (not BF16)
+  bf16: false
+  gradient_checkpointing: true         # Trades compute for VRAM — essential on T4
+  optim: "paged_adamw_8bit"            # 8-bit Adam — saves ~1GB VRAM
+  seed: 42
+
+# =============================================================================
+# Data
+# =============================================================================
+data:
+  max_seq_length: 1024                 # Tokens per example — fits T4 VRAM
+                                       # Code files avg ~1,500 tokens, so some truncation
+                                       # 2048 would OOM on T4 with batch_size=2
+  packing: true                        # Concatenate short examples to fill seq length
+                                       # Much more efficient — no wasted padding tokens
+  dataset_text_field: "code"           # Column containing the training text
+
+# =============================================================================
+# Dataset (ONLY PART THAT CHANGES PER CONDITION)
+# =============================================================================
+dataset:
+  name: "legesher/language-decoded-data"
+  config: "condition-1-en"             # <-- CHANGE THIS per condition:
+                                       #   condition-1-en  (English code)
+                                       #   condition-2-zh  (Chinese keyword-swapped)
+                                       #   condition-2-es  (Spanish keyword-swapped)
+                                       #   condition-2-ur  (Urdu keyword-swapped)
+  train_split: "train"
+  eval_split: "validation"
+
+# =============================================================================
+# Output
+# =============================================================================
+output:
+  dir: "./output/${dataset.config}"    # e.g., ./output/condition-1-en/
+  hub_model_id: "legesher/language-decoded-lora"
+  hub_subfolder: "${dataset.config}"   # Pushes to legesher/language-decoded-lora/condition-1-en/
+  push_to_hub: true
+  save_strategy: "epoch"
+  logging_steps: 10
+  eval_strategy: "steps"
+  eval_steps: 500                      # Eval every 500 steps during training
+
+# =============================================================================
+# Experiment Tracking
+# =============================================================================
+tracking:
+  report_to: "none"                    # Options: "wandb", "tensorboard", "none"
+                                       # Set to "wandb" if team has W&B setup
+  run_name: "${dataset.config}"        # e.g., "condition-1-en"
