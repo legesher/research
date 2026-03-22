@@ -432,7 +432,13 @@ def validate_subsets(
     # --- Token count stats ---
     print("\n--- Token Count Statistics ---")
     for config_name, combined in combined_datasets.items():
-        counts = combined["token_count"]
+        raw_counts = combined["token_count"]
+        counts = [c for c in raw_counts if c is not None]
+        none_count = len(raw_counts) - len(counts)
+        if none_count > 0:
+            print(
+                f"  WARNING: {config_name} has {none_count} rows with null token_count"
+            )
         total = sum(counts)
         avg = total / len(counts) if counts else 0
         min_c = min(counts) if counts else 0
