@@ -587,7 +587,7 @@ def main() -> None:
                 args.push,
                 config_name=new_config,
                 data_dir=f"data/{new_config}",
-                private=True,
+                private=False,
             )
             print(f"  Pushed {new_config}")
         print(f"Done! Dataset at https://huggingface.co/datasets/{args.push}")
