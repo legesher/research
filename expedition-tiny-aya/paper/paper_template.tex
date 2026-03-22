@@ -14,48 +14,47 @@
 % paper title
 \title{Language, Decoded: Exploring the Impact of Native-Language Code on Multilingual Models}
 
-
 \author{
 \authorblockN{Tom Sherborne}
 \authorblockA{Cohere\\
-Edinburgh, Scotland, United Kingdom\\
+Edinburgh, Scotland, UK\\
 tom@cohere.com}
 \and
 \authorblockN{Madi Edgar}
 \authorblockA{Legesher\\
-Dubai, United Arab Emirates\\
+Dubai, UAE\\
 madi@legesher.com}
 \and
-\authorblockN{Saad Bazaz}
+\authorblockN{Saad Ahmed Bazaz}
 \authorblockA{Grayhat\\
-Islamabad, Pakistan\\
+Islamabad, PK\\
 bazaz@grayhat.studio}
 \and
 \authorblockN{Rashik Shahjahan}
-\authorblockA{Independent Consultant\\
-Toronto, Canada\\
+\authorblockA{Independent\\
+Toronto, CA\\
 rashik@rashik.sh}
 \and
 \authorblockN{Khojasteh Mirza}
 \authorblockA{The Friedman Brain Institute\\
-Icahn School of Medicine at Mount Sinai\\
 New York, USA\\
 khojasteh.mirza@mssm.edu}
 \and
 \authorblockN{Sarah Jawaid}
 \authorblockA{Grayhat\\
-Karachi, Pakistan\\
+Karachi, PK\\
 sarah.jawaid@grayhat.studio}
 \and
 \authorblockN{Rafay Mustafa}
 \authorblockA{Tkxel\\
-Lahore, Pakistan\\
+Lahore, PK\\
 rafay.mustafa@tkxel.com}
 \and
-\authorblockN{Sohaib Bazaz}
+\authorblockN{Sohaib Ahmed Bazaz}
 \authorblockA{Grayhat\\
-Islamabad, Pakistan\\
-sohaib.bazaz@grayhat.studio}}
+Islamabad, PK\\
+sohaib.bazaz@grayhat.studio}
+}
 
 \maketitle
 
@@ -115,6 +114,7 @@ Datasets for each language were constructed from multiple sources:
 
 Each language dataset consisted of a mixture of these sources, ensuring diversity in linguistic and structural representation. We also used static code analysis tools to verify the quality and correctness of the code samples, particularly for the fully native code condition.
 
+The datasets were uploaded to Hugging Face \cite{legesher_language_decoded_community} for accessibility during fine-tuning.
 
 \subsection{Experimental Conditions}
 The conditions form a progressive ladder, each building on the previous to test incremental hypotheses:
@@ -184,6 +184,10 @@ Our experimental ladder demonstrates that native-language code provides incremen
 
 \section{Acknowledgments}
 We would like to thank Cohere for providing the opportunity to explore this project through the Expedition Tiny Aya program. Their support and infrastructure were instrumental in enabling this research.
+
+We would also like to acknowledge the open-source community for their contributions to multilingual programming languages and code datasets, especially the Language Decoded Community Dataset \cite{legesher_language_decoded_community}, which was essential for our data curation process.
+
+Finally, we thank our colleagues and peers for their valuable feedback and insights during the development of this paper.
 
 %% Use plainnat to work nicely with natbib. 
 
