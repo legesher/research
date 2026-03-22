@@ -1,30 +1,30 @@
 # Evaluation Pipeline
 
-**Owner:** Saad (crew:saad)
+**Owner:** Khojasteh
 
-Benchmark evaluation across all conditions and languages.
+Benchmark evaluation across 3 langauges and 3 datasets. There are 2 ways to evaluate:
+1: Dataset in chosen language + english prompt
+2: Dataset in chosen langugae + prompt in chosen langugae
 
 ## Contents
 
-- `scripts/` — Benchmark runners and cross-condition comparison
+- `scripts/baseline_benchmarking.ipynb` — Benchmark running notebook
 - `results/` — Per-condition benchmark scores
   - `baseline/` — Pre-training scores (Tiny Aya base)
   - `condition-1/` through `condition-4/` — Post-training scores
 - `configs/` — Benchmark suite configuration
+- `README` - You are here
+- `requirements.txt` - Requirements to run the evaluations
 
 ## Benchmark Suite
 
-| Benchmark | What It Measures | Languages |
-| --- | --- | --- |
-| XNLI | Natural language inference | zh, am, ur |
-| XStoryCloze | Commonsense reasoning | zh, am, ur |
-| TyDi QA | Question answering | zh, am, ur |
-| MMLU | World knowledge | zh, am, ur |
-| MultiNRC | Culturally-grounded comprehension | zh, am, ur |
-| AI4Math | Mathematical reasoning | zh, am, ur |
-| HumanEval/MBPP | Code generation (secondary) | zh, am, ur |
+| Benchmark | What It Measures | es | zh | ur
+| --- | --- | --- | --- | --- |
+| MGSM | Multilingual math reasoning on grade-school word problems; evaluates whether the model can reason through quantitative problems and produce the correct final numeric answer language inference | ✓ | ✓ | ✓ |
+| XNLI | Multilingual natural language inference; evaluates whether the model can determine if a hypothesis is entailed by, contradicted by, or neutral with respect to a premise | ✓ | ✓ | ✓ |
+| X-CSQA | Multilingual commonsense reasoning in multiple-choice format; evaluates whether the model can choose the most plausible answer based on everyday world knowledge | ✓ | ✓ | ✓ |
 
-## Suggested Entrypoints
+## Suggested Entrypoints # to edit based on draft pr 
 
 ## Evaluation Script
 # `eval_pipeline.py`
