@@ -76,7 +76,7 @@ The experiment isolates variables: from no fine-tuning (baseline) to English cod
 Our results show that native-language code yields significant improvements, with implications for developing more equitable multilingual AI systems.
 
 \section{Literature Review}
-The role of code in training LLMs has gained attention following Cohere's "To Code or Not to Code" study, which found that fine-tuning on English Python code improves mathematical reasoning and instruction following \cite{code_or_not}. This work established code as a valuable training signal, but focused exclusively on English.
+The role of code in training LLMs has gained attention following Cohere's "To Code or Not to Code" study, which found that pretraining on English Python code improves mathematical reasoning and instruction following \cite{code_or_not}. This work established code as a valuable training signal, but focused exclusively on English.
 
 Multilingual programming languages represent an emerging area. Research on frameworks for localizing programming languages highlights the challenges and opportunities in adapting code to native linguistic structures \cite{localization_framework}. Additionally, studies on multilingual programming languages explore how non-English keywords and syntax can make coding more accessible \cite{multilingual_pl}.
 
@@ -114,7 +114,7 @@ Datasets for each language were constructed from multiple sources:
 
 Each language dataset consisted of a mixture of these sources, ensuring diversity in linguistic and structural representation. We also used static code analysis tools to verify the quality and correctness of the code samples, particularly for the fully native code condition.
 
-The datasets were uploaded to Hugging Face \cite{legesher_language_decoded_community} for accessibility during fine-tuning.
+The datasets were uploaded to Hugging Face \cite{legesher_language_decoded} for accessibility during fine-tuning.
 
 \subsection{Experimental Conditions}
 The conditions form a progressive ladder, each building on the previous to test incremental hypotheses:
