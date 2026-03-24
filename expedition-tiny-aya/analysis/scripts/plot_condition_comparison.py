@@ -242,6 +242,68 @@ def plot_grouped_bars(df: pd.DataFrame, output_dir: Path):
         print(f"  Saved grouped_bars_{prompt_type}.png")
 
 
+# ── Chart 1b: Single-Language Bar Charts ─────────────────────────────────────
+
+
+def plot_single_language_bars(df: pd.DataFrame, output_dir: Path):
+    """
+    One standalone chart per language × prompt type.
+    X = condition, Y = score, 3 colored bars (MGSM, XNLI, CSQA).
+    """
+    condition_order = ["baseline"] + CONDITIONS
+
+    for prompt_type in PROMPT_TYPES:
+        subset = df[df["prompt_type"] == prompt_type]
+        prompt_label = "English" if prompt_type == "english" else "Native Language"
+
+        for lang in LANGUAGES:
+            lang_data = subset[subset["language"] == lang]
+            x = np.arange(len(condition_order))
+            width = 0.25
+
+            fig, ax = plt.subplots(figsize=(8, 5))
+
+            for i, benchmark in enumerate(BENCHMARKS):
+                bm_data = lang_data[lang_data["benchmark"] == benchmark]
+                scores = []
+                for cond in condition_order:
+                    match = bm_data[bm_data["condition"] == cond]
+                    scores.append(match["score_pct"].values[0] if len(match) > 0 else 0)
+                ax.bar(
+                    x + (i - 1) * width,
+                    scores,
+                    width,
+                    label=BENCHMARK_LABELS[benchmark],
+                    color=BENCHMARK_COLORS[benchmark],
+                    alpha=0.85,
+                )
+
+            ax.set_title(
+                f"{lang.upper()} — {prompt_label} Prompt",
+                fontsize=13,
+                fontweight="bold",
+            )
+            ax.set_xlabel("Condition")
+            ax.set_ylabel("Accuracy (%)")
+            ax.set_xticks(x)
+            ax.set_xticklabels(
+                [CONDITION_LABELS_SHORT[c] for c in condition_order],
+                fontsize=9,
+                rotation=45,
+                ha="right",
+            )
+            ax.set_ylim(0, 65)
+            ax.yaxis.set_major_locator(mticker.MultipleLocator(10))
+            ax.grid(axis="y", alpha=0.3)
+            ax.legend(loc="upper left", fontsize=9)
+
+            fig.tight_layout()
+            fname = f"bars_{lang}_{prompt_type}.png"
+            fig.savefig(output_dir / fname, dpi=150, bbox_inches="tight")
+            plt.close(fig)
+            print(f"  Saved {fname}")
+
+
 # ── Chart 2: Delta from Baseline ─────────────────────────────────────────────
 
 
@@ -542,6 +604,7 @@ def main():
     # Generate charts
     print("\nGenerating charts...")
     plot_grouped_bars(df, output_dir)
+    plot_single_language_bars(df, output_dir)
     plot_delta_bars(df, output_dir)
     plot_heatmap(df, output_dir)
     plot_prompt_comparison(df, output_dir)
