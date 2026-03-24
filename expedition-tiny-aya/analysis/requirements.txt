@@ -2,3 +2,9 @@
 datasets>=2.14.0
 langdetect>=1.0.9
 huggingface_hub>=0.16.0
+
+# Dependencies for visualization (plot_condition_comparison.py)
+matplotlib>=3.8.0
+seaborn>=0.13.0
+pandas>=2.0.0
+numpy>=1.24.0
