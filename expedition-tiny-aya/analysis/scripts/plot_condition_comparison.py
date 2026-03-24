@@ -78,16 +78,17 @@ BENCHMARK_LABELS = {
     "csqa": "CSQA (commonsense)",
 }
 
-# Known baseline XNLI zh decimal error: raw = 0.01996, actual ≈ 0.20
-# The script reads from the actual baseline JSON and applies correction below.
-BASELINE_XNLI_ZH_NATIVE_CORRECTED = 0.1996
-
 
 # ── Data Loading ─────────────────────────────────────────────────────────────
 
 
 def load_baseline(baseline_dir: Path) -> dict:
-    """Load baseline results from local JSON files."""
+    """Load baseline results from local JSON files.
+
+    Baseline JSONs were re-scored 2026-03-24 with expanded native label
+    extraction (see evaluation-summary.md § Label Extraction Methodology).
+    No runtime correction is needed — the files contain the corrected values.
+    """
     results = {}
     for prompt_type in PROMPT_TYPES:
         filename = f"baseline_{'english' if prompt_type == 'english' else 'native'}_prompt_results.json"
@@ -97,18 +98,7 @@ def load_baseline(baseline_dir: Path) -> dict:
             continue
         with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
-        summary = data["summary"]
-
-        # Apply known correction: XNLI zh native had a decimal placement error
-        if prompt_type == "native" and "xnli_zh_acc" in summary:
-            raw_val = summary["xnli_zh_acc"]
-            if raw_val < 0.05:  # clearly the errored value (~0.02)
-                summary["xnli_zh_acc"] = BASELINE_XNLI_ZH_NATIVE_CORRECTED
-                print(
-                    f"  Corrected baseline XNLI zh native: {raw_val:.5f} → {BASELINE_XNLI_ZH_NATIVE_CORRECTED:.4f}"
-                )
-
-        results[prompt_type] = summary
+        results[prompt_type] = data["summary"]
     return results
 
 
