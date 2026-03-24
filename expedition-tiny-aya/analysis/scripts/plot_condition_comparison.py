@@ -192,12 +192,11 @@ def plot_grouped_bars(df: pd.DataFrame, output_dir: Path):
 
     for prompt_type in PROMPT_TYPES:
         subset = df[df["prompt_type"] == prompt_type]
-        fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=False)
+        fig, axes = plt.subplots(1, 3, figsize=(14, 5), sharey=False)
         fig.suptitle(
             f"Benchmark Scores by Condition — {'English' if prompt_type == 'english' else 'Native Language'} Prompt",
-            fontsize=14,
+            fontsize=13,
             fontweight="bold",
-            y=1.02,
         )
 
         for ax, lang in zip(axes, LANGUAGES):
@@ -215,7 +214,7 @@ def plot_grouped_bars(df: pd.DataFrame, output_dir: Path):
                     x + (i - 1) * width,
                     scores,
                     width,
-                    label=BENCHMARK_LABELS[benchmark],
+                    label=BENCHMARK_LABELS[benchmark] if lang == "zh" else None,
                     color=BENCHMARK_COLORS[benchmark],
                     alpha=0.85,
                 )
@@ -225,7 +224,10 @@ def plot_grouped_bars(df: pd.DataFrame, output_dir: Path):
             ax.set_title(f"{lang.upper()}")
             ax.set_xticks(x)
             ax.set_xticklabels(
-                [CONDITION_LABELS[c] for c in condition_order], fontsize=7
+                [CONDITION_LABELS_SHORT[c] for c in condition_order],
+                fontsize=8,
+                rotation=45,
+                ha="right",
             )
             ax.set_ylim(0, 65)
             ax.yaxis.set_major_locator(mticker.MultipleLocator(10))
@@ -253,12 +255,11 @@ def plot_delta_bars(df: pd.DataFrame, output_dir: Path):
             ["benchmark", "language"]
         )["score_pct"]
 
-        fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=True)
+        fig, axes = plt.subplots(1, 3, figsize=(14, 5), sharey=True)
         fig.suptitle(
             f"Change from Baseline (pp) — {'English' if prompt_type == 'english' else 'Native Language'} Prompt",
-            fontsize=14,
+            fontsize=13,
             fontweight="bold",
-            y=1.02,
         )
 
         for ax, lang in zip(axes, LANGUAGES):
@@ -277,14 +278,11 @@ def plot_delta_bars(df: pd.DataFrame, output_dir: Path):
                     val = match["score_pct"].values[0] if len(match) > 0 else 0
                     deltas.append(val - bl)
 
-                colors = [
-                    BENCHMARK_COLORS[benchmark] if d >= 0 else "#E53935" for d in deltas
-                ]
                 ax.bar(
                     x + (i - 1) * width,
                     deltas,
                     width,
-                    color=colors,
+                    color=BENCHMARK_COLORS[benchmark],
                     alpha=0.85,
                     label=BENCHMARK_LABELS[benchmark] if lang == "zh" else None,
                 )
@@ -295,7 +293,10 @@ def plot_delta_bars(df: pd.DataFrame, output_dir: Path):
             ax.set_title(f"{lang.upper()}")
             ax.set_xticks(x)
             ax.set_xticklabels(
-                [CONDITION_LABELS[c] for c in condition_order], fontsize=7
+                [CONDITION_LABELS_SHORT[c] for c in condition_order],
+                fontsize=8,
+                rotation=45,
+                ha="right",
             )
             ax.grid(axis="y", alpha=0.3)
 
@@ -343,7 +344,7 @@ def plot_heatmap(df: pd.DataFrame, output_dir: Path):
 
         heat_df = pd.DataFrame(matrix, index=row_labels, columns=col_labels)
 
-        fig, ax = plt.subplots(figsize=(12, 4))
+        fig, ax = plt.subplots(figsize=(11, 3.5))
         vmax = max(abs(heat_df.min().min()), abs(heat_df.max().max()))
         sns.heatmap(
             heat_df,
@@ -380,12 +381,11 @@ def plot_prompt_comparison(df: pd.DataFrame, output_dir: Path):
     condition_order = ["baseline"] + CONDITIONS
 
     for benchmark in BENCHMARKS:
-        fig, axes = plt.subplots(1, 3, figsize=(18, 5), sharey=True)
+        fig, axes = plt.subplots(1, 3, figsize=(14, 5), sharey=True)
         fig.suptitle(
             f"{BENCHMARK_LABELS[benchmark]} — Native vs English Prompt",
-            fontsize=14,
+            fontsize=13,
             fontweight="bold",
-            y=1.02,
         )
 
         for ax, lang in zip(axes, LANGUAGES):
@@ -408,7 +408,7 @@ def plot_prompt_comparison(df: pd.DataFrame, output_dir: Path):
                     x + (i - 0.5) * width,
                     scores,
                     width,
-                    label=f"{pt_label} prompt",
+                    label=f"{pt_label} prompt" if lang == "zh" else None,
                     color=color,
                     alpha=0.85,
                 )
@@ -418,7 +418,10 @@ def plot_prompt_comparison(df: pd.DataFrame, output_dir: Path):
             ax.set_title(f"{lang.upper()}")
             ax.set_xticks(x)
             ax.set_xticklabels(
-                [CONDITION_LABELS[c] for c in condition_order], fontsize=7
+                [CONDITION_LABELS_SHORT[c] for c in condition_order],
+                fontsize=8,
+                rotation=45,
+                ha="right",
             )
             ax.grid(axis="y", alpha=0.3)
 
