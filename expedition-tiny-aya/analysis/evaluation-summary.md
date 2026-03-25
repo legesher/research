@@ -420,19 +420,92 @@ The universally-wrong questions are almost entirely the ~1,670 neutral items (si
 
 ---
 
+## Deep Dive: Raw Output Analysis
+
+Inspecting the actual text the model generates (the `raw_output` field in per-example results) reveals that the accuracy numbers are even less meaningful than the label bias analysis suggests. The model is producing memorized templates, not reasoned classifications.
+
+### Output format differs between baseline and fine-tuned conditions
+
+| Condition            | Single label word only | Label + explanation | Code artifacts |
+| -------------------- | ---------------------- | ------------------- | -------------- |
+| Baseline (zh)        | 55%                    | 40%                 | 0%             |
+| Baseline (es)        | 98%                    | 2%                  | 0%             |
+| Fine-tuned (all, zh) | 0-13%                  | 86-100%             | 0%             |
+| Fine-tuned (all, es) | 0-1%                   | 99%                 | 0%             |
+| Cond 2-ur (ur)       | 0%                     | 98%                 | **2%**         |
+
+Fine-tuning consistently makes the model more verbose — it almost always adds an explanation after the label. The baseline more often produces a bare label word.
+
+### Chinese keyword fine-tuning increased English label usage, not Chinese
+
+For Chinese XNLI, the baseline outputs Chinese labels (矛盾, 蕴含) 95% of the time. After Cond 2-zh fine-tuning, **65% of outputs use the English word "entailment"** instead of a Chinese equivalent:
+
+| Condition | First token = Chinese label | First token = English label |
+| --------- | --------------------------- | --------------------------- |
+| Baseline  | 95.3%                       | 4.6%                        |
+| Cond 2-zh | 34.8%                       | **65.1%**                   |
+| Cond 2-ur | 1.8%                        | **98.2%**                   |
+
+Chinese keyword code did not teach the model to use Chinese classification labels more. It shifted the model toward the English word "entailment" — likely because English labels appeared in the training prompt format, and the fine-tuning reinforced that English token.
+
+### Spanish XNLI: memorized template responses
+
+Cond 2-zh outputs the **exact same string** for 99.3% of its entailment predictions on Spanish XNLI:
+
+```text
+entailment\nLa hipotesis se sigue de
+```
+
+4,339 of 5,010 questions receive this identical response. The model is not evaluating premise-hypothesis pairs — it is producing a cached template. Other conditions show similar templating behavior with different labels.
+
+### Urdu XNLI: label-explanation contradictions and code leakage
+
+**Cond 2-es** (99.7% contradiction on Urdu XNLI) reveals a disconnect between label and reasoning. The model outputs `contradiction` as its label, then writes Urdu text describing entailment logic:
+
+```text
+contradiction\nHypothesis، premise سے لازم آتی
+```
+
+`لازم آتی` means "it follows" — the explanation says the hypothesis follows from the premise, while the label says contradiction. The first token is a learned reflex, not a reasoned judgment.
+
+**Cond 2-ur** shows **code leaking into XNLI responses**:
+
+```text
+contradiction\nتعریف main():\n    premise =
+contradiction\nتصدیق(entailment(p
+```
+
+`تعریف` is the Legesher keyword for `def`; `تصدیق` is the keyword for `assert`. The Urdu keyword code training is contaminating the NLI task — the model sometimes responds to XNLI prompts by generating Urdu Python code instead of NLI reasoning.
+
+### What this means
+
+1. **The model is not deliberately classifying.** It is producing memorized templates, not evaluating premise-hypothesis relationships. The same output string repeated thousands of times is not classification.
+
+2. **Chinese keywords did not teach Chinese entailment.** They shifted the model toward producing the English token "entailment" more frequently. The improvement in Chinese XNLI accuracy is a side effect of English token probability changes, not Chinese language comprehension.
+
+3. **Code training leaks into task outputs.** Urdu keyword translations (`تعریف` for `def`, `تصدیق` for `assert`) appear in XNLI responses, showing incomplete separation between the code fine-tuning domain and the evaluation domain.
+
+4. **Label and explanation can contradict each other.** The model's first token (the classification label) is a learned bias, while the subsequent explanation text sometimes describes the opposite relationship. The label is reflexive, not reasoned.
+
+### Benchmark selection implications
+
+XNLI's fixed 3-label format is vulnerable to this kind of bias collapse at small model scales. Benchmarks where the answer options change per question — such as **Belebele** (4-way reading comprehension with unique options per question), **XStoryCloze** (2-way story completion with unique endings), or **SIB-200** (7-way topic classification with concrete categories) — would be more robust because the model cannot develop a fixed label preference. The eval pipeline already includes XStoryCloze and CSQA (5-way with changing options), and these benchmarks do not show the same bias collapse pattern.
+
+---
+
 ## Presentation Highlights
 
-1. **"Chinese keywords improve Chinese NLI"** — Cond 2-zh achieves 42.2% vs baseline 36.1% (+6.1pp). Target-language keywords outperform English code (+5.3pp vs Cond 1-5K), using the exact same underlying files.
-2. **"5K files is enough"** — Full dataset vs 5K shows negligible difference. Resource-efficient experimentation validated.
-3. **"Mixed sources (Cond 3) shows broadest gains with English prompts"** — Best CSQA across all languages, best MGSM ur.
-4. **"Prompt language matters more than training data for math"** — English prompts ~2x MGSM scores regardless of condition.
-5. **"Effect is language-specific"** — Chinese keywords help Chinese NLI; Spanish and Urdu do not benefit from keyword swap. The finding is more targeted than a broad "multilingual code helps."
-6. **"Label extraction methodology matters"** — Re-scoring with proper native label maps changed baseline XNLI dramatically (zh: 2% → 36%, es: 24% → 49%). Evaluation methodology must be rigorous.
+1. **"5K files is enough"** — Full dataset vs 5K shows negligible difference. Resource-efficient experimentation validated.
+2. **"Chinese keywords shift Chinese XNLI accuracy"** — Cond 2-zh achieves 42.2% vs baseline 36.1% (+6.1pp), but raw output analysis shows this reflects a label bias shift (toward the English word "entailment"), not deeper Chinese language understanding.
+3. **"XNLI at this model scale measures label bias, not comprehension"** — The model never predicts "neutral" (<0.02% across all conditions and languages), producing memorized templates instead of reasoned classifications. CSQA and MGSM are more reliable indicators.
+4. **"Mixed sources (Cond 3) shows broadest gains with English prompts"** — Best CSQA across all languages, best MGSM ur.
+5. **"Prompt language matters more than training data for math"** — English prompts ~2x MGSM scores regardless of condition.
+6. **"Code training leaks into evaluation"** — Urdu keyword translations appear in XNLI responses, and label-explanation contradictions show the model's first token is reflexive, not reasoned.
 
 ### Key caveats for presentation
 
-- The code fine-tuning effect is narrower than initially estimated — primarily limited to Chinese XNLI with Chinese keywords
-- Spanish and Urdu XNLI show slight regressions from code fine-tuning, suggesting potential catastrophic forgetting
+- XNLI results should be presented with the label bias context — raw accuracy numbers are misleading without the per-label breakdown
+- The code fine-tuning effect is narrower than the headline numbers suggest
 - MGSM improvements are within noise (250 examples)
 - Only 1 of 3 languages has Condition 3 results
 - No English benchmarks yet for forgetting analysis
@@ -444,8 +517,8 @@ The universally-wrong questions are almost entirely the ~1,670 neutral items (si
 ### Immediate (no new training required)
 
 - **English benchmark evaluation**: Run already-trained adapters on MGSM-en, XNLI-en, CSQA-en to assess catastrophic forgetting. LoRA adapters are saved at `legesher/language-decoded-lora`. (AYA-180)
-- **Chinese/Urdu XNLI per-example analysis**: Repeat the Spanish XNLI deep dive for zh and ur to determine if the same neutral-blindness and binary bias pattern holds across languages.
-- **Neutral label investigation**: Understand why the model never predicts "neutral" for Spanish XNLI. Is this a prompting issue, a tokenizer issue, or a model-scale limitation?
+- **Neutral label investigation**: Understand why the model never predicts "neutral." Test whether adding "neutral" as an explicit option in the prompt template changes behavior, or whether this is a fundamental model-scale limitation.
+- **Alternative benchmarks**: Consider adding Belebele or SIB-200 to the eval suite for Cycle 2 — these have per-question answer options and are less vulnerable to label bias.
 - **Verify evaluation branch**: Confirm with Khojasteh which branch was used for evaluations (main vs `feat/create-5k-subset-AYA-173`) given the CSQA lang swap bug on the feature branch.
 
 ### Phase 2 stretch / Phase 3
@@ -457,4 +530,38 @@ The universally-wrong questions are almost entirely the ~1,670 neutral items (si
 
 ---
 
-_Generated 2026-03-24 (updated with re-scored XNLI values). Data source: HuggingFace `legesher/language-decoded-experiments`. Visualization script: `analysis/scripts/plot_condition_comparison.py`._
+## FAQ / Discussion Context
+
+Questions and answers that came up during analysis, preserved for team context.
+
+### Why is XNLI not a good benchmark at this model scale?
+
+XNLI uses a fixed set of 3 labels (entailment, contradiction, neutral) for every question. At 3.35B parameters, Tiny Aya can't reliably distinguish all three — it collapses to a binary classifier. Because the labels never change, the model can "score" by always picking one label. This is fundamentally different from benchmarks like CSQA (5 unique answer options per question) or XStoryCloze (2 unique story endings per question), where a fixed bias can't help.
+
+**Better benchmarks for Cycle 2** would include:
+
+- **Belebele** — 4-way reading comprehension where each question has unique answer options. Covers zh, es, ur. The model must actually read the passage since it can't default to one answer.
+- **SIB-200** — topic classification across 200+ languages with 7 concrete categories (science, sports, politics, etc.). Concrete labels are easier to learn than the abstract entailment/neutral distinction.
+- **XStoryCloze** — already in the eval pipeline. 2-way with unique endings per question. Not vulnerable to label bias.
+
+The eval pipeline already uses CSQA and could use XStoryCloze (it's in `eval_pipeline.py`). XNLI results are still informative — they reveal the model's label bias behavior — but the overall accuracy number should not be interpreted as language understanding.
+
+### Does the Chinese keyword improvement reflect real learning?
+
+The headline finding was: Cond 2-zh improves Chinese XNLI by +6.1pp. But raw output analysis shows the model shifted from outputting Chinese labels (矛盾, 92% of the time) to outputting the English word "entailment" (65% of the time). The accuracy improved because the baseline's extreme contradiction bias (92%) was rebalanced toward a more even split (65/35).
+
+The more accurate claim is: **Chinese keyword fine-tuning changed the distribution of first tokens the model produces in response to Chinese XNLI prompts, shifting from near-total contradiction bias to a more balanced entailment/contradiction split.** This is a real behavioral change, but it's a change in token probability, not evidence of deeper NLI comprehension. Whether the model "understands" entailment vs contradiction, or just learned to output the English word "entailment" more often, is unclear from this data alone.
+
+### How do LoRA adapters create label bias?
+
+The base model (Tiny Aya, 3.35B parameters) already has behavior for every prompt — when given a Chinese XNLI question, it produces a probability distribution over possible next tokens. Before fine-tuning, this distribution favors "contradiction"-associated tokens for Chinese.
+
+The LoRA adapter is a small set of additional weights (~1% of total parameters) added to the base model during inference. It was trained on 5,000 Python files with Chinese keywords. During training, the adapter weights adjusted to make the model better at predicting Chinese code tokens (like `如果` for `if`, `返回` for `return`).
+
+These weight changes modify how the model processes Chinese tokens _generally_ — not just for code. When the adapted model encounters Chinese text in an XNLI prompt, it processes it through the modified pathway, which happens to produce different label token probabilities. The direction of the shift (toward entailment or contradiction) depends on how the keyword tokens overlap with NLI label tokens in the model's internal representation space — it's essentially a side effect of code training, not a deliberate NLI capability.
+
+This is why the effect is language-specific: the Chinese adapter primarily modifies Chinese token processing weights, the Spanish adapter modifies Spanish-related weights, etc. And it's why the bias direction is unpredictable across languages — it depends on which internal representations the code keywords share with the NLI labels.
+
+---
+
+_Generated 2026-03-24 (updated with re-scored XNLI values and raw output analysis). Data source: HuggingFace `legesher/language-decoded-experiments`. Visualization script: `analysis/scripts/plot_condition_comparison.py`._
