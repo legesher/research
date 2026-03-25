@@ -490,13 +490,65 @@ The model sees the word "premise" in the XNLI prompt and starts generating Leges
 
 2. **Chinese keywords did not teach Chinese entailment.** They shifted the model toward producing the English token "entailment" more frequently. The improvement in Chinese XNLI accuracy is a side effect of English token probability changes, not Chinese language comprehension.
 
-3. **Code training leaks into task outputs.** Urdu keyword translations (`تعریف` for `def`, `تصدیق` for `assert`) appear in XNLI responses, showing incomplete separation between the code fine-tuning domain and the evaluation domain.
+3. **Code training leaks into task outputs.** Urdu keyword translations (`تعریف` for `def`, `تصدیق` for `assert`) appear in XNLI responses, showing incomplete separation between the code fine-tuning domain and the evaluation domain. This is notable because Urdu has no established programming language — Legesher's keyword translations are among the first attempts to create one. The model's conflation of Urdu code keywords with NLI task responses suggests that even a small amount of code exposure (5K files) is enough to contaminate general language tasks when the code keywords share the same script as the evaluation language.
 
 4. **Label and explanation can contradict each other.** The model's first token (the classification label) is a learned bias, while the subsequent explanation text sometimes describes the opposite relationship. The label is reflexive, not reasoned.
+
+5. **Code leakage corrupts label extraction for Cond 2-ur.** In 1,071 of 5,010 Urdu XNLI outputs (21.4%), the model's first line says "contradiction" but the second line contains Legesher code `تصدیق(entailment)` (= `assert(entailment)`). Because the label extractor scans the full output for English label words, it picks up "entailment" from the code on line 2 and records that as the prediction — overriding the model's actual first-line answer. This means the reported Cond 2-ur entailment/contradiction split (1,756/3,252) is an artifact. If extraction used only the first line, the split would be approximately 685/4,323 — a much more extreme contradiction bias. The reported Cond 2-ur accuracy of 36.9% is therefore unreliable and would likely change if the extractor were corrected.
 
 ### Benchmark selection implications
 
 XNLI's fixed 3-label format is vulnerable to this kind of bias collapse at small model scales. Benchmarks where the answer options change per question — such as **Belebele** (4-way reading comprehension with unique options per question), **XStoryCloze** (2-way story completion with unique endings), or **SIB-200** (7-way topic classification with concrete categories) — would be more robust because the model cannot develop a fixed label preference. The eval pipeline already includes XStoryCloze and CSQA (5-way with changing options), and these benchmarks do not show the same bias collapse pattern.
+
+---
+
+## XNLI Accuracy with Neutral Questions Removed
+
+Since the model never predicts "neutral," we can ask: how well does it actually distinguish entailment from contradiction? By removing the ~1,670 neutral gold-label items per language, we evaluate only the ~3,340 items where the model could potentially be right. Random chance becomes **50%** (binary) instead of 33.3%.
+
+### Neutral-Removed Accuracy (Native Prompt)
+
+| Condition        | ZH        | ES        | UR    |
+| ---------------- | --------- | --------- | ----- |
+| **Baseline**     | 54.2%     | **73.6%** | 57.2% |
+| Cond 1 (en full) | 56.0%     | 72.0%     | 55.3% |
+| Cond 1 (en 5K)   | 55.3%     | 70.9%     | 55.3% |
+| **Cond 2-zh**    | **63.4%** | 64.6%     | 54.3% |
+| Cond 2-es        | 53.2%     | 66.8%     | 50.0% |
+| Cond 2-ur        | 51.8%     | 73.2%     | 55.4% |
+| Cond 3-zh        | 54.0%     | 62.4%     | 51.0% |
+
+### Delta from Baseline (Neutral Removed)
+
+| Condition | ZH         | ES      | UR         |
+| --------- | ---------- | ------- | ---------- |
+| Cond 1 5K | +1.1pp     | -2.7pp  | -1.9pp     |
+| Cond 2-zh | **+9.1pp** | -9.0pp  | -2.9pp     |
+| Cond 2-es | -1.0pp     | -6.8pp  | **-7.2pp** |
+| Cond 2-ur | -2.4pp     | -0.4pp  | -1.8pp     |
+| Cond 3-zh | -0.3pp     | -11.2pp | -6.2pp     |
+
+### Controlled Comparison — Same 5K Files, Only Keywords Differ (Neutral Removed)
+
+| Comparison     | Cond 2 | Cond 1 5K | Delta      |
+| -------------- | ------ | --------- | ---------- |
+| Cond 2-zh → ZH | 63.4%  | 55.3%     | **+8.1pp** |
+| Cond 2-es → ES | 66.8%  | 70.9%     | **-4.1pp** |
+| Cond 2-ur → UR | 55.4%  | 55.3%     | +0.1pp     |
+
+### Key observations
+
+1. **Rankings are unchanged.** Removing neutral items preserves the same ordering of conditions for all three languages. The relative performance differences are structural, not an artifact of neutral confusion.
+
+2. **The Chinese keyword signal is stronger.** Cond 2-zh's controlled gain over Cond 1-5K goes from +5.3pp (full set) to **+8.1pp** (neutral removed). Against a 50% binary chance level, 63.4% is 13.4pp above random — the clearest positive finding in the experiment.
+
+3. **Spanish baseline is strong.** At 73.6%, the baseline distinguishes entailment from contradiction well for Spanish (23.6pp above chance). Fine-tuning generally hurts this — Cond 3-zh drops it by 11.2pp.
+
+4. **Urdu is barely above coin flip.** Most conditions land at 50-57%. Cond 2-es on Urdu is literally 50.0% — random guessing. The model has minimal entailment/contradiction discrimination for Urdu at this scale.
+
+5. **Deltas amplify by ~1.5x** because removing 1/3 of examples (guaranteed-wrong neutrals) concentrates the signal. This makes both the gains (Chinese) and regressions (Spanish, Urdu) more apparent.
+
+6. **English benchmark evaluation is needed** to complete the picture. The current analysis only covers zh/es/ur data. Running the same adapters on English XNLI/MGSM/CSQA (AYA-180) would show whether fine-tuning hurts English performance (catastrophic forgetting) and whether the neutral-blindness also applies to English. This would also provide a within-language baseline for the binary discrimination analysis.
 
 ---
 
