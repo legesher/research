@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Re-score XNLI predictions from existing HuggingFace results.
 
+ONE-TIME CORRECTION SCRIPT. This fixes Cycle 1 results that were scored with
+the old full-output extraction logic. Once run with --upload, the HF JSONs are
+corrected and re-running produces 0 changes. Future evaluations use the fixed
+extraction built into baseline_benchmarking.ipynb and finetuned-benchmarking.ipynb,
+so this script is not part of the ongoing eval pipeline.
+
 Downloads result JSONs from legesher/language-decoded-experiments, re-applies
 the corrected first-line-only label extraction, updates summary accuracy, and
 optionally uploads corrected files back to HuggingFace.
