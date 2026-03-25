@@ -468,14 +468,21 @@ contradiction\nHypothesis، premise سے لازم آتی
 
 `لازم آتی` means "it follows" — the explanation says the hypothesis follows from the premise, while the label says contradiction. The first token is a learned reflex, not a reasoned judgment.
 
-**Cond 2-ur** shows **code leaking into XNLI responses**:
+**Cond 2-ur** shows **extensive code leaking into XNLI responses** — 2,157 of 5,010 Urdu XNLI outputs (43.1%) contain Legesher code patterns. No other condition or language shows any code leakage. The most common patterns:
 
-```text
-contradiction\nتعریف main():\n    premise =
-contradiction\nتصدیق(entailment(p
-```
+| Pattern                                | Count | Legesher → English equivalent        |
+| -------------------------------------- | ----- | ------------------------------------ |
+| `تصدیق(entailment(p...`                | 763   | `assert(entailment(p...`             |
+| `تصدیق\nتصدیق`                         | 306   | `assert\nassert`                     |
+| `تصدیق(entailment)`                    | 280   | `assert(entailment)`                 |
+| `تعریف main():\n    premise,`          | 253   | `def main():\n    premise,`          |
+| `اگر premise اور hypothesis:\n    اگر` | 233   | `if premise and hypothesis:\n    if` |
+| `تعریف main():\n`                      | 142   | `def main():`                        |
+| `تعریف main():\n    premise =`         | 61    | `def main():\n    premise =`         |
+| `تعریف premise_1():`                   | 10    | `def premise_1():`                   |
+| `تعریف entailment(prem...`             | 9     | `def entailment(prem...`             |
 
-`تعریف` is the Legesher keyword for `def`; `تصدیق` is the keyword for `assert`. The Urdu keyword code training is contaminating the NLI task — the model sometimes responds to XNLI prompts by generating Urdu Python code instead of NLI reasoning.
+The model sees the word "premise" in the XNLI prompt and starts generating Legesher Python functions. It is writing `تعریف main():\n    premise =` (= `def main():\n    premise =`) as if coding, not classifying. Leaked outputs score 34.8% accuracy vs 38.6% for clean outputs — the code generation actively hurts NLI performance.
 
 ### What this means
 
