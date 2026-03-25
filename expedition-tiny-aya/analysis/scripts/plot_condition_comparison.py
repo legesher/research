@@ -458,6 +458,244 @@ def plot_prompt_comparison(df: pd.DataFrame, output_dir: Path):
         print(f"  Saved prompt_comparison_{benchmark}.png")
 
 
+# ── Chart 5: Per-Language Experimental Chain ─────────────────────────────────
+
+
+# Colors for the experimental chain conditions
+CHAIN_COLORS = {
+    "baseline": "#9E9E9E",  # grey
+    "condition-1-en": "#78909C",  # blue-grey
+    "condition-1-en-5k": "#42A5F5",  # blue
+    "condition-2": "#FF7043",  # orange (target-language keyword swap)
+    "condition-3-zh-5k": "#AB47BC",  # purple (mixed sources)
+}
+
+
+def plot_language_vs_cond1(df: pd.DataFrame, output_dir: Path):
+    """Per-language experimental chain: Baseline → Cond 1-en → Cond 2-{lang}.
+
+    Shows the controlled comparison for each language: does English code help,
+    and do target-language keywords help further? Cond 3-zh included for Chinese.
+    """
+    # Define the experimental chain per language
+    chains = {
+        "zh": {
+            "conditions": [
+                "baseline",
+                "condition-1-en",
+                "condition-1-en-5k",
+                "condition-2-zh-5k",
+                "condition-3-zh-5k",
+            ],
+            "labels": [
+                "Baseline",
+                "C1-en\n(full)",
+                "C1-en\n(5K)",
+                "C2-zh\n(5K)",
+                "C3-zh\n(5K)",
+            ],
+            "colors": [
+                CHAIN_COLORS["baseline"],
+                CHAIN_COLORS["condition-1-en"],
+                CHAIN_COLORS["condition-1-en-5k"],
+                CHAIN_COLORS["condition-2"],
+                CHAIN_COLORS["condition-3-zh-5k"],
+            ],
+            "title": "Chinese (zh)",
+        },
+        "es": {
+            "conditions": [
+                "baseline",
+                "condition-1-en",
+                "condition-1-en-5k",
+                "condition-2-es-5k",
+            ],
+            "labels": ["Baseline", "C1-en\n(full)", "C1-en\n(5K)", "C2-es\n(5K)"],
+            "colors": [
+                CHAIN_COLORS["baseline"],
+                CHAIN_COLORS["condition-1-en"],
+                CHAIN_COLORS["condition-1-en-5k"],
+                CHAIN_COLORS["condition-2"],
+            ],
+            "title": "Spanish (es)",
+        },
+        "ur": {
+            "conditions": [
+                "baseline",
+                "condition-1-en",
+                "condition-1-en-5k",
+                "condition-2-ur-5k",
+            ],
+            "labels": ["Baseline", "C1-en\n(full)", "C1-en\n(5K)", "C2-ur\n(5K)"],
+            "colors": [
+                CHAIN_COLORS["baseline"],
+                CHAIN_COLORS["condition-1-en"],
+                CHAIN_COLORS["condition-1-en-5k"],
+                CHAIN_COLORS["condition-2"],
+            ],
+            "title": "Urdu (ur)",
+        },
+    }
+
+    for prompt_type in PROMPT_TYPES:
+        prompt_label = "English" if prompt_type == "english" else "Native Language"
+        subset = df[df["prompt_type"] == prompt_type]
+
+        fig, axes = plt.subplots(1, 3, figsize=(16, 6))
+        fig.suptitle(
+            f"Experimental Chain by Language — {prompt_label} Prompt",
+            fontsize=14,
+            fontweight="bold",
+            y=1.02,
+        )
+
+        for ax, lang in zip(axes, LANGUAGES):
+            chain = chains[lang]
+            n_conds = len(chain["conditions"])
+            x = np.arange(len(BENCHMARKS))
+            width = 0.8 / n_conds
+
+            for j, (cond, label, color) in enumerate(
+                zip(chain["conditions"], chain["labels"], chain["colors"])
+            ):
+                scores = []
+                for bm in BENCHMARKS:
+                    match = subset[
+                        (subset["condition"] == cond)
+                        & (subset["benchmark"] == bm)
+                        & (subset["language"] == lang)
+                    ]
+                    scores.append(match["score_pct"].values[0] if len(match) > 0 else 0)
+
+                offset = (j - (n_conds - 1) / 2) * width
+                bars = ax.bar(
+                    x + offset,
+                    scores,
+                    width,
+                    label=label.replace("\n", " "),
+                    color=color,
+                    alpha=0.85,
+                    edgecolor="white",
+                    linewidth=0.5,
+                )
+                # Add value labels on bars
+                for bar, score in zip(bars, scores):
+                    if score > 0:
+                        ax.text(
+                            bar.get_x() + bar.get_width() / 2,
+                            bar.get_height() + 0.5,
+                            f"{score:.1f}",
+                            ha="center",
+                            va="bottom",
+                            fontsize=6,
+                            rotation=90,
+                        )
+
+            ax.set_title(chain["title"], fontsize=12, fontweight="bold")
+            ax.set_xlabel("Benchmark")
+            ax.set_ylabel("Accuracy (%)")
+            ax.set_xticks(x)
+            ax.set_xticklabels([BENCHMARK_LABELS[bm] for bm in BENCHMARKS], fontsize=9)
+            ax.set_ylim(0, 65)
+            ax.yaxis.set_major_locator(mticker.MultipleLocator(10))
+            ax.grid(axis="y", alpha=0.3)
+            ax.legend(loc="upper left", fontsize=7, framealpha=0.9)
+
+        fig.tight_layout()
+        fname = f"language_chain_{prompt_type}.png"
+        fig.savefig(output_dir / fname, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print(f"  Saved {fname}")
+
+    # Also generate a delta version showing change relative to Cond 1-en (5K)
+    for prompt_type in PROMPT_TYPES:
+        prompt_label = "English" if prompt_type == "english" else "Native Language"
+        subset = df[df["prompt_type"] == prompt_type]
+
+        fig, axes = plt.subplots(1, 3, figsize=(16, 6))
+        fig.suptitle(
+            f"Change vs Cond 1-en (5K) by Language — {prompt_label} Prompt",
+            fontsize=14,
+            fontweight="bold",
+            y=1.02,
+        )
+
+        for ax, lang in zip(axes, LANGUAGES):
+            chain = chains[lang]
+
+            # Get Cond 1-en-5k scores as reference
+            ref_scores = {}
+            for bm in BENCHMARKS:
+                match = subset[
+                    (subset["condition"] == "condition-1-en-5k")
+                    & (subset["benchmark"] == bm)
+                    & (subset["language"] == lang)
+                ]
+                ref_scores[bm] = match["score_pct"].values[0] if len(match) > 0 else 0
+
+            # Only show conditions that aren't the reference
+            plot_conds = [
+                (c, l, col)
+                for c, l, col in zip(
+                    chain["conditions"], chain["labels"], chain["colors"]
+                )
+                if c != "condition-1-en-5k"
+            ]
+            n_conds = len(plot_conds)
+            x = np.arange(len(BENCHMARKS))
+            width = 0.8 / n_conds
+
+            for j, (cond, label, color) in enumerate(plot_conds):
+                deltas = []
+                for bm in BENCHMARKS:
+                    match = subset[
+                        (subset["condition"] == cond)
+                        & (subset["benchmark"] == bm)
+                        & (subset["language"] == lang)
+                    ]
+                    val = match["score_pct"].values[0] if len(match) > 0 else 0
+                    deltas.append(val - ref_scores[bm])
+
+                offset = (j - (n_conds - 1) / 2) * width
+                bars = ax.bar(
+                    x + offset,
+                    deltas,
+                    width,
+                    label=label.replace("\n", " "),
+                    color=color,
+                    alpha=0.85,
+                    edgecolor="white",
+                    linewidth=0.5,
+                )
+                for bar, delta in zip(bars, deltas):
+                    va = "bottom" if delta >= 0 else "top"
+                    y_pos = bar.get_height() + (0.3 if delta >= 0 else -0.3)
+                    ax.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        y_pos,
+                        f"{delta:+.1f}",
+                        ha="center",
+                        va=va,
+                        fontsize=6,
+                        rotation=90,
+                    )
+
+            ax.axhline(0, color="black", linewidth=0.8, label="Cond 1-en (5K)")
+            ax.set_title(chain["title"], fontsize=12, fontweight="bold")
+            ax.set_xlabel("Benchmark")
+            ax.set_ylabel("Δ from Cond 1-en 5K (pp)")
+            ax.set_xticks(x)
+            ax.set_xticklabels([BENCHMARK_LABELS[bm] for bm in BENCHMARKS], fontsize=9)
+            ax.grid(axis="y", alpha=0.3)
+            ax.legend(loc="upper left", fontsize=7, framealpha=0.9)
+
+        fig.tight_layout()
+        fname = f"language_chain_delta_{prompt_type}.png"
+        fig.savefig(output_dir / fname, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print(f"  Saved {fname}")
+
+
 # ── Summary Table ────────────────────────────────────────────────────────────
 
 
@@ -545,6 +783,7 @@ def main():
     plot_delta_bars(df, output_dir)
     plot_heatmap(df, output_dir)
     plot_prompt_comparison(df, output_dir)
+    plot_language_vs_cond1(df, output_dir)
 
     print(f"\nAll charts saved to {output_dir}")
 
