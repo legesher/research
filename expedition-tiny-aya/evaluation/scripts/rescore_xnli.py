@@ -109,8 +109,16 @@ def rescore_xnli_results(data: dict) -> dict:
 
         benchmark = data[benchmark_key]
 
-        # Handle both flat structure and nested results structure
-        results = benchmark.get("results", benchmark.get("data", []))
+        # The JSON structure stores per-example results as a flat list
+        # directly under the benchmark key (e.g. data["xnli_zh"] = [...]),
+        # not nested inside a "results" sub-key.
+        if isinstance(benchmark, list):
+            results = benchmark
+        elif isinstance(benchmark, dict):
+            results = benchmark.get("results", benchmark.get("data", []))
+        else:
+            continue
+
         if not results:
             continue
 
@@ -138,11 +146,12 @@ def rescore_xnli_results(data: dict) -> dict:
 
         new_accuracy = correct / total if total else 0.0
 
-        # Update summary
-        if "summary" in data and benchmark_key in data["summary"]:
-            old_accuracy = data["summary"][benchmark_key]
-            data["summary"][benchmark_key] = round(new_accuracy, 6)
-        elif "accuracy" in benchmark:
+        # Update summary — keys use "_acc" suffix (e.g. "xnli_zh_acc")
+        summary_key = f"{benchmark_key}_acc"
+        if "summary" in data and summary_key in data["summary"]:
+            old_accuracy = data["summary"][summary_key]
+            data["summary"][summary_key] = round(new_accuracy, 6)
+        elif isinstance(benchmark, dict) and "accuracy" in benchmark:
             old_accuracy = benchmark["accuracy"]
             benchmark["accuracy"] = round(new_accuracy, 6)
         else:
