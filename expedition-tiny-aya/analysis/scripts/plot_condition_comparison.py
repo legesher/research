@@ -2,11 +2,11 @@
 """
 Visualization script for Tiny Aya Expedition evaluation results.
 
-Fetches benchmark results from HuggingFace and local baseline data,
+Fetches benchmark results from HuggingFace (including baseline),
 then generates comparison charts across experimental conditions.
 
 Usage:
-    python plot_condition_comparison.py [--output-dir ../figures] [--no-fetch]
+    python plot_condition_comparison.py [--output-dir ../figures] [--cache-dir /path/to/cache]
 
 Charts generated:
     1. Grouped bar charts (condition x benchmark, per language x prompt type)
@@ -34,6 +34,7 @@ HF_REPO = "legesher/language-decoded-experiments"
 HF_REPO_TYPE = "dataset"
 
 CONDITIONS = [
+    "baseline",
     "condition-1-en",
     "condition-1-en-5k",
     "condition-2-zh-5k",
@@ -82,28 +83,14 @@ BENCHMARK_LABELS = {
 # ── Data Loading ─────────────────────────────────────────────────────────────
 
 
-def load_baseline(baseline_dir: Path) -> dict:
-    """Load baseline results from local JSON files.
+def fetch_all_results(cache_dir: Path | None) -> dict:
+    """Fetch all condition results (including baseline) from HuggingFace Hub.
 
-    Baseline JSONs were re-scored 2026-03-24 with expanded native label
-    extraction (see evaluation-summary.md § Label Extraction Methodology).
-    No runtime correction is needed — the files contain the corrected values.
+    All results, including baseline, are fetched from the canonical source at
+    legesher/language-decoded-experiments on HuggingFace. This ensures the
+    script always uses the latest re-scored values without depending on local
+    JSON files that may be stale.
     """
-    results = {}
-    for prompt_type in PROMPT_TYPES:
-        filename = f"baseline_{'english' if prompt_type == 'english' else 'native'}_prompt_results.json"
-        filepath = baseline_dir / filename
-        if not filepath.exists():
-            print(f"  Warning: baseline file not found: {filepath}")
-            continue
-        with open(filepath, encoding="utf-8") as f:
-            data = json.load(f)
-        results[prompt_type] = data["summary"]
-    return results
-
-
-def fetch_condition_results(cache_dir: Path) -> dict:
-    """Fetch condition results from HuggingFace Hub."""
     results = {}
     for condition in CONDITIONS:
         results[condition] = {}
@@ -114,7 +101,7 @@ def fetch_condition_results(cache_dir: Path) -> dict:
                     repo_id=HF_REPO,
                     filename=hf_filename,
                     repo_type=HF_REPO_TYPE,
-                    cache_dir=cache_dir,
+                    cache_dir=str(cache_dir) if cache_dir else None,
                 )
                 with open(local_path, encoding="utf-8") as f:
                     data = json.load(f)
@@ -125,28 +112,11 @@ def fetch_condition_results(cache_dir: Path) -> dict:
     return results
 
 
-def build_dataframe(baseline: dict, conditions: dict) -> pd.DataFrame:
+def build_dataframe(all_results: dict) -> pd.DataFrame:
     """Combine all results into a tidy DataFrame."""
     rows = []
-    for prompt_type in PROMPT_TYPES:
-        # Baseline
-        if prompt_type in baseline:
-            for benchmark in BENCHMARKS:
-                for lang in LANGUAGES:
-                    key = f"{benchmark}_{lang}_acc"
-                    val = baseline[prompt_type].get(key)
-                    if val is not None:
-                        rows.append(
-                            {
-                                "condition": "baseline",
-                                "prompt_type": prompt_type,
-                                "benchmark": benchmark,
-                                "language": lang,
-                                "score": val,
-                            }
-                        )
-        # Conditions
-        for condition, cond_data in conditions.items():
+    for condition, cond_data in all_results.items():
+        for prompt_type in PROMPT_TYPES:
             if prompt_type not in cond_data:
                 continue
             summary = cond_data[prompt_type]
@@ -538,21 +508,10 @@ def main():
         help="Directory to save figures (default: ../figures relative to this script)",
     )
     parser.add_argument(
-        "--baseline-dir",
-        type=str,
-        default=None,
-        help="Directory with baseline JSON files (default: ../../evaluation/results/baseline)",
-    )
-    parser.add_argument(
         "--cache-dir",
         type=str,
         default=None,
         help="HuggingFace cache directory (default: system default)",
-    )
-    parser.add_argument(
-        "--no-fetch",
-        action="store_true",
-        help="Skip HuggingFace fetch (use cached data only)",
     )
     args = parser.parse_args()
 
@@ -560,28 +519,16 @@ def main():
     output_dir = (
         Path(args.output_dir) if args.output_dir else script_dir.parent / "figures"
     )
-    baseline_dir = (
-        Path(args.baseline_dir)
-        if args.baseline_dir
-        else script_dir.parent.parent / "evaluation" / "results" / "baseline"
-    )
     cache_dir = Path(args.cache_dir) if args.cache_dir else None
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load data
-    print("Loading baseline results...")
-    baseline = load_baseline(baseline_dir)
-
-    if args.no_fetch:
-        print("Skipping HuggingFace fetch (--no-fetch)")
-        conditions = {}
-    else:
-        print("Fetching condition results from HuggingFace...")
-        conditions = fetch_condition_results(cache_dir)
+    # Load all data from HuggingFace (including baseline)
+    print("Fetching all results from HuggingFace...")
+    all_results = fetch_all_results(cache_dir)
 
     print("Building DataFrame...")
-    df = build_dataframe(baseline, conditions)
+    df = build_dataframe(all_results)
     print(f"  {len(df)} rows loaded")
 
     if df.empty:

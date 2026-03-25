@@ -10,11 +10,11 @@
 
 ## Executive Summary
 
-1. **Chinese keyword code specifically improves Chinese XNLI** — Cond 2-zh achieves 42.2% on Chinese XNLI (native prompt), +5.3pp over English code (Cond 1-5K at 36.9%). This is the cleanest signal: same 5K files, only keywords differ.
+1. **Chinese keyword code specifically improves Chinese XNLI** — Cond 2-zh achieves 42.3% on Chinese XNLI (native prompt), +6.2pp over English code (Cond 1-5K at 36.1%). This is the cleanest signal: same 5K files, only keywords differ.
 2. **Code fine-tuning generally does not improve — and sometimes hurts — Spanish and Urdu XNLI** — Most conditions show regression from baseline for es and ur. The baseline already performs well on native prompts after corrected label extraction (49.1% es, 38.1% ur).
 3. **5K files equals full dataset performance** — Cond 1 (full) vs Cond 1 (5K) shows <1pp difference across all metrics. Resource-efficient experimentation validated.
 4. **MGSM (math reasoning) shows no meaningful improvement** — all differences are within noise at this model scale (3.35B params). This is a useful null result.
-5. **Label extraction methodology significantly affected XNLI scores** — Re-scoring with expanded native label maps changed baseline zh from 2.0% to 36.1% and baseline es from 23.8% to 49.1%. See [Label Extraction Methodology](#label-extraction-methodology) section.
+5. **Label extraction methodology significantly affected XNLI scores** — Re-scoring with expanded native label maps changed baseline zh from 2.0% to 35.8% and baseline es from 23.8% to 49.1%. See [Label Extraction Methodology](#label-extraction-methodology) section.
 
 ### Caveats
 
@@ -33,9 +33,9 @@ XNLI evaluation requires extracting a label (entailment, contradiction, neutral)
 
 ### Issue 1: Missing Chinese Native Labels (Baseline Only)
 
-**Impact**: Baseline XNLI zh native: 2.0% → **36.1%** (4,773 of 5,010 predictions changed)
+**Impact**: Baseline XNLI zh native: 2.0% → **35.8%** (4,773 of 5,010 predictions changed by label map expansion; 35 additional predictions corrected by first-line-only extraction)
 
-The baseline evaluation was run with an extraction function that only matched English labels. When the model responded in Chinese (e.g., `矛盾` for "contradiction", `蕴含` for "entailment", `中立` for "neutral"), the extraction returned `None` and the prediction was marked incorrect. After adding Chinese labels to the map, 36.1% of predictions matched correctly.
+The baseline evaluation was run with an extraction function that only matched English labels. When the model responded in Chinese (e.g., `矛盾` for "contradiction", `蕴含` for "entailment", `中立` for "neutral"), the extraction returned `None` and the prediction was marked incorrect. After adding Chinese labels to the map and applying first-line-only extraction (see Issue 4 below), 35.8% of predictions matched correctly.
 
 **Labels added**: `蕴含`/`蕴涵` (entailment), `矛盾` (contradiction), `中立` (neutral)
 
@@ -67,9 +67,21 @@ The model occasionally outputs paraphrased Urdu for "entailment": `لازم آت
 
 **Labels added**: `لازم آتی ہے` (entailment paraphrase), `انضمامیت` (alternative entailment)
 
+### Issue 4: Code Leakage and Explanation Contamination (First-Line-Only Extraction)
+
+**Impact**: 0–264 predictions changed per condition for Chinese native prompt; 1,083 predictions changed for Cond 2-ur Urdu native prompt. No change to English-prompt or Spanish results.
+
+The original extractor scanned the FULL model output for label words. Multi-line outputs caused two classes of mis-scoring:
+
+1. **Code leakage (Cond 2-ur, Urdu XNLI)**: The model outputs Legesher-translated Python code after the label. Example: `contradiction\nتعریف main():\n    تصدیق(entailment)`. The old extractor found "entailment" inside `تصدیق` (assert) on line 3 and returned that instead of the actual "contradiction" on line 1. Affected 1,083/5,010 Urdu predictions.
+
+2. **Chinese explanation contamination**: The model outputs `矛盾\n假设被前提蕴含。` — "contradiction" on line 1, then an explanation containing `蕴含` (entailment) on line 2. The old extractor found `蕴含` and returned "entailment", overriding the correct label. Affected 1–264 predictions per condition (most in Cond 2-es: 264; fewest in Cond 2-zh: 1).
+
+**Fix**: First-line-only extraction — only reads line 1 of the model output. Implemented in `rescore_xnli.py` (one-time correction script) and both benchmarking notebooks.
+
 ### Re-Scoring Summary
 
-All XNLI native-prompt results on HuggingFace have been re-scored with the expanded, case-insensitive label map. English-prompt results were minimally affected (1 prediction changed for zh baseline, no accuracy change) because English labels were already in the original map.
+All XNLI native-prompt results on HuggingFace have been re-scored with the expanded, case-insensitive label map AND first-line-only extraction. English-prompt results were unaffected because English-prompted outputs are clean single-line responses. Spanish results were also unaffected (single-line outputs).
 
 **The numbers in this document reflect the re-scored values.**
 
@@ -90,6 +102,18 @@ Understanding what each benchmark measures is critical for interpreting results.
 - **MGSM** tests **reasoning** — if code exposure helps reasoning, MGSM should improve
 - **XNLI** tests **language understanding** — if multilingual keywords improve the model's grasp of that language, XNLI should improve
 - **CSQA** tests **world knowledge** — least likely to be affected by code training
+
+### Evaluation Method: Open-Ended Generation
+
+These benchmarks were evaluated using **open-ended generation** — the model generates free text in response to the prompt, and an extraction function parses the answer from the raw output. This differs from the standard approach of **constrained/log-probability scoring** (where the model scores each possible answer and the highest-probability option is selected, with no free text generated).
+
+Open-ended generation is a valid choice — it tests whether the model can produce the right answer in a realistic scenario, not just whether the right token has the highest probability. But it creates challenges:
+
+- **Multi-line outputs**: The model often generates a label/answer on line 1, then an explanation or (for Cond 2-ur) code on subsequent lines. The XNLI extraction bug (see [Label Extraction Methodology](#label-extraction-methodology)) was caused by the extractor scanning all lines instead of just line 1.
+- **Code leakage**: After Urdu keyword fine-tuning, the model sometimes generates Legesher Python code in its continuation, affecting both XNLI and CSQA evaluations.
+- **Format inconsistency**: The model may respond in different scripts (Chinese labels vs English labels) or with varying verbosity across conditions.
+
+The `eval_pipeline.py` script in this repo implements log-probability scoring as an alternative. Future evaluations could compare both methods.
 
 ### Statistical Significance Context
 
@@ -135,19 +159,19 @@ _All XNLI scores reflect re-scored values with expanded native label extraction 
 
 | Condition            | MGSM zh | MGSM es | MGSM ur | XNLI zh | XNLI es | XNLI ur | CSQA zh | CSQA es | CSQA ur |
 | -------------------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- |
-| **Baseline**         | 6.0%    | 5.6%    | 3.2%    | 36.1%   | 49.1%   | 38.1%   | 52.1%   | 52.4%   | 40.0%   |
-| **Cond 1 (en full)** | 4.4%    | 6.4%    | 2.8%    | 37.4%   | 48.0%   | 36.9%   | 52.4%   | 53.3%   | 40.6%   |
-| **Cond 1 (en 5K)**   | 3.6%    | 5.6%    | 2.8%    | 36.9%   | 47.3%   | 36.9%   | 52.3%   | 53.3%   | 40.7%   |
-| **Cond 2-zh**        | 6.0%    | 6.8%    | 4.4%    | 42.2%   | 43.1%   | 36.2%   | 52.9%   | 53.4%   | 41.0%   |
-| **Cond 2-es**        | 3.2%    | 5.6%    | 4.4%    | 35.5%   | 44.5%   | 33.3%   | 52.2%   | 53.4%   | 39.8%   |
-| **Cond 2-ur**        | 3.2%    | 6.8%    | 3.2%    | 34.6%   | 48.8%   | 36.9%   | 52.4%   | 53.6%   | 38.2%   |
-| **Cond 3-zh**        | 7.2%    | 4.0%    | 3.2%    | 36.0%   | 41.6%   | 34.0%   | 54.5%   | 52.8%   | 42.2%   |
+| **Baseline**         | 6.0%    | 5.6%    | 3.2%    | 35.8%   | 49.1%   | 38.1%   | 52.1%   | 52.4%   | 40.0%   |
+| **Cond 1 (en full)** | 4.4%    | 6.4%    | 2.8%    | 36.5%   | 48.0%   | 36.9%   | 52.4%   | 53.3%   | 40.6%   |
+| **Cond 1 (en 5K)**   | 3.6%    | 5.6%    | 2.8%    | 36.1%   | 47.3%   | 36.8%   | 52.3%   | 53.3%   | 40.7%   |
+| **Cond 2-zh**        | 6.0%    | 6.8%    | 4.4%    | 42.3%   | 43.1%   | 36.2%   | 52.9%   | 53.4%   | 41.0%   |
+| **Cond 2-es**        | 3.2%    | 5.6%    | 4.4%    | 34.2%   | 44.5%   | 33.3%   | 52.2%   | 53.4%   | 39.8%   |
+| **Cond 2-ur**        | 3.2%    | 6.8%    | 3.2%    | 34.6%   | 48.8%   | 37.7%   | 52.4%   | 53.6%   | 38.2%   |
+| **Cond 3-zh**        | 7.2%    | 4.0%    | 3.2%    | 35.8%   | 41.6%   | 34.0%   | 54.5%   | 52.8%   | 42.2%   |
 
 ### English Prompt Results (English prompt + target-language data)
 
 | Condition            | MGSM zh | MGSM es | MGSM ur | XNLI zh | XNLI es | XNLI ur | CSQA zh | CSQA es | CSQA ur |
 | -------------------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- |
-| **Baseline**         | 6.8%    | 7.2%    | 6.0%    | 46.4%   | 51.2%   | 40.7%   | 52.3%   | 53.8%   | 41.2%   |
+| **Baseline**         | 6.8%    | 7.2%    | 6.0%    | 46.4%   | 51.2%   | 40.9%   | 52.3%   | 53.8%   | 41.2%   |
 | **Cond 1 (en full)** | 8.0%    | 9.2%    | 6.0%    | 47.1%   | 52.2%   | 41.2%   | 51.2%   | 53.4%   | 42.1%   |
 | **Cond 1 (en 5K)**   | 8.4%    | 9.6%    | 6.4%    | 47.0%   | 52.2%   | 41.8%   | 51.7%   | 53.5%   | 42.2%   |
 | **Cond 2-zh**        | 7.2%    | 10.0%   | 6.8%    | 46.9%   | 52.7%   | 40.2%   | 51.3%   | 53.1%   | 42.2%   |
@@ -157,21 +181,91 @@ _All XNLI scores reflect re-scored values with expanded native label extraction 
 
 ---
 
+## Per-Language Experimental Chain
+
+The experimental design creates a controlled chain for each target language. Within each chain, comparing adjacent steps isolates a single variable:
+
+- **Baseline → Cond 1-en**: Does code fine-tuning help at all? (adds English code)
+- **Cond 1-en (full) → Cond 1-en (5K)**: Does dataset size matter? (same questions, less data)
+- **Cond 1-en (5K) → Cond 2-{lang}**: Does keyword language matter? (same 5K files, only reserved words differ)
+
+Cond 3-zh is included for Chinese but is **not directly comparable** — it uses different, lower-quality source files (Wenyan + community code + different Legesher transpiled files), so differences could reflect data quality/diversity rather than keyword language alone.
+
+### Chinese: Keyword swap works for native-prompt XNLI
+
+| Condition        | MGSM zh  | XNLI zh   | CSQA zh   |     | MGSM Δ | XNLI Δ     | CSQA Δ |
+| ---------------- | -------- | --------- | --------- | --- | ------ | ---------- | ------ |
+| **Baseline**     | 6.0%     | 35.8%     | 52.1%     |     |        |            |        |
+| Cond 1-en (full) | 4.4%     | 36.5%     | 52.4%     |     | -1.6pp | +0.7pp     | +0.3pp |
+| Cond 1-en (5K)   | 3.6%     | 36.1%     | 52.3%     |     | -2.4pp | +0.3pp     | +0.2pp |
+| **Cond 2-zh**    | **6.0%** | **42.3%** | **52.9%** |     | +0.0pp | **+6.4pp** | +0.8pp |
+| Cond 3-zh\*      | 7.2%     | 35.8%     | 54.5%     |     | +1.2pp | -0.0pp     | +2.4pp |
+
+_\*Different source files — not a controlled comparison._
+
+_Native prompt shown. English prompt: Cond 2-zh shows no XNLI improvement (+0.6pp, same as Cond 1), confirming the keyword effect is specific to native-language prompting._
+
+**Story**: English code barely moves Chinese XNLI (+0.3pp). Swapping to Chinese keywords produces a clear +6.1pp jump (Cond 1-5K → Cond 2-zh). Cond 3-zh tells a different story — no native XNLI improvement but best CSQA (+2.4pp), suggesting its mixed sources teach world knowledge rather than label preference.
+
+### Spanish: Fine-tuning progressively hurts
+
+| Condition        | MGSM es | XNLI es   | CSQA es |     | MGSM Δ | XNLI Δ     | CSQA Δ |
+| ---------------- | ------- | --------- | ------- | --- | ------ | ---------- | ------ |
+| **Baseline**     | 5.6%    | **49.1%** | 52.4%   |     |        |            |        |
+| Cond 1-en (full) | 6.4%    | 48.0%     | 53.3%   |     | +0.8pp | -1.1pp     | +0.9pp |
+| Cond 1-en (5K)   | 5.6%    | 47.3%     | 53.3%   |     | +0.0pp | -1.8pp     | +0.9pp |
+| **Cond 2-es**    | 5.6%    | 44.5%     | 53.4%   |     | +0.0pp | **-4.5pp** | +1.0pp |
+
+_Native prompt shown. English prompt follows the same pattern: Cond 2-es XNLI es = 48.0% vs baseline 51.2% (-3.3pp)._
+
+**Story**: The baseline already performs well on Spanish XNLI (49.1%, well above 33.3% random). Each step down the chain makes it worse — English code slightly (-1.8pp), Spanish keywords more (-4.5pp total). The keyword swap is the opposite of what you'd want. CSQA is stable (+1.0pp), confirming the regression is XNLI-specific (likely a label bias shift rather than comprehension loss).
+
+### Urdu: Nothing moves the needle (and code leaks)
+
+| Condition        | MGSM ur | XNLI ur | CSQA ur   |     | MGSM Δ | XNLI Δ | CSQA Δ     |
+| ---------------- | ------- | ------- | --------- | --- | ------ | ------ | ---------- |
+| **Baseline**     | 3.2%    | 38.1%   | 40.0%     |     |        |        |            |
+| Cond 1-en (full) | 2.8%    | 36.9%   | 40.6%     |     | -0.4pp | -1.3pp | +0.6pp     |
+| Cond 1-en (5K)   | 2.8%    | 36.8%   | 40.7%     |     | -0.4pp | -1.3pp | +0.7pp     |
+| **Cond 2-ur**    | 3.2%    | 37.7%   | **38.2%** |     | +0.0pp | -0.5pp | **-1.8pp** |
+
+_Native prompt shown. English prompt: Cond 2-ur shows MGSM +1.2pp but XNLI -0.8pp and CSQA -1.4pp._
+
+**Story**: Urdu XNLI is flat across all conditions (36.8–38.1%). The keyword swap (Cond 1-5K → Cond 2-ur) barely helps XNLI (+0.8pp) but hurts CSQA (-2.5pp). The CSQA regression is partly explained by code contamination: 14.6% of Cond 2-ur Urdu CSQA outputs contain Legesher code fragments (`اگر __name__ == '__main__':`, `تعریف main():`), and contaminated outputs score 25.3% accuracy vs 41.1% for clean outputs (p < 0.01). See [Deep Dive: CSQA Code Contamination](#deep-dive-csqa-label-bias-and-code-contamination) for details.
+
+### Keyword swap effect — the cleanest comparison
+
+Cond 1-5K → Cond 2-{lang}: same 5K files, only 37 keywords + 72 builtins + 66 exceptions differ.
+
+| Comparison                  | XNLI native | XNLI english | CSQA native | CSQA english |
+| --------------------------- | ----------- | ------------ | ----------- | ------------ |
+| zh keywords → zh benchmarks | **+6.1pp**  | -0.1pp       | +0.6pp      | -0.4pp       |
+| es keywords → es benchmarks | **-2.7pp**  | **-4.3pp**   | +0.1pp      | -1.3pp       |
+| ur keywords → ur benchmarks | +0.8pp      | -1.8pp       | **-2.5pp**  | **-2.4pp**   |
+
+The keyword swap has a strong positive effect **only for Chinese XNLI with native prompts**. For Spanish it's negative across the board. For Urdu it's slightly positive for XNLI native but negative for everything else.
+
+### Data volume check
+
+Cond 1-en (full) vs Cond 1-en (5K): same questions, different data volume. Maximum gap across all 18 metrics: **0.8pp** (MGSM zh native). 5K files is sufficient — more data does not help at this model scale.
+
+---
+
 ## Key Findings
 
 ### Finding 1: Chinese keyword code specifically improves Chinese XNLI
 
-Cond 2-zh achieves 42.2% on Chinese XNLI (native prompt), the highest zh XNLI score across all conditions. Deltas from baseline (36.1%):
+Cond 2-zh achieves 42.3% on Chinese XNLI (native prompt), the highest zh XNLI score across all conditions. Deltas from baseline (35.8%):
 
 | Condition | zh delta   | es delta | ur delta |
 | --------- | ---------- | -------- | -------- |
-| Cond 1 5K | +0.8pp     | -1.8pp   | -1.2pp   |
-| Cond 2-zh | **+6.1pp** | -6.0pp   | -1.9pp   |
-| Cond 2-es | -0.6pp     | -4.6pp   | -4.8pp   |
-| Cond 2-ur | -1.5pp     | -0.3pp   | -1.2pp   |
-| Cond 3-zh | -0.1pp     | -7.5pp   | -4.1pp   |
+| Cond 1 5K | +0.3pp     | -1.8pp   | -1.3pp   |
+| Cond 2-zh | **+6.5pp** | -6.0pp   | -1.9pp   |
+| Cond 2-es | -1.6pp     | -4.6pp   | -4.8pp   |
+| Cond 2-ur | -1.2pp     | -0.3pp   | -0.4pp   |
+| Cond 3-zh | 0.0pp      | -7.5pp   | -4.1pp   |
 
-With ~5,000 XNLI examples, a 6pp change is ~4x the confidence interval — statistically significant.
+With ~5,000 XNLI examples, a 6.5pp change is ~4.5x the confidence interval — statistically significant.
 
 **Key insight**: Only Cond 2-zh improves Chinese XNLI meaningfully. All other conditions are flat or slightly worse. And the improvement is specific to Chinese — the same condition _hurts_ Spanish (-6.0pp) and Urdu (-1.9pp). This suggests the model is learning from the Chinese keyword tokens specifically, not gaining general multilingual capability.
 
@@ -181,11 +275,11 @@ Comparing Cond 2-{lang} against Cond 1-5K on the _matching_ target language (exa
 
 | Comparison          | Cond 2 score | Cond 1 5K | Delta      |
 | ------------------- | ------------ | --------- | ---------- |
-| Cond 2-zh → XNLI zh | 42.2%        | 36.9%     | **+5.3pp** |
+| Cond 2-zh → XNLI zh | 42.3%        | 36.1%     | **+6.2pp** |
 | Cond 2-es → XNLI es | 44.5%        | 47.3%     | **-2.8pp** |
-| Cond 2-ur → XNLI ur | 36.9%        | 36.9%     | 0.0pp      |
+| Cond 2-ur → XNLI ur | 37.7%        | 36.8%     | +0.9pp     |
 
-**For Chinese**: The keyword swap provides a clear, statistically significant benefit (+5.3pp). Because the underlying code is identical, this difference is attributable purely to the 37 keywords + 72 builtins + 66 exceptions being in Chinese vs English.
+**For Chinese**: The keyword swap provides a clear, statistically significant benefit (+6.2pp). Because the underlying code is identical, this difference is attributable purely to the 37 keywords + 72 builtins + 66 exceptions being in Chinese vs English.
 
 **For Spanish**: The keyword swap actually _hurts_ compared to English code (-2.8pp). This is unexpected and may relate to how the model's tokenizer handles Spanish keywords vs English ones.
 
@@ -217,13 +311,13 @@ Urdu XNLI native is essentially flat across all conditions:
 | Condition | XNLI ur (native) | vs baseline |
 | --------- | ---------------- | ----------- |
 | Baseline  | 38.1%            | —           |
-| Cond 1 5K | 36.9%            | -1.2pp      |
+| Cond 1 5K | 36.8%            | -1.3pp      |
 | Cond 2-zh | 36.2%            | -1.9pp      |
 | Cond 2-es | 33.3%            | **-4.8pp**  |
-| Cond 2-ur | 36.9%            | -1.2pp      |
+| Cond 2-ur | 37.7%            | -0.4pp      |
 | Cond 3-zh | 34.0%            | -4.1pp      |
 
-Even Cond 2-ur (Urdu keyword code) shows -1.2pp. Spanish keyword code causes the largest regression (-4.8pp, dropping to exactly random chance at 33.3%).
+Even Cond 2-ur (Urdu keyword code) shows -0.4pp. Spanish keyword code causes the largest regression (-4.8pp, dropping to exactly random chance at 33.3%).
 
 **Possible explanations**: (a) Urdu uses RTL Nastaliq script, which may not benefit from code fine-tuning in the same way; (b) The model's Urdu capability may be limited at this scale regardless of training data; (c) Code fine-tuning slightly interferes with existing Urdu instruction-following.
 
@@ -319,7 +413,7 @@ The baseline model's default label preference varies by language:
 | Spanish  | 49.9%                 | 50.0%                    | Balanced                 |
 | Urdu     | 38.2%                 | 61.5%                    | Moderately contradiction |
 
-This explains why baseline accuracies differ: Spanish baseline (49.1%) scores highest because its even split aligns best with the balanced test set. Chinese baseline (36.1%) is worst because its extreme contradiction bias means it gets almost no entailment items right (12.2%).
+This explains why baseline accuracies differ: Spanish baseline (49.1%) scores highest because its even split aligns best with the balanced test set. Chinese baseline (35.8%) is worst because its extreme contradiction bias means it gets almost no entailment items right (12.2%).
 
 ### Fine-tuning shifts the binary boundary differently per language
 
@@ -334,14 +428,14 @@ This explains why baseline accuracies differ: Spanish baseline (49.1%) scores hi
 | Cond 2-ur | **98.2%**           | 1.7%                   |
 | Cond 3-zh | 7.4%                | 92.5%                  |
 
-Cond 2-zh is the only condition that moves the dial toward a balanced split (65/35), which is why it scores highest (42.2%). Cond 2-ur overshoots to 98% entailment, destroying contradiction accuracy entirely (4.3%).
+Cond 2-zh is the only condition that moves the dial toward a balanced split (65/35), which is why it scores highest (42.3%). Cond 2-ur overshoots to 98% entailment, destroying contradiction accuracy entirely (4.3%).
 
 #### Chinese XNLI — Per-Label Accuracy
 
 | Condition | Entailment acc | Contradiction acc | Overall   |
 | --------- | -------------- | ----------------- | --------- |
-| Baseline  | 12.2%          | 96.2%             | 36.1%     |
-| Cond 2-zh | **76.2%**      | 50.5%             | **42.2%** |
+| Baseline  | 12.2%          | 96.2%             | 35.8%     |
+| Cond 2-zh | **76.2%**      | 50.5%             | **42.3%** |
 | Cond 2-ur | 99.3%          | 4.3%              | 34.6%     |
 
 #### Spanish XNLI — Prediction Distribution
@@ -383,7 +477,7 @@ Every condition deepens the contradiction bias. Cond 2-es collapses to a single-
 | Condition | Entailment acc | Contradiction acc | Overall   |
 | --------- | -------------- | ----------------- | --------- |
 | Baseline  | 43.2%          | 71.2%             | **38.1%** |
-| Cond 2-ur | 39.8%          | 70.9%             | 36.9%     |
+| Cond 2-ur | ~40%           | ~73%              | 37.7%     |
 | Cond 2-es | 0.1%           | 99.9%             | 33.3%     |
 
 ### Regressions are clean label flips, not output degradation
@@ -410,7 +504,7 @@ The universally-wrong questions are almost entirely the ~1,670 neutral items (si
 
 1. **Overall XNLI accuracy is not a measure of language understanding.** It is an artifact of how the model's binary bias aligns with the test set's balanced label distribution. The "best" condition for each language is simply the one with the most balanced entailment/contradiction split.
 
-2. **Cond 2-zh's Chinese XNLI improvement (+6.1pp) is real but narrow.** It reflects Chinese keywords teaching the model to sometimes predict "entailment" in Chinese instead of defaulting to "contradiction." This is genuine learning — but it's learning a label preference, not deeper NLI reasoning.
+2. **Cond 2-zh's Chinese XNLI improvement (+6.5pp) is real but narrow.** It reflects Chinese keywords teaching the model to sometimes predict "entailment" in Chinese instead of defaulting to "contradiction." This is genuine learning — but it's learning a label preference, not deeper NLI reasoning.
 
 3. **Spanish regression from fine-tuning is a bias shift, not comprehension loss.** The baseline's 49.1% is highest because it happens to have the most balanced binary split, not because it understands Spanish NLI best.
 
@@ -494,11 +588,11 @@ The model sees the word "premise" in the XNLI prompt and starts generating Leges
 
 4. **Label and explanation can contradict each other.** The model's first token (the classification label) is a learned bias, while the subsequent explanation text sometimes describes the opposite relationship. The label is reflexive, not reasoned.
 
-5. **Code leakage corrupts label extraction for Cond 2-ur.** In 1,071 of 5,010 Urdu XNLI outputs (21.4%), the model's first line says "contradiction" but the second line contains Legesher code `تصدیق(entailment)` (= `assert(entailment)`). Because the label extractor scans the full output for English label words, it picks up "entailment" from the code on line 2 and records that as the prediction — overriding the model's actual first-line answer. This means the reported Cond 2-ur entailment/contradiction split (1,756/3,252) is an artifact. If extraction used only the first line, the split would be approximately 685/4,323 — a much more extreme contradiction bias. The reported Cond 2-ur accuracy of 36.9% is therefore unreliable and would likely change if the extractor were corrected.
+5. **Code leakage previously corrupted label extraction for Cond 2-ur (now corrected).** In 1,083 of 5,010 Urdu XNLI outputs (21.6%), the model's first line says "contradiction" but subsequent lines contain Legesher code like `تصدیق(entailment)` (= `assert(entailment)`). The original full-output extractor picked up "entailment" from the code and recorded that as the prediction — overriding the model's actual first-line answer. After applying first-line-only extraction (see [Label Extraction Methodology](#label-extraction-methodology), Issue 4), Cond 2-ur accuracy changed from 36.9% to 37.7%. The corrected prediction distribution shows a more extreme contradiction bias (~685 entailment / ~4,323 contradiction) than the uncorrected version (1,756/3,252) suggested.
 
 ### Benchmark selection implications
 
-XNLI's fixed 3-label format is vulnerable to this kind of bias collapse at small model scales. Benchmarks where the answer options change per question — such as **Belebele** (4-way reading comprehension with unique options per question), **XStoryCloze** (2-way story completion with unique endings), or **SIB-200** (7-way topic classification with concrete categories) — would be more robust because the model cannot develop a fixed label preference. The eval pipeline already includes XStoryCloze and CSQA (5-way with changing options), and these benchmarks do not show the same bias collapse pattern.
+XNLI's fixed 3-label format is vulnerable to this kind of bias collapse at small model scales. Benchmarks where the answer options change per question — such as **Belebele** (4-way reading comprehension with unique options per question), **XStoryCloze** (2-way story completion with unique endings), or **SIB-200** (7-way topic classification with concrete categories) — would be more robust because the model cannot develop a fixed label preference. The eval pipeline already includes XStoryCloze and CSQA (5-way with changing options). CSQA shows position bias (favoring early options A/B) but not the catastrophic label collapse seen in XNLI — the model still predicts all 5 options, just not uniformly.
 
 ---
 
@@ -540,7 +634,7 @@ Since the model never predicts "neutral," we can ask: how well does it actually 
 
 1. **Rankings are unchanged.** Removing neutral items preserves the same ordering of conditions for all three languages. The relative performance differences are structural, not an artifact of neutral confusion.
 
-2. **The Chinese keyword signal is stronger.** Cond 2-zh's controlled gain over Cond 1-5K goes from +5.3pp (full set) to **+8.1pp** (neutral removed). Against a 50% binary chance level, 63.4% is 13.4pp above random — the clearest positive finding in the experiment.
+2. **The Chinese keyword signal is stronger.** Cond 2-zh's controlled gain over Cond 1-5K goes from +6.2pp (full set) to **+8.1pp** (neutral removed). Against a 50% binary chance level, 63.4% is 13.4pp above random — the clearest positive finding in the experiment.
 
 3. **Spanish baseline is strong.** At 73.6%, the baseline distinguishes entailment from contradiction well for Spanish (23.6pp above chance). Fine-tuning generally hurts this — Cond 3-zh drops it by 11.2pp.
 
@@ -552,14 +646,109 @@ Since the model never predicts "neutral," we can ask: how well does it actually 
 
 ---
 
+## Deep Dive: CSQA Label Bias and Code Contamination
+
+### CSQA label bias — A/B favored, E underrepresented
+
+CSQA uses 5-way multiple choice (A–E) with unique answer options per question, making it more robust to label bias than XNLI. However, the model still shows position bias. Across all conditions and languages, choices A and B are significantly over-predicted, while E is severely under-predicted — especially for Urdu.
+
+Representative distribution (baseline, native prompt):
+
+| Language | Pred A | Pred B | Pred C | Pred D | Pred E | Uniform |
+| -------- | ------ | ------ | ------ | ------ | ------ | ------- |
+| Chinese  | 324    | 257    | 195    | 109    | 115    | ~200    |
+| Spanish  | ~300   | ~260   | ~200   | ~130   | ~110   | ~200    |
+| Urdu     | 325    | 210    | 251    | 183    | **29** | ~200    |
+
+Per-label accuracy confirms the bias hurts performance: gold-label A items achieve 55–67% accuracy, while gold-label E items achieve only 10–34% accuracy across languages. For Urdu, the model predicts E for only 29/1000 items — nearly suppressing the option entirely.
+
+**Impact on findings**: This bias is consistent across conditions (fine-tuning doesn't significantly change the A/B preference), which means CSQA's cross-condition stability (Finding 6) is genuine — it reflects a stable baseline behavior, not an artifact of shifting biases canceling out. However, the absolute accuracy numbers (38–56%) overstate the model's commonsense reasoning because position bias inflates scores on early-position gold labels.
+
+### Cond 2-ur Urdu CSQA: code contamination significantly hurts accuracy
+
+**146 of 1,000** Urdu CSQA native-prompt responses from Cond 2-ur contain hard code contamination (Python/Legesher patterns like `__name__`, `تعریف`/def, `تصدیق`/assert). The model outputs a valid letter answer (A–E), then immediately generates boilerplate code:
+
+```text
+B\nاگر __name__ == '__main__':
+```
+
+```text
+C\nتعریف main():
+```
+
+The code is **generic boilerplate unrelated to the question** — zero overlap between question content and code fragments. The two dominant patterns are `__name__ == '__main__':` boilerplate (93 outputs, 20.4% accuracy) and `تعریف main():` scaffolding (53 outputs, 34.0% accuracy).
+
+#### Contamination significantly hurts accuracy
+
+| Group            | Accuracy  | N    |
+| ---------------- | --------- | ---- |
+| **Contaminated** | **25.3%** | 146  |
+| **Clean**        | **41.1%** | 816  |
+| Overall          | 38.2%     | 1000 |
+
+The 15.8pp accuracy gap is statistically significant (p < 0.01). The model appears to "derail" into code generation mode, which correlates with worse answer selection — not just worse continuation text.
+
+#### Contaminated outputs are biased toward B/C
+
+| Predicted | Contaminated (N=146) | Clean (N=816) |
+| --------- | -------------------- | ------------- |
+| A         | 8.1%                 | 19.7%         |
+| **B**     | **39.9%**            | 36.8%         |
+| **C**     | **39.9%**            | 29.1%         |
+| D         | 11.1%                | 11.7%         |
+| E         | 1.0%                 | 2.7%          |
+
+Contaminated outputs concentrate 80% of predictions on B and C, while clean outputs are more evenly distributed. Contamination is roughly uniform across gold labels (17–22% per label), so it's not triggered by specific question types.
+
+#### Contamination is prompt-language-specific
+
+| Condition / Prompt                   | Code contamination | Accuracy  |
+| ------------------------------------ | ------------------ | --------- |
+| Cond 2-ur / Urdu native / CSQA ur    | **14.6%**          | **38.2%** |
+| Cond 2-ur / English prompt / CSQA ur | 0.0%               | 39.8%     |
+| Baseline / Urdu native / CSQA ur     | 0.0%               | 40.0%     |
+| Cond 2-ur / Urdu native / CSQA zh    | 0.0%               | 52.4%     |
+| Cond 2-ur / Urdu native / CSQA es    | 0.0%               | 53.6%     |
+
+The contamination requires **all three conditions simultaneously**: (1) Urdu keyword fine-tuning, (2) Urdu-script prompt, (3) Urdu evaluation data. English prompts on the same model produce zero leakage, confirming Urdu text generation context specifically triggers the code patterns learned during fine-tuning. This parallels the XNLI code leakage finding (where 2,157/5,010 Urdu XNLI responses from Cond 2-ur contained Legesher code) — the contamination extends across benchmarks whenever the model generates in Urdu after Urdu keyword training.
+
+---
+
+## Deep Dive: MGSM Validation
+
+### Extraction is clean — no bugs comparable to XNLI
+
+Re-extracting MGSM answers (using last-number extraction) yields at most +0.8pp improvement over stored predictions. Null predictions are near zero (0–3 per 250 items, only in Chinese where the model occasionally outputs `略` meaning "omitted" or produces empty output). The stored accuracy numbers accurately reflect model performance.
+
+### The model cannot do the math
+
+Error analysis across all conditions confirms the MGSM null result (Finding 5) is a genuine capability limitation:
+
+- The vast majority of wrong answers are **completely off** — not even in the right order of magnitude
+- Only 3–5 out of ~235 wrong answers per condition are within 10% of the gold answer
+- ~20–24 are off by exactly one order of magnitude (suggesting the model sometimes gets the right digits but wrong scale)
+
+Cases where the gold number appears in `raw_output` are almost entirely coincidental — the number comes from the model restating the problem (e.g., gold=20 because the question mentions "20 chickens"), not from the model computing the answer.
+
+### Fine-tuning makes outputs longer but not better
+
+| Condition type  | Avg output length (chars) |
+| --------------- | ------------------------- |
+| Baseline        | ~22                       |
+| Cond 2 variants | ~72                       |
+
+Fine-tuned models produce longer chain-of-thought outputs but this does NOT improve accuracy. The model generates reasoning-like text without actually reasoning — another instance of the template generation pattern seen in XNLI.
+
+---
+
 ## Presentation Highlights
 
 1. **"5K files is enough"** — Full dataset vs 5K shows negligible difference. Resource-efficient experimentation validated.
-2. **"Chinese keywords shift Chinese XNLI accuracy"** — Cond 2-zh achieves 42.2% vs baseline 36.1% (+6.1pp), but raw output analysis shows this reflects a label bias shift (toward the English word "entailment"), not deeper Chinese language understanding.
-3. **"XNLI at this model scale measures label bias, not comprehension"** — The model never predicts "neutral" (<0.02% across all conditions and languages), producing memorized templates instead of reasoned classifications. CSQA and MGSM are more reliable indicators.
+2. **"Chinese keywords shift Chinese XNLI accuracy"** — Cond 2-zh achieves 42.3% vs baseline 35.8% (+6.5pp), but raw output analysis shows this reflects a label bias shift (toward the English word "entailment"), not deeper Chinese language understanding.
+3. **"XNLI at this model scale measures label bias, not comprehension"** — The model never predicts "neutral" (<0.02% across all conditions and languages), producing memorized templates instead of reasoned classifications. CSQA is more robust (unique options per question prevent fixed label bias), though it shows position bias (A/B favored over D/E).
 4. **"Mixed sources (Cond 3) shows broadest gains with English prompts"** — Best CSQA across all languages, best MGSM ur.
 5. **"Prompt language matters more than training data for math"** — English prompts ~2x MGSM scores regardless of condition.
-6. **"Code training leaks into evaluation"** — Urdu keyword translations appear in XNLI responses, and label-explanation contradictions show the model's first token is reflexive, not reasoned.
+6. **"Code training leaks into evaluation across benchmarks"** — Urdu keyword translations appear in both XNLI (43% of outputs) and CSQA (71% of outputs) responses for Cond 2-ur. Label-explanation contradictions show the model's first token is reflexive, not reasoned.
 
 ### Key caveats for presentation
 
@@ -607,7 +796,7 @@ The eval pipeline already uses CSQA and could use XStoryCloze (it's in `eval_pip
 
 ### Does the Chinese keyword improvement reflect real learning?
 
-The headline finding was: Cond 2-zh improves Chinese XNLI by +6.1pp. But raw output analysis shows the model shifted from outputting Chinese labels (矛盾, 92% of the time) to outputting the English word "entailment" (65% of the time). The accuracy improved because the baseline's extreme contradiction bias (92%) was rebalanced toward a more even split (65/35).
+The headline finding was: Cond 2-zh improves Chinese XNLI by +6.5pp (42.3% vs 35.8% baseline). But raw output analysis shows the model shifted from outputting Chinese labels (矛盾, 92% of the time) to outputting the English word "entailment" (65% of the time). The accuracy improved because the baseline's extreme contradiction bias (92%) was rebalanced toward a more even split (65/35).
 
 The more accurate claim is: **Chinese keyword fine-tuning changed the distribution of first tokens the model produces in response to Chinese XNLI prompts, shifting from near-total contradiction bias to a more balanced entailment/contradiction split.** This is a real behavioral change, but it's a change in token probability, not evidence of deeper NLI comprehension. Whether the model "understands" entailment vs contradiction, or just learned to output the English word "entailment" more often, is unclear from this data alone.
 
@@ -623,4 +812,4 @@ This is why the effect is language-specific: the Chinese adapter primarily modif
 
 ---
 
-_Generated 2026-03-24 (updated with re-scored XNLI values and raw output analysis). Data source: HuggingFace `legesher/language-decoded-experiments`. Visualization script: `analysis/scripts/plot_condition_comparison.py`._
+_Generated 2026-03-24 (updated with first-line-only re-scored XNLI values, raw output analysis, CSQA/MGSM deep dives). Data source: HuggingFace `legesher/language-decoded-experiments`. Visualization script: `analysis/scripts/plot_condition_comparison.py`._
