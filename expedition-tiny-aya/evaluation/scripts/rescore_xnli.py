@@ -5,12 +5,43 @@ Downloads result JSONs from legesher/language-decoded-experiments, re-applies
 the corrected first-line-only label extraction, updates summary accuracy, and
 optionally uploads corrected files back to HuggingFace.
 
+Background:
+  The original extraction function scanned the FULL model output for label
+  words. This caused two classes of mis-scoring discovered during analysis:
+
+  1. Code leakage (Cond 2-ur, Urdu XNLI, native prompt):
+     The model outputs Legesher-translated Python code on lines after the
+     label. For example: "contradiction\nتعریف main():\n    تصدیق(entailment)"
+     The old extractor found "entailment" inside the assert call (تصدیق) on
+     line 3 and returned that instead of the actual "contradiction" on line 1.
+     Affected 1,083/5,010 Urdu predictions in Cond 2-ur alone — the condition
+     trained on Urdu keyword code, so code leakage is condition-specific.
+
+  2. Chinese line-2 contamination (all conditions, Chinese XNLI, native prompt):
+     The model outputs "矛盾\n假设被前提蕴含。" — "contradiction" on line 1,
+     then an explanation containing 蕴含 (entailment) on line 2. The old
+     extractor found 蕴含 and returned "entailment", overriding the correct
+     "contradiction". Affected 1-264 predictions per condition (most in
+     Cond 2-es: 264; fewest in Cond 2-zh: 1, because that condition learned
+     to output clean single-line Chinese labels).
+
+  3. Missing Urdu label variants:
+     The model sometimes outputs Urdu paraphrases not in the original map,
+     e.g. "لازم آتی ہے" (entailment) or "انضمامیت" (entailment). These were
+     scored as None (incorrect) when they were valid classifications.
+
 Fixes applied:
-  1. First-line-only extraction — prevents code leakage on subsequent lines
-     from corrupting predictions (e.g. Cond 2-ur Urdu outputs containing
-     Legesher keywords like تصدیق(entailment) on line 2).
-  2. Expanded native label map — catches Urdu paraphrases like لازم آتی ہے.
-  3. Case-insensitive native matching — handles mixed-case model outputs.
+  1. First-line-only extraction — only reads line 1, preventing code leakage
+     and explanation text on subsequent lines from overriding the actual label.
+  2. Expanded native label map — adds Urdu paraphrases (لازم آتی ہے, انضمامیت)
+     observed in raw model outputs.
+  3. Case-insensitive native matching — the old function matched native labels
+     case-sensitively but matched English labels case-insensitively. Now both
+     are case-insensitive for consistency.
+
+  No changes to English-prompt results (0 predictions changed across all
+  conditions) — English-prompted outputs are clean single-line responses.
+  No changes to Spanish predictions — Spanish outputs are single-line.
 
 Usage:
   # Dry run (download, re-score, print diffs, save locally):
@@ -53,21 +84,31 @@ RESULT_FILES = [
     "native_prompt_results.json",
 ]
 
+# Native-language label mappings for XNLI extraction.
+#
+# The model sometimes responds with native-language equivalents instead of the
+# English labels requested in the prompt. Each entry maps a native token to its
+# canonical English label. Entries were identified by inspecting raw_output fields
+# across all conditions and languages.
+#
+# Urdu entries (لازم آتی ہے, انضمامیت) were added after discovering these
+# paraphrases in Cond 2-ur outputs — the original map only had لازمی, causing
+# valid entailment predictions to be scored as None.
 NATIVE_LABEL_MAP = {
-    # Chinese
+    # Chinese — 蕴含/蕴涵 are synonyms for "entailment" used interchangeably
     "蕴含": "entailment",
     "蕴涵": "entailment",
     "矛盾": "contradiction",
     "中立": "neutral",
-    # Spanish
+    # Spanish — accent and non-accent variants (model output varies)
     "implicación": "entailment",
     "implicacion": "entailment",
     "contradicción": "contradiction",
     "contradiccion": "contradiction",
-    # Urdu
-    "لازمی": "entailment",
-    "لازم آتی ہے": "entailment",
-    "انضمامیت": "entailment",
+    # Urdu — multiple valid translations observed in model outputs
+    "لازمی": "entailment",  # "necessary" / standard entailment
+    "لازم آتی ہے": "entailment",  # "it follows" / paraphrase form
+    "انضمامیت": "entailment",  # "implication" / formal variant
     "تردید": "contradiction",
     "غیرجانبدار": "neutral",
 }
@@ -76,18 +117,37 @@ NATIVE_LABEL_MAP = {
 def extract_xnli_label(text: str) -> str | None:
     """Extract XNLI label from model output using first line only.
 
-    Reads only the first line of output to avoid code leakage on subsequent
-    lines (e.g. Legesher keywords containing 'entailment' inside assert calls).
+    Why first-line-only:
+      The model often generates multi-line output: a label on line 1 followed
+      by an explanation or (in Cond 2-ur) Legesher-translated Python code.
+      The old full-output scanner would find English label words embedded in
+      later lines and return those instead of the actual classification.
+
+      Example (Cond 2-ur, Urdu XNLI):
+        Line 1: "contradiction"           <- actual prediction
+        Line 2: "تعریف main():"           <- Legesher code (def main():)
+        Line 3: "    تصدیق(entailment)"   <- Legesher code (assert(entailment))
+      Old extractor returned "entailment" (from line 3). Correct: "contradiction".
+
+      Example (baseline, Chinese XNLI):
+        Line 1: "矛盾"                    <- actual prediction (contradiction)
+        Line 2: "假设被前提蕴含。"          <- explanation containing 蕴含 (entailment)
+      Old extractor returned "entailment" (from 蕴含 on line 2). Correct: "contradiction".
+
+    Why case-insensitive native matching:
+      The old function matched English labels case-insensitively (via .lower())
+      but matched native labels case-sensitively. Now both paths are consistent.
     """
+    # Only read the first line — everything after is explanation or code leakage
     first_line = text.strip().split("\n")[0].strip()
     first_line_lower = first_line.lower()
 
-    # Try English labels first
+    # Try English labels first (word-boundary match to avoid partial hits)
     for label in ["entailment", "contradiction", "neutral"]:
         if re.search(rf"\b{label}\b", first_line_lower):
             return label
 
-    # Try native language labels (case-insensitive)
+    # Try native language labels (case-insensitive to match English behavior)
     for native, english in NATIVE_LABEL_MAP.items():
         if native.lower() in first_line_lower:
             return english
