@@ -285,6 +285,141 @@ The `feat/create-5k-subset-AYA-173` branch has a bug where `csqa_es` is evaluate
 
 ---
 
+## Deep Dive: XNLI Label Bias (All Three Languages)
+
+Per-example analysis of XNLI native-prompt results across all three evaluation languages reveals that the model has collapsed the 3-way classification into a binary task. This is the single most important finding for interpreting XNLI results in this experiment.
+
+### Background: What XNLI asks the model to do
+
+XNLI gives the model two sentences — a premise and a hypothesis — and asks it to classify their relationship as one of three labels:
+
+- **Entailment**: the hypothesis logically follows from the premise (if the premise is true, the hypothesis must be true)
+- **Contradiction**: the hypothesis conflicts with the premise (they cannot both be true)
+- **Neutral**: the hypothesis is neither confirmed nor ruled out by the premise (it could be true or false — the premise doesn't tell us)
+
+The gold labels in the test set are evenly split: ~1,670 entailment, ~1,670 contradiction, ~1,670 neutral (~5,010 total per language). Random chance is 33.3%.
+
+### The model never predicts "neutral" — in any language
+
+Across **all 7 conditions and all 3 languages** (105,210 total predictions), "neutral" is predicted fewer than 60 times total. The model has collapsed XNLI into a binary entailment-vs-contradiction decision. This caps the maximum achievable accuracy at ~66.7% since all ~1,670 neutral items per language are guaranteed wrong.
+
+| Language | Total neutral predictions (across all 7 conditions) | Neutral prediction rate |
+| -------- | --------------------------------------------------- | ----------------------- |
+| Chinese  | 3                                                   | 0.009%                  |
+| Spanish  | 5                                                   | 0.014%                  |
+| Urdu     | 53                                                  | 0.15%                   |
+
+### Each language has a different baseline bias
+
+The baseline model's default label preference varies by language:
+
+| Language | Baseline entailment % | Baseline contradiction % | Baseline bias            |
+| -------- | --------------------- | ------------------------ | ------------------------ |
+| Chinese  | 7.5%                  | 92.3%                    | Strongly contradiction   |
+| Spanish  | 49.9%                 | 50.0%                    | Balanced                 |
+| Urdu     | 38.2%                 | 61.5%                    | Moderately contradiction |
+
+This explains why baseline accuracies differ: Spanish baseline (49.1%) scores highest because its even split aligns best with the balanced test set. Chinese baseline (36.1%) is worst because its extreme contradiction bias means it gets almost no entailment items right (12.2%).
+
+### Fine-tuning shifts the binary boundary differently per language
+
+#### Chinese XNLI — Prediction Distribution
+
+| Condition | Predicts entailment | Predicts contradiction |
+| --------- | ------------------- | ---------------------- |
+| Baseline  | 7.5%                | 92.3%                  |
+| Cond 1-5K | 13.3%               | 86.6%                  |
+| Cond 2-zh | **65.2%**           | 34.8%                  |
+| Cond 2-es | 6.6%                | 93.3%                  |
+| Cond 2-ur | **98.2%**           | 1.7%                   |
+| Cond 3-zh | 7.4%                | 92.5%                  |
+
+Cond 2-zh is the only condition that moves the dial toward a balanced split (65/35), which is why it scores highest (42.2%). Cond 2-ur overshoots to 98% entailment, destroying contradiction accuracy entirely (4.3%).
+
+#### Chinese XNLI — Per-Label Accuracy
+
+| Condition | Entailment acc | Contradiction acc | Overall   |
+| --------- | -------------- | ----------------- | --------- |
+| Baseline  | 12.2%          | 96.2%             | 36.1%     |
+| Cond 2-zh | **76.2%**      | 50.5%             | **42.2%** |
+| Cond 2-ur | 99.3%          | 4.3%              | 34.6%     |
+
+#### Spanish XNLI — Prediction Distribution
+
+| Condition | Predicts entailment | Predicts contradiction |
+| --------- | ------------------- | ---------------------- |
+| Baseline  | 49.9%               | 50.0%                  |
+| Cond 1-5K | 37.1%               | 62.8%                  |
+| Cond 2-zh | **87.2%**           | 12.7%                  |
+| Cond 2-es | 19.5%               | **80.5%**              |
+| Cond 2-ur | **78.8%**           | 21.2%                  |
+| Cond 3-zh | **89.3%**           | 10.6%                  |
+
+Chinese/Urdu keyword training pushes toward entailment. English/Spanish keyword training pushes toward contradiction.
+
+#### Spanish XNLI — Per-Label Accuracy
+
+| Condition | Entailment acc | Contradiction acc | Overall   |
+| --------- | -------------- | ----------------- | --------- |
+| Baseline  | 69.7%          | 77.5%             | **49.1%** |
+| Cond 2-zh | 97.6%          | 31.7%             | 43.1%     |
+| Cond 2-es | 37.1%          | 96.5%             | 44.5%     |
+
+#### Urdu XNLI — Prediction Distribution
+
+| Condition | Predicts entailment | Predicts contradiction |
+| --------- | ------------------- | ---------------------- |
+| Baseline  | 38.2%               | 61.5%                  |
+| Cond 1-5K | 22.8%               | 77.0%                  |
+| Cond 2-zh | 13.7%               | 86.3%                  |
+| Cond 2-es | 0.2%                | **99.7%**              |
+| Cond 2-ur | 35.0%               | 64.9%                  |
+| Cond 3-zh | 2.8%                | 96.7%                  |
+
+Every condition deepens the contradiction bias. Cond 2-es collapses to a single-class predictor (99.7% contradiction), achieving exactly 33.3% — random chance.
+
+#### Urdu XNLI — Per-Label Accuracy
+
+| Condition | Entailment acc | Contradiction acc | Overall   |
+| --------- | -------------- | ----------------- | --------- |
+| Baseline  | 43.2%          | 71.2%             | **38.1%** |
+| Cond 2-ur | 39.8%          | 70.9%             | 36.9%     |
+| Cond 2-es | 0.1%           | 99.9%             | 33.3%     |
+
+### Regressions are clean label flips, not output degradation
+
+Zero malformed outputs were found across any language. Every regression is a question where the model switched from one valid label to another — not a formatting or language issue.
+
+| Language | Condition with most regressions from baseline | Dominant flip pattern      | % of regressions |
+| -------- | --------------------------------------------- | -------------------------- | ---------------- |
+| Chinese  | Cond 2-ur (1,535 regressions)                 | contradiction → entailment | 99.9%            |
+| Spanish  | Cond 3-zh (848 regressions)                   | contradiction → entailment | 99.8%            |
+| Urdu     | Cond 2-es (719 regressions)                   | entailment → contradiction | 100.0%           |
+
+### Questions wrong across all conditions
+
+| Language | Wrong in all 7 conditions | Right in all 7 conditions |
+| -------- | ------------------------- | ------------------------- |
+| Chinese  | 1,683 (33.6%)             | 83 (1.7%)                 |
+| Spanish  | 1,739 (34.7%)             | 979 (19.5%)               |
+| Urdu     | 2,313 (46.2%)             | 881 (17.6%)               |
+
+The universally-wrong questions are almost entirely the ~1,670 neutral items (since neutral is never predicted) plus a few hard entailment/contradiction items. Chinese has the fewest universally-correct items because its strong contradiction bias means fewer entailment items are ever captured.
+
+### What this means for interpreting XNLI results
+
+1. **Overall XNLI accuracy is not a measure of language understanding.** It is an artifact of how the model's binary bias aligns with the test set's balanced label distribution. The "best" condition for each language is simply the one with the most balanced entailment/contradiction split.
+
+2. **Cond 2-zh's Chinese XNLI improvement (+6.1pp) is real but narrow.** It reflects Chinese keywords teaching the model to sometimes predict "entailment" in Chinese instead of defaulting to "contradiction." This is genuine learning — but it's learning a label preference, not deeper NLI reasoning.
+
+3. **Spanish regression from fine-tuning is a bias shift, not comprehension loss.** The baseline's 49.1% is highest because it happens to have the most balanced binary split, not because it understands Spanish NLI best.
+
+4. **Urdu's "flatness" across conditions is the deepest bias.** Every condition makes the contradiction bias worse. Even Urdu keyword training (Cond 2-ur) doesn't help — it preserves the baseline's split but doesn't improve it.
+
+5. **The root limitation is model scale.** At 3.35B parameters, Tiny Aya cannot learn the 3-way NLI distinction (especially the nuanced "neutral" category). Before attributing XNLI differences to training conditions, the model needs to demonstrate it can produce all three labels.
+
+---
+
 ## Presentation Highlights
 
 1. **"Chinese keywords improve Chinese NLI"** — Cond 2-zh achieves 42.2% vs baseline 36.1% (+6.1pp). Target-language keywords outperform English code (+5.3pp vs Cond 1-5K), using the exact same underlying files.
@@ -309,8 +444,8 @@ The `feat/create-5k-subset-AYA-173` branch has a bug where `csqa_es` is evaluate
 ### Immediate (no new training required)
 
 - **English benchmark evaluation**: Run already-trained adapters on MGSM-en, XNLI-en, CSQA-en to assess catastrophic forgetting. LoRA adapters are saved at `legesher/language-decoded-lora`. (AYA-180)
-- **Raw output analysis**: Examine model outputs qualitatively for XNLI across conditions — look at output format, label distribution, confidence patterns to understand _why_ Chinese keywords help but Spanish/Urdu don't.
-- **Anomaly investigation**: Investigate why Cond 2-ur preserves Spanish XNLI while Cond 2-es hurts it.
+- **Chinese/Urdu XNLI per-example analysis**: Repeat the Spanish XNLI deep dive for zh and ur to determine if the same neutral-blindness and binary bias pattern holds across languages.
+- **Neutral label investigation**: Understand why the model never predicts "neutral" for Spanish XNLI. Is this a prompting issue, a tokenizer issue, or a model-scale limitation?
 - **Verify evaluation branch**: Confirm with Khojasteh which branch was used for evaluations (main vs `feat/create-5k-subset-AYA-173`) given the CSQA lang swap bug on the feature branch.
 
 ### Phase 2 stretch / Phase 3
