@@ -130,9 +130,10 @@ In short, while prior work has explored whether code helps LLMs, we investigate 
 \end{table*}
 
 \section{Methodology}
-We employ an experimental ladder design to isolate the impact of native-language code on multilingual LLM performance. The base model is \texttt{CohereLabs/tiny-aya-base} (3.35B parameters), trained using QLoRA 4-bit quantization on Kaggle T4 GPUs.
+We employ an experimental ladder design to isolate the impact of native-language code on multilingual LLM performance. Our base model is \texttt{CohereLabs/tiny-aya-base}, a 3.35B-parameter causal language model. Rather than full continued pretraining, we adapt the model with parameter-efficient QLoRA so that all conditions can be trained under the same constrained compute budget on Kaggle T4 GPUs.
 
-\subsection{Data Curation} Data was curated according to a quality hierarchy designed to capture progressively richer linguistic signals in code:
+\subsection{Data Curation}
+Data was curated according to a quality hierarchy designed to capture progressively richer linguistic signals in code:
 
 \begin{itemize} 
 \item \textbf{Fully native code} (best): Code written entirely in the target language, including identifiers, syntax adaptations, and comments. 
@@ -144,9 +145,9 @@ Datasets for each language were constructed from multiple sources:
 
 \begin{itemize} \item Code extracted from \textbf{The Stack} dataset \cite{kocetkov2022stack3tbpermissively} for the target language. \item Native programming languages in the target languages (e.g., Wenyan \cite{Huang_wenyan_A_Programming_2019} and Qi \cite{Yang_Qi_A_Lightweight_2021} for Chinese via GitHub and Gitee; Latino \cite{Lenguaje_Latino_Contributors_Latino_Lenguaje_de_2024} programming language for Spanish via GitHub). \item Transpiled Python programs into the target language using Legesher \cite{Edgar_Legesher_Because_language_2026}. \end{itemize}
 
-Each language dataset consisted of a mixture of these sources, ensuring diversity in linguistic and structural representation. We also used static code analysis tools to verify the quality and correctness of the code samples, particularly for the fully native code condition.
+Each language dataset consisted of a mixture of these sources, ensuring diversity in linguistic and structural representation. We filtered code for basic validity, removed obvious duplicates, and used static code analysis to verify quality and correctness where possible, particularly for the fully native and transpiled code conditions. For training, each sample is treated as a plain code document and serialized through the model tokenizer without adding task-specific supervision.
 
-The datasets were uploaded to Hugging Face \cite{legesher_language_decoded} for accessibility during continued pretraining.
+The resulting datasets were uploaded to Hugging Face \cite{legesher_language_decoded} for accessibility during training and evaluation.
 
 \subsection{Experimental Conditions}
 The conditions form a progressive ladder, each building on the previous to test incremental hypotheses:
@@ -157,6 +158,15 @@ The conditions form a progressive ladder, each building on the previous to test 
 \item \textbf{Condition 2 - Keyword-Swapped}: Per-language training on Legesher-transpiled Python with native keywords (e.g., \texttt{if} $\rightarrow$ \texttt{如果} in Chinese).
 \item \textbf{Condition 3 - Mixed Native Sources}: Per-language blend of transpiled Python, native programming languages (e.g., Wenyan for Chinese), and community code.
 \end{enumerate}
+
+\subsection{Training Procedure}
+All trainable variants were produced with the same QLoRA recipe to keep the comparison focused on data differences rather than optimizer changes. We load Tiny Aya in 4-bit mode and attach LoRA adapters to the attention and MLP projection layers (\texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, \texttt{o\_proj}, \texttt{gate\_proj}, \texttt{up\_proj}, \texttt{down\_proj}) with rank $r=16$, $\alpha=32$, and zero dropout.
+
+Training was implemented with Unsloth and TRL on Kaggle T4 GPUs. The training script sets maximum sequence length to 1024, uses per-device batch size 8 with gradient accumulation 1, and optimizes with paged AdamW 8-bit. We use a cosine learning-rate schedule with 5\% warmup, learning rate $2\times10^{-4}$, weight decay 0.01, max gradient norm 1.0, and gradient checkpointing to stay within the memory limits of 4-bit fine-tuning.
+
+Before optimization, each dataset is pretokenized by applying the Tiny Aya tokenizer to the \texttt{code} field with truncation to 1024 tokens. Training then optimizes the standard causal language modeling objective for one epoch per condition. The training configuration is otherwise held fixed across English-code, keyword-swapped, and mixed-native runs so that any downstream differences can be attributed to the training data rather than to changes in optimization.
+
+To test whether large curated corpora were necessary at this model scale, we trained English-code baselines using both the full English dataset and a 5K-file subset. The small gap between these runs (reported in Section~IV) indicates that the observed downstream effects are not driven solely by corpus size.
 
 \subsection{Evaluation}
 We evaluate on MGSM (250 examples), X-CSQA ($\sim$1K examples), and XNLI ($\sim$5K examples) in English, Chinese, Spanish, and Urdu. Each evaluation uses dual prompts: English and language-specific. Benchmarks measure math reasoning, commonsense reasoning, and natural language inference, respectively.

@@ -1,0 +1,381 @@
+#!/usr/bin/env python3
+"""Re-score XNLI predictions from existing HuggingFace results.
+
+ONE-TIME CORRECTION SCRIPT. This fixes Cycle 1 results that were scored with
+the old full-output extraction logic. Once run with --upload, the HF JSONs are
+corrected and re-running produces 0 changes. Future evaluations use the fixed
+extraction built into baseline_benchmarking.ipynb and finetuned-benchmarking.ipynb,
+so this script is not part of the ongoing eval pipeline.
+
+Downloads result JSONs from legesher/language-decoded-experiments, re-applies
+the corrected first-line-only label extraction, updates summary accuracy, and
+optionally uploads corrected files back to HuggingFace.
+
+Background:
+  The original extraction function scanned the FULL model output for label
+  words. This caused two classes of mis-scoring discovered during analysis:
+
+  1. Code leakage (Cond 2-ur, Urdu XNLI, native prompt):
+     The model outputs Legesher-translated Python code on lines after the
+     label. For example: "contradiction\nتعریف main():\n    تصدیق(entailment)"
+     The old extractor found "entailment" inside the assert call (تصدیق) on
+     line 3 and returned that instead of the actual "contradiction" on line 1.
+     Affected 1,083/5,010 Urdu predictions in Cond 2-ur alone — the condition
+     trained on Urdu keyword code, so code leakage is condition-specific.
+
+  2. Chinese line-2 contamination (all conditions, Chinese XNLI, native prompt):
+     The model outputs "矛盾\n假设被前提蕴含。" — "contradiction" on line 1,
+     then an explanation containing 蕴含 (entailment) on line 2. The old
+     extractor found 蕴含 and returned "entailment", overriding the correct
+     "contradiction". Affected 1-264 predictions per condition (most in
+     Cond 2-es: 264; fewest in Cond 2-zh: 1, because that condition learned
+     to output clean single-line Chinese labels).
+
+  3. Missing Urdu label variants:
+     The model sometimes outputs Urdu paraphrases not in the original map,
+     e.g. "لازم آتی ہے" (entailment) or "انضمامیت" (entailment). These were
+     scored as None (incorrect) when they were valid classifications.
+
+Fixes applied:
+  1. First-line-only extraction — only reads line 1, preventing code leakage
+     and explanation text on subsequent lines from overriding the actual label.
+  2. Expanded native label map — adds Urdu paraphrases (لازم آتی ہے, انضمامیت)
+     observed in raw model outputs.
+  3. Case-insensitive native matching — the old function matched native labels
+     case-sensitively but matched English labels case-insensitively. Now both
+     are case-insensitive for consistency.
+
+  No changes to English-prompt results (0 predictions changed across all
+  conditions) — English-prompted outputs are clean single-line responses.
+  No changes to Spanish predictions — Spanish outputs are single-line.
+
+Usage:
+  # Dry run (download, re-score, print diffs, save locally):
+  python rescore_xnli.py
+
+  # Upload corrected files back to HuggingFace:
+  python rescore_xnli.py --upload
+
+  # Process only specific conditions:
+  python rescore_xnli.py --conditions baseline condition-2-ur-5k
+
+  # Save corrected files to a custom directory:
+  python rescore_xnli.py --output-dir ./rescored
+"""
+
+import argparse
+import json
+import re
+from pathlib import Path
+
+from huggingface_hub import HfApi, hf_hub_download
+
+REPO_ID = "legesher/language-decoded-experiments"
+REPO_TYPE = "dataset"
+
+# All condition directories on HuggingFace
+CONDITIONS = [
+    "baseline",
+    "condition-1-en",
+    "condition-1-en-5k",
+    "condition-2-zh-5k",
+    "condition-2-es-5k",
+    "condition-2-ur-5k",
+    "condition-3-zh-5k",
+]
+
+# Result file names within each condition directory
+RESULT_FILES = [
+    "english_prompt_results.json",
+    "native_prompt_results.json",
+]
+
+# Native-language label mappings for XNLI extraction.
+#
+# The model sometimes responds with native-language equivalents instead of the
+# English labels requested in the prompt. Each entry maps a native token to its
+# canonical English label. Entries were identified by inspecting raw_output fields
+# across all conditions and languages.
+#
+# Urdu entries (لازم آتی ہے, انضمامیت) were added after discovering these
+# paraphrases in Cond 2-ur outputs — the original map only had لازمی, causing
+# valid entailment predictions to be scored as None.
+NATIVE_LABEL_MAP = {
+    # Chinese — 蕴含/蕴涵 are synonyms for "entailment" used interchangeably
+    "蕴含": "entailment",
+    "蕴涵": "entailment",
+    "矛盾": "contradiction",
+    "中立": "neutral",
+    # Spanish — accent and non-accent variants (model output varies)
+    "implicación": "entailment",
+    "implicacion": "entailment",
+    "contradicción": "contradiction",
+    "contradiccion": "contradiction",
+    # Urdu — multiple valid translations observed in model outputs
+    "لازمی": "entailment",  # "necessary" / standard entailment
+    "لازم آتی ہے": "entailment",  # "it follows" / paraphrase form
+    "انضمامیت": "entailment",  # "implication" / formal variant
+    "تردید": "contradiction",
+    "غیرجانبدار": "neutral",
+}
+
+
+def extract_xnli_label(text: str) -> str | None:
+    """Extract XNLI label from model output using first line only.
+
+    Why first-line-only:
+      The model often generates multi-line output: a label on line 1 followed
+      by an explanation or (in Cond 2-ur) Legesher-translated Python code.
+      The old full-output scanner would find English label words embedded in
+      later lines and return those instead of the actual classification.
+
+      Example (Cond 2-ur, Urdu XNLI):
+        Line 1: "contradiction"           <- actual prediction
+        Line 2: "تعریف main():"           <- Legesher code (def main():)
+        Line 3: "    تصدیق(entailment)"   <- Legesher code (assert(entailment))
+      Old extractor returned "entailment" (from line 3). Correct: "contradiction".
+
+      Example (baseline, Chinese XNLI):
+        Line 1: "矛盾"                    <- actual prediction (contradiction)
+        Line 2: "假设被前提蕴含。"          <- explanation containing 蕴含 (entailment)
+      Old extractor returned "entailment" (from 蕴含 on line 2). Correct: "contradiction".
+
+    Why case-insensitive native matching:
+      The old function matched English labels case-insensitively (via .lower())
+      but matched native labels case-sensitively. Now both paths are consistent.
+    """
+    # Only read the first line — everything after is explanation or code leakage
+    first_line = text.strip().split("\n")[0].strip()
+    first_line_lower = first_line.lower()
+
+    # Try English labels first (word-boundary match to avoid partial hits)
+    for label in ["entailment", "contradiction", "neutral"]:
+        if re.search(rf"\b{label}\b", first_line_lower):
+            return label
+
+    # Try native language labels (case-insensitive to match English behavior)
+    for native, english in NATIVE_LABEL_MAP.items():
+        if native.lower() in first_line_lower:
+            return english
+
+    return None
+
+
+def rescore_xnli_results(data: dict) -> dict:
+    """Re-score XNLI entries in a results JSON using corrected extraction.
+
+    Returns a new dict with updated predictions and summary accuracy for XNLI.
+    Non-XNLI benchmarks are passed through unchanged.
+    """
+    data = json.loads(json.dumps(data))  # deep copy
+
+    for benchmark_key in list(data.keys()):
+        if "xnli" not in benchmark_key.lower():
+            continue
+
+        benchmark = data[benchmark_key]
+
+        # The JSON structure stores per-example results as a flat list
+        # directly under the benchmark key (e.g. data["xnli_zh"] = [...]),
+        # not nested inside a "results" sub-key.
+        if isinstance(benchmark, list):
+            results = benchmark
+        elif isinstance(benchmark, dict):
+            results = benchmark.get("results", benchmark.get("data", []))
+        else:
+            continue
+
+        if not results:
+            continue
+
+        correct = 0
+        total = 0
+        changed = 0
+
+        for entry in results:
+            raw_output = entry.get("raw_output", "")
+            if not raw_output:
+                continue
+
+            old_pred = entry.get("pred")
+            new_pred = extract_xnli_label(raw_output)
+            gold = entry.get("gold")
+
+            if new_pred != old_pred:
+                changed += 1
+
+            entry["pred"] = new_pred
+            entry["correct"] = new_pred == gold
+
+            total += 1
+            correct += int(entry["correct"])
+
+        new_accuracy = correct / total if total else 0.0
+
+        # Update summary — keys use "_acc" suffix (e.g. "xnli_zh_acc")
+        summary_key = f"{benchmark_key}_acc"
+        if "summary" in data and summary_key in data["summary"]:
+            old_accuracy = data["summary"][summary_key]
+            data["summary"][summary_key] = round(new_accuracy, 6)
+        elif isinstance(benchmark, dict) and "accuracy" in benchmark:
+            old_accuracy = benchmark["accuracy"]
+            benchmark["accuracy"] = round(new_accuracy, 6)
+        else:
+            old_accuracy = None
+
+        print(
+            f"  {benchmark_key}: "
+            f"{changed}/{total} predictions changed, "
+            f"accuracy {old_accuracy} -> {new_accuracy:.4f}"
+        )
+
+    return data
+
+
+def download_result(condition: str, filename: str, cache_dir: Path) -> Path | None:
+    """Download a single result JSON from HuggingFace."""
+    # Try multiple path patterns used across conditions
+    path_patterns = [
+        f"conditions/{condition}/results/{filename}",
+        f"conditions/{condition}/{filename}",
+        f"{condition}/results/{filename}",
+        f"{condition}/{filename}",
+    ]
+
+    for path in path_patterns:
+        try:
+            local_path = hf_hub_download(
+                repo_id=REPO_ID,
+                filename=path,
+                repo_type=REPO_TYPE,
+                cache_dir=str(cache_dir / ".hf_cache"),
+            )
+            return Path(local_path)
+        except Exception:
+            continue
+
+    return None
+
+
+def process_condition(condition: str, cache_dir: Path, output_dir: Path) -> list[dict]:
+    """Download, re-score, and save results for one condition."""
+    print(f"\n{'='*60}")
+    print(f"Condition: {condition}")
+    print(f"{'='*60}")
+
+    changes = []
+
+    for filename in RESULT_FILES:
+        local_path = download_result(condition, filename, cache_dir)
+        if local_path is None:
+            print(f"  {filename}: not found, skipping")
+            continue
+
+        print(f"\n  Processing {filename}:")
+
+        with open(local_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        rescored = rescore_xnli_results(data)
+
+        # Save locally
+        out_path = output_dir / condition / filename
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(rescored, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+
+        changes.append(
+            {
+                "condition": condition,
+                "filename": filename,
+                "local_path": str(out_path),
+                "hf_path": f"conditions/{condition}/results/{filename}",
+            }
+        )
+
+    return changes
+
+
+def upload_results(changes: list[dict]) -> None:
+    """Upload re-scored results back to HuggingFace."""
+    api = HfApi()
+
+    print(f"\n{'='*60}")
+    print("Uploading to HuggingFace...")
+    print(f"{'='*60}")
+
+    for change in changes:
+        print(f"  Uploading {change['hf_path']}...")
+        api.upload_file(
+            path_or_fileobj=change["local_path"],
+            path_in_repo=change["hf_path"],
+            repo_id=REPO_ID,
+            repo_type=REPO_TYPE,
+            commit_message=(
+                f"rescore: fix XNLI label extraction for {change['condition']}\n\n"
+                "Applied first-line-only extraction to prevent code leakage\n"
+                "corruption and expanded native label map for Urdu paraphrases."
+            ),
+        )
+
+    print(f"\nUploaded {len(changes)} files.")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Re-score XNLI predictions from HuggingFace results."
+    )
+    parser.add_argument(
+        "--conditions",
+        nargs="+",
+        default=None,
+        help="Specific conditions to process (default: all)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("rescored_results"),
+        help="Directory to save re-scored JSONs (default: ./rescored_results)",
+    )
+    parser.add_argument(
+        "--upload",
+        action="store_true",
+        help="Upload corrected files back to HuggingFace",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    conditions = args.conditions or CONDITIONS
+    output_dir = args.output_dir.resolve()
+    cache_dir = Path.home() / ".cache" / "rescore_xnli"
+
+    # Validate condition names
+    for cond in conditions:
+        if cond not in CONDITIONS:
+            print(f"Warning: '{cond}' not in known conditions: {CONDITIONS}")
+
+    all_changes = []
+    for condition in conditions:
+        changes = process_condition(condition, cache_dir, output_dir)
+        all_changes.extend(changes)
+
+    print(f"\n{'='*60}")
+    print(f"Re-scored {len(all_changes)} files -> {output_dir}")
+    print(f"{'='*60}")
+
+    if args.upload:
+        if not all_changes:
+            print("No files to upload.")
+            return
+        upload_results(all_changes)
+    else:
+        print(
+            "\nDry run complete. Use --upload to push corrected files to HuggingFace."
+        )
+
+
+if __name__ == "__main__":
+    main()
