@@ -229,25 +229,25 @@ Comparison of Condition 1 (full dataset) versus Condition 1 (5K subset) shows ma
     ybar,
     enlargelimits=0.1,
     legend style={at={(0.5,-0.3)}, anchor=north,legend columns=-1},
-    ylabel={XNLI Accuracy (\%)},
+    ylabel={CSQA Accuracy (\%)},
     symbolic x coords={Baseline,Cond1,Cond2-zh,Cond2-es,Cond2-ur,Cond3-zh},
     xtick=data,
     xticklabel style={rotate=45, anchor=north east, font=\small},
     nodes near coords,
     nodes near coords align={vertical},
     nodes near coords style={font=\tiny},
-    ymin=30,
-    ymax=55,
+    ymin=35,
+    ymax=60,
     bar width=8pt,
 ]
-\addplot coordinates {(Baseline,35.8) (Cond1,36.1) (Cond2-zh,42.3) (Cond2-es,34.2) (Cond2-ur,34.6) (Cond3-zh,35.8)};
-\addplot coordinates {(Baseline,49.1) (Cond1,47.3) (Cond2-zh,43.1) (Cond2-es,44.5) (Cond2-ur,48.8) (Cond3-zh,41.6)};
-\addplot coordinates {(Baseline,38.1) (Cond1,36.8) (Cond2-zh,36.2) (Cond2-es,33.3) (Cond2-ur,37.7) (Cond3-zh,34.0)};
+\addplot coordinates {(Baseline,52.1) (Cond1,52.4) (Cond2-zh,52.9) (Cond2-es,52.2) (Cond2-ur,52.4) (Cond3-zh,54.5)};
+\addplot coordinates {(Baseline,52.4) (Cond1,53.3) (Cond2-zh,53.4) (Cond2-es,53.4) (Cond2-ur,53.6) (Cond3-zh,52.8)};
+\addplot coordinates {(Baseline,40.0) (Cond1,40.6) (Cond2-zh,41.0) (Cond2-es,39.8) (Cond2-ur,38.2) (Cond3-zh,42.2)};
 \legend{Chinese,Spanish,Urdu}
 \end{axis}
 \end{tikzpicture}
-\caption{XNLI Native Prompt Accuracy by Condition}
-\label{fig:xnli_results}
+\caption{CSQA Native Prompt Accuracy by Condition}
+\label{fig:csqa_results}
 \end{figure}
 
 \subsection{Label Extraction Methodology}
