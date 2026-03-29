@@ -19,22 +19,25 @@ Usage:
         --language ur \\
         --output ./packaged-ur/
 
-    # Retokenize an existing HF dataset with the correct tokenizer
+    # Retokenize a specific config within an umbrella dataset
     python package_dataset.py retokenize \\
-        --dataset legesher/python-ur-transpiled \\
-        --output ./retokenized-ur/
+        --dataset legesher/language-decoded-data \\
+        --config-name condition-1-en \\
+        --output ./retokenized/condition-1-en/
 
     # Retokenize and push back to HuggingFace
     python package_dataset.py retokenize \\
-        --dataset legesher/python-ur-transpiled \\
-        --output ./retokenized-ur/ \\
-        --push legesher/python-ur-transpiled
+        --dataset legesher/language-decoded-data \\
+        --config-name condition-1-en \\
+        --output ./retokenized/condition-1-en/ \\
+        --push legesher/language-decoded-data
 
     # Use a specific tokenizer (default: CohereLabs/tiny-aya-base)
     python package_dataset.py retokenize \\
-        --dataset legesher/python-ur-transpiled \\
+        --dataset legesher/language-decoded-data \\
+        --config-name condition-1-en \\
         --tokenizer CohereLabs/tiny-aya-base \\
-        --output ./retokenized-ur/
+        --output ./retokenized/condition-1-en/
 """
 
 from __future__ import annotations
@@ -103,7 +106,7 @@ def retokenize(args: argparse.Namespace) -> None:
     print(f"Loading tokenizer: {args.tokenizer}")
     tokenizer = load_tokenizer(args.tokenizer)
 
-    config = getattr(args, "config_name", None)
+    config = args.config_name
     print(
         f"Loading dataset: {args.dataset}" + (f" (config={config})" if config else "")
     )
@@ -119,9 +122,8 @@ def retokenize(args: argparse.Namespace) -> None:
                 file=sys.stderr,
             )
 
-    def _retokenize_row(example):
-        example["token_count"] = count_tokens(tokenizer, example["code"])
-        return example
+    def _retokenize_row(example: dict) -> dict:
+        return {**example, "token_count": count_tokens(tokenizer, example["code"])}
 
     # Show before/after stats for first split
     first_split = list(ds.keys())[0]
@@ -145,7 +147,13 @@ def retokenize(args: argparse.Namespace) -> None:
 
     # Compute aggregate stats
     for split_name in ds:
-        counts = ds[split_name]["token_count"]
+        raw_counts = ds[split_name]["token_count"]
+        counts = [c for c in raw_counts if c is not None]
+        if len(counts) < len(raw_counts):
+            print(
+                f"\n  WARNING: {split_name} has {len(raw_counts) - len(counts)} rows "
+                f"with null token_count (stats from {len(counts)}/{len(raw_counts)} rows)"
+            )
         total = sum(counts)
         avg = total / len(counts) if counts else 0
         print(
