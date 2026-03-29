@@ -172,10 +172,10 @@ def retokenize(args: argparse.Namespace) -> None:
                 args.push,
                 config_name=args.config_name,
                 data_dir=f"data/{args.config_name}",
-                private=True,
+                private=False,
             )
         else:
-            ds.push_to_hub(args.push, private=True)
+            ds.push_to_hub(args.push, private=False)
         print(f"Done! Dataset live at https://huggingface.co/datasets/{args.push}")
 
 
@@ -298,10 +298,10 @@ def package_from_files(args: argparse.Namespace) -> None:
                 args.push,
                 config_name=args.config_name,
                 data_dir=f"data/{args.config_name}",
-                private=True,
+                private=False,
             )
         else:
-            ds.push_to_hub(args.push, private=True)
+            ds.push_to_hub(args.push, private=False)
         print(f"Done! Dataset live at https://huggingface.co/datasets/{args.push}")
 
     # Save run metadata
