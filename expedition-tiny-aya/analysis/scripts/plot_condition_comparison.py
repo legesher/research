@@ -148,7 +148,7 @@ def plot_grouped_bars(df: pd.DataFrame, output_dir: Path):
     Grouped bar chart: X = condition, Y = score, 3 colored bars per condition
     for MGSM, XNLI, CSQA. One subplot per language, one figure per prompt type.
     """
-    condition_order = ["baseline"] + CONDITIONS
+    condition_order = CONDITIONS
 
     for prompt_type in PROMPT_TYPES:
         subset = df[df["prompt_type"] == prompt_type]
@@ -210,7 +210,7 @@ def plot_single_language_bars(df: pd.DataFrame, output_dir: Path):
     One standalone chart per language × prompt type.
     X = condition, Y = score, 3 colored bars (MGSM, XNLI, CSQA).
     """
-    condition_order = ["baseline"] + CONDITIONS
+    condition_order = CONDITIONS
 
     for prompt_type in PROMPT_TYPES:
         subset = df[df["prompt_type"] == prompt_type]
@@ -269,7 +269,7 @@ def plot_single_language_bars(df: pd.DataFrame, output_dir: Path):
 
 def plot_delta_bars(df: pd.DataFrame, output_dir: Path):
     """Bar chart showing improvement (or regression) over baseline in pp."""
-    condition_order = [c for c in (["baseline"] + CONDITIONS) if c != "baseline"]
+    condition_order = [c for c in CONDITIONS if c != "baseline"]
 
     for prompt_type in PROMPT_TYPES:
         subset = df[df["prompt_type"] == prompt_type]
@@ -336,7 +336,7 @@ def plot_delta_bars(df: pd.DataFrame, output_dir: Path):
 
 def plot_heatmap(df: pd.DataFrame, output_dir: Path):
     """Heatmap of delta from baseline. Rows = conditions, columns = benchmark_lang."""
-    condition_order = ["baseline"] + CONDITIONS
+    condition_order = CONDITIONS
     col_labels = [f"{bm.upper()} {lang}" for bm in BENCHMARKS for lang in LANGUAGES]
 
     for prompt_type in PROMPT_TYPES:
@@ -400,7 +400,7 @@ def plot_heatmap(df: pd.DataFrame, output_dir: Path):
 
 def plot_prompt_comparison(df: pd.DataFrame, output_dir: Path):
     """Paired bars showing native vs English prompt scores per condition."""
-    condition_order = ["baseline"] + CONDITIONS
+    condition_order = CONDITIONS
 
     for benchmark in BENCHMARKS:
         fig, axes = plt.subplots(1, 3, figsize=(14, 5), sharey=True)
@@ -701,7 +701,7 @@ def plot_language_vs_cond1(df: pd.DataFrame, output_dir: Path):
 
 def print_summary_table(df: pd.DataFrame):
     """Print a formatted summary table to console."""
-    condition_order = ["baseline"] + CONDITIONS
+    condition_order = CONDITIONS
 
     for prompt_type in PROMPT_TYPES:
         print(f"\n{'=' * 80}")
