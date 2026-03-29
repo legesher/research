@@ -8,7 +8,7 @@ targeting 5,000 total files with a 90/10 train/validation split.
 The transpiled sample excludes file_paths already used in condition-2-zh-5k
 to keep training data independent across conditions.
 
-Linked issue: AYA-163
+Linked issue: AYA-179
 
 Requirements:
     pip install datasets transformers huggingface_hub tqdm pandas
@@ -463,7 +463,9 @@ def main() -> None:
             "source_dataset": TRANSPILED_DATASET,
             "config": TRANSPILED_CONFIG,
             "count": transpiled_needed,
-            "excluded_from": str(SUBSET_MANIFEST),
+            "excluded_from": str(
+                SUBSET_MANIFEST.relative_to(Path(__file__).parent.parent)
+            ),
             "excluded_count": len(excluded),
         },
         "validation": report,

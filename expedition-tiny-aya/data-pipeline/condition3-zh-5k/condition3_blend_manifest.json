@@ -14,7 +14,7 @@
     "source_dataset": "legesher/language-decoded-data",
     "config": "condition-2-zh",
     "count": 1514,
-    "excluded_from": "/Users/madisonedgar/GitHub/Legesher/research/expedition-tiny-aya/data-pipeline/subset-5k/subset_manifest.json",
+    "excluded_from": "subset-5k/subset_manifest.json",
     "excluded_count": 5000
   },
   "validation": {
