@@ -1,0 +1,55 @@
+{
+  "target_size": 5000,
+  "actual_size": 5000,
+  "seed": 42,
+  "split_ratio": 0.1,
+  "created_at": "2026-03-23T21:55:23.510346+00:00",
+  "tokenizer": "CohereLabs/tiny-aya-base",
+  "native": {
+    "source_dataset": "legesher/language-decoded-community",
+    "config": "zh",
+    "count": 3486
+  },
+  "transpiled": {
+    "source_dataset": "legesher/language-decoded-data",
+    "config": "condition-2-zh",
+    "count": 1514,
+    "excluded_from": "/Users/madisonedgar/GitHub/Legesher/research/expedition-tiny-aya/data-pipeline/subset-5k/subset_manifest.json",
+    "excluded_count": 5000
+  },
+  "validation": {
+    "all_passed": true,
+    "checks": [
+      {
+        "name": "total_size",
+        "expected": 5000,
+        "actual": 5000,
+        "ok": true
+      },
+      {
+        "name": "no_duplicates",
+        "duplicates": 0,
+        "ok": true
+      },
+      {
+        "name": "code_en_nullability",
+        "native_with_code_en": 0,
+        "transpiled_without_code_en": 0,
+        "ok": true
+      },
+      {
+        "name": "no_null_tokens",
+        "null_count": 0,
+        "ok": true
+      }
+    ],
+    "native_count": 3486,
+    "transpiled_count": 1514,
+    "token_stats": {
+      "total": 11251943,
+      "avg": 2250.4,
+      "min": 13,
+      "max": 392122
+    }
+  }
+}
