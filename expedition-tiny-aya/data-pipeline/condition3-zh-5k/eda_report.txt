@@ -1,0 +1,159 @@
+========================================================================
+  CHINESE PROGRAMMING LANGUAGE CORPUS — EDA REPORT
+  Generated : 2026-03-23 02:12 UTC
+  Root      : D:\Chinese_code
+========================================================================
+
+────────────────────────────────────────────────────────────────────────
+  1. FILTERING SUMMARY
+────────────────────────────────────────────────────────────────────────
+  Total files discovered  :    3797
+  Rejected — duplicate    :     182
+  Rejected — fully English:      73  (CJK ratio < 0.001)
+  Rejected — trivial      :      56  (< 30 chars or < 2 lines or 0 CJK)
+  Read errors             :       0
+  ────────────────────────────────
+  TOTAL KEPT              :    3486
+
+────────────────────────────────────────────────────────────────────────
+  2. FILES BY SOURCE (origin)
+────────────────────────────────────────────────────────────────────────
+  Source                      Files   Avg CJK ratio    Total KB
+  ──────                      ─────   ─────────────    ────────
+  thestack                     1948          0.0727      10962K
+  program_in_chinese            703          0.3067      10944K
+  wenyan                        430          0.8848       2680K
+  qi                            239          0.7303        305K
+  mulan                         166          0.3771        150K
+
+────────────────────────────────────────────────────────────────────────
+  3. QUALITY TIER BREAKDOWN  (metric: CJK ratio)
+────────────────────────────────────────────────────────────────────────
+  Tier A  (CJK >= 30%)  — strongly Chinese
+  Tier B  (CJK >= 5%)  — meaningful Chinese presence
+  Tier C  (CJK >= 1.0%)  — sparse CJK (comments/labels)
+  Tier D  (CJK < 1.0%)   — effectively English (FILTERED OUT)
+
+  Tier       Count   Avg CJK ratio   Avg lines    Avg KB
+  ────       ─────   ─────────────   ─────────    ──────
+  A           1119          0.7155         106      5.9K
+  B           1166          0.1290         157      5.6K
+  C            789          0.0275         214      6.4K
+  D            412          0.0049         586     16.7K
+
+────────────────────────────────────────────────────────────────────────
+  4. FILE EXTENSION BREAKDOWN
+────────────────────────────────────────────────────────────────────────
+  Extension        Count   Avg CJK ratio   Avg lines
+  ─────────        ─────   ─────────────   ─────────
+  .py               2003          0.0817         169
+  .wy                430          0.8848         127
+  .java              288          0.2023          63
+  .qi                239          0.7303          27
+  .js                205          0.5220         480
+  .ul                166          0.3771          32
+  .ts                 59          0.2174        2382
+  .c                  36          0.0621        1249
+  .scala              15          0.3587          19
+  .kt                 13          0.2091          48
+  .cs                 13          0.1919          41
+  .go                  9          0.0831         117
+  .cpp                 6          0.1276         421
+  .swift               2          0.1676          12
+  .rb                  2          0.3499          18
+
+────────────────────────────────────────────────────────────────────────
+  5. CJK RATIO DISTRIBUTION (all kept files)
+────────────────────────────────────────────────────────────────────────
+  0.001 – 0.01  (Tier C low)        412  ███████
+  0.01  – 0.05  (Tier C high)       789  █████████████
+  0.05  – 0.15  (Tier B)            791  █████████████
+  0.15  – 0.30  (Tier B high)       375  ██████
+  0.30  – 0.60  (Tier A)            442  ███████
+  0.60  – 1.00  (Tier A high)       677  ███████████
+
+────────────────────────────────────────────────────────────────────────
+  6. STATIC ANALYSIS SUMMARY (kept files)
+────────────────────────────────────────────────────────────────────────
+  Total files kept        : 3486
+  Total size              : 25,043 KB
+  Total lines             : 711,842
+  Total CJK chars         : 2,131,106
+  Avg CJK ratio           : 0.2796
+  Avg lines per file      : 204.2
+  Avg CJK chars per file  : 611.3
+  Files with CJK lines    : 3486
+  Avg comment ratio       : 0.1872
+
+────────────────────────────────────────────────────────────────────────
+  7. TOP 20 FILES BY CJK RATIO (most Chinese-dense)
+────────────────────────────────────────────────────────────────────────
+   CJK ratio  Tier   Lines  Source                File
+   ─────────  ────   ─────  ──────                ────
+      1.0000     A      21  qi                    00005_AnonymousAAArdvark__qi__methods.qi
+      1.0000     A       7  qi                    00014_AnonymousAAArdvark__qi__to_this.qi
+      1.0000     A       3  qi                    00031_AnonymousAAArdvark__qi__not.qi
+      1.0000     A       4  qi                    00035_AnonymousAAArdvark__qi__object.qi
+      1.0000     A      22  qi                    00038_AnonymousAAArdvark__qi__inherited_method.qi
+      1.0000     A       3  qi                    00041_AnonymousAAArdvark__qi__local_inherit_self.qi
+      1.0000     A       4  qi                    00064_AnonymousAAArdvark__qi__default.qi
+      1.0000     A       3  qi                    00065_AnonymousAAArdvark__qi__default_arguments.qi
+      1.0000     A      10  qi                    00070_AnonymousAAArdvark__qi__return_in_nested_function.qi
+      1.0000     A       2  qi                    00078_AnonymousAAArdvark__qi__get_on_class.qi
+      1.0000     A       3  qi                    00079_AnonymousAAArdvark__qi__get_on_function.qi
+      1.0000     A       9  qi                    00086_AnonymousAAArdvark__qi__on_instance.qi
+      1.0000     A       2  qi                    00089_AnonymousAAArdvark__qi__set_on_class.qi
+      1.0000     A       3  qi                    00090_AnonymousAAArdvark__qi__set_on_function.qi
+      1.0000     A       4  qi                    00094_AnonymousAAArdvark__qi__undefined.qi
+      1.0000     A       2  qi                    00095_AnonymousAAArdvark__qi__class_in_body.qi
+      1.0000     A       2  qi                    00097_AnonymousAAArdvark__qi__fun_in_body.qi
+      1.0000     A       2  qi                    00105_AnonymousAAArdvark__qi__var_in_body.qi
+      1.0000     A       4  qi                    00116_AnonymousAAArdvark__qi__print.qi
+      1.0000     A       2  qi                    00121_AnonymousAAArdvark__qi__class_in_then.qi
+
+────────────────────────────────────────────────────────────────────────
+  8. TOP 20 FILES BY SIZE (largest files)
+────────────────────────────────────────────────────────────────────────
+   Size KB   Lines   CJK ratio  Tier  Source                File
+   ───────   ─────   ─────────  ────  ──────                ────
+     1600K   56572      0.0050     D  program_in_chinese    00166_program-in-chinese__CTS__checker.ts
+      741K    9167      0.1501     B  program_in_chinese    00350_program-in-chinese__zwnode__unicode-test.js
+      737K   23053      0.2031     B  program_in_chinese    00596_program-in-chinese__npm-wubi-code-data__五笔码表数据.js
+      499K     128      0.9250     A  thestack              1853_haymaicc_simhash.py
+      468K   20981      0.9965     A  program_in_chinese    00524_program-in-chinese__npm-chinese-character-strokes__笔顺数据.js
+      444K   13137      0.0071     D  program_in_chinese    00226_program-in-chinese__team_website__圈3.js
+      422K   12490      0.0012     D  program_in_chinese    00227_program-in-chinese__team_website__圈4.js
+      393K   15872      0.0024     D  program_in_chinese    00173_program-in-chinese__CTS__parser.ts
+      306K     955      0.2912     B  program_in_chinese    00600_program-in-chinese__npm-pinyin-data__全拼数据.js
+      290K    7398      0.0461     C  program_in_chinese    00169_program-in-chinese__tinycc_zh__tccgen.c
+      277K   12930      0.0112     C  program_in_chinese    00063_program-in-chinese__CTS__utilities.ts
+      233K   10754      0.0017     D  program_in_chinese    00178_program-in-chinese__CTS__types.ts
+      201K   16409      0.0399     C  thestack              0273_jieatelement_quickstart-aws-industrial-m.py
+      195K    7704      0.0051     D  program_in_chinese    00165_program-in-chinese__CTS__binder.ts
+      192K    2351      1.0000     A  qi                    00137_AnonymousAAArdvark__qi__loop_too_large.qi
+      187K    4104      0.9747     A  wenyan                00331_github__tcztzy__wenyan__wenyan.wy
+      172K    5194      0.1075     B  thestack              0242_yangyimincn_tencentcloud-sdk-python.py
+      146K    6940      0.0030     D  program_in_chinese    00066_program-in-chinese__CTS__emitter.ts
+      146K    3623      0.0015     D  thestack              0197_msyyc_autorest_python.py
+      137K    3855      0.0684     B  program_in_chinese    00171_program-in-chinese__tinycc_zh__tccpp.c
+
+------------------------------------------------------------------------
+  LICENSE STATUS
+------------------------------------------------------------------------
+  License                          Count  Status
+  ───────                          ─────  ──────
+  UNKNOWN                           2818  ✓ permissive
+  varies                             502  ✗ blocked
+  MIT                                166  ✓ permissive
+
+------------------------------------------------------------------------
+  QUALITY GATE SUMMARY (per file)
+------------------------------------------------------------------------
+  Non-trivial (>= 30 chars, >= 2 lines, CJK >= 1) : 3,486
+  Appropriately licensed                           : 3,486
+  Contains CJK characters                         : 3,486
+  ALL gates passed                                 : 3,486
+
+========================================================================
+  END OF REPORT
+========================================================================
