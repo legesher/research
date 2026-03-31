@@ -8,8 +8,7 @@ from datasets import load_dataset
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-
-BASE_MODEL = "CohereForAI/tiny-aya-base"
+BASE_MODEL = "CohereLabs/tiny-aya-base"
 
 BENCHMARKS = {
     "xnli": "accuracy",
@@ -29,7 +28,14 @@ def parse_args():
         required=True,
         help="Adapter path or HF Hub id. Repeat for batch mode.",
     )
-    parser.add_argument("--language", required=True, help="Language code, e.g. zh, ur, am")
+    parser.add_argument(
+        "--subfolder",
+        default=None,
+        help="Subfolder within adapter repo (e.g. condition-1-en-5k for unified lora repo).",
+    )
+    parser.add_argument(
+        "--language", required=True, help="Language code, e.g. zh, ur, am"
+    )
     parser.add_argument(
         "--benchmarks",
         nargs="+",
@@ -53,7 +59,7 @@ def normalize_benchmarks(values):
     return normalized
 
 
-def load_model_with_adapter(adapter_path):
+def load_model_with_adapter(adapter_path, subfolder=None):
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -64,7 +70,10 @@ def load_model_with_adapter(adapter_path):
         device_map="auto" if torch.cuda.is_available() else None,
     )
 
-    model = PeftModel.from_pretrained(model, adapter_path)
+    kwargs = {}
+    if subfolder:
+        kwargs["subfolder"] = subfolder
+    model = PeftModel.from_pretrained(model, adapter_path, **kwargs)
     model = model.merge_and_unload()
     model.eval()
     return model, tokenizer
@@ -87,7 +96,9 @@ def move_to_model_device(inputs, model):
 
 def score_choice(model, tokenizer, prompt, choice):
     prompt_tokens = tokenizer(prompt, return_tensors="pt", add_special_tokens=False)
-    full_tokens = tokenizer(prompt + choice, return_tensors="pt", add_special_tokens=False)
+    full_tokens = tokenizer(
+        prompt + choice, return_tensors="pt", add_special_tokens=False
+    )
     prompt_length = prompt_tokens["input_ids"].shape[1]
     full_tokens = move_to_model_device(full_tokens, model)
 
@@ -184,8 +195,7 @@ def run_xnli(model, tokenizer, language):
         )
 
         scores = [
-            score_choice(model, tokenizer, prompt, f" {label}")
-            for label in label_names
+            score_choice(model, tokenizer, prompt, f" {label}") for label in label_names
         ]
         prediction = int(torch.tensor(scores).argmax().item())
         correct += int(prediction == int(example["label"]))
@@ -323,11 +333,14 @@ def save_results(results, output_file):
         handle.write("\n")
 
 
-def evaluate_adapter(adapter_path, language, benchmarks):
+def evaluate_adapter(adapter_path, language, benchmarks, subfolder=None):
     print(f"Loading base model from HF: {BASE_MODEL}")
-    print(f"Loading adapter: {adapter_path}")
+    print(
+        f"Loading adapter: {adapter_path}"
+        + (f" (subfolder: {subfolder})" if subfolder else "")
+    )
 
-    model, tokenizer = load_model_with_adapter(adapter_path)
+    model, tokenizer = load_model_with_adapter(adapter_path, subfolder=subfolder)
     adapter_results = {
         "adapter_path": adapter_path,
         "language": language,
@@ -369,6 +382,7 @@ def main():
                 adapter_path=adapter_path,
                 language=args.language,
                 benchmarks=benchmarks,
+                subfolder=args.subfolder,
             )
         )
 

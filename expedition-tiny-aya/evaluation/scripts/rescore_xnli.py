@@ -76,7 +76,7 @@ REPO_TYPE = "dataset"
 # All condition directories on HuggingFace
 CONDITIONS = [
     "baseline",
-    "condition-1-en",
+    "condition-1-en-32k",
     "condition-1-en-5k",
     "condition-2-zh-5k",
     "condition-2-es-5k",
