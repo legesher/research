@@ -1,25 +1,5 @@
 # Natural Language Text Datasets
 
-**Owner:** NL Curator (crew:nl-curator)
+> **Note:** This pipeline was not used in the final experiment. Condition 3 uses a blend of transpiled + native code instead of NL text. This directory is kept for reference.
 
-Pull, clean, and volume-match multilingual NL text for the control condition (Condition 3).
-
-## Contents
-
-- `scripts/` — Data pull, cleaning, tokenization, packaging
-- `configs/` — Source URLs, target token counts per language
-
-## Suggested Pipeline Steps
-
-1. **Pull** NL text for zh/am/ur from CC-100 or OSCAR (e.g. `pull_nl_text.py`)
-2. **Filter & clean** — language verification, quality filtering (e.g. `clean_and_filter.py`)
-3. **Tokenize & volume-match** using Tiny Aya tokenizer (e.g. `tokenize_and_match.py`)
-4. **Package** as HuggingFace Datasets (e.g. `package_nl_dataset.py`)
-
-## Key Constraint
-
-Token volume must match the transpiled code datasets exactly — this is the control condition.
-
-## Deliverable
-
-Volume-matched NL datasets delivered to Saad for Condition 3 training by Data Handoff (Day 5).
+The original plan was to pull, clean, and volume-match multilingual NL text as a control condition. The experiment design was updated to use mixed native code (transpiled + human-written) as Condition 3 instead.

@@ -1,29 +1,28 @@
 # Transpilation Pipeline
 
-**Owner:** Madi (crew:madi)
-
-Batch transpilation of Python source files from English into Chinese (zh), Amharic (am), and Urdu (ur) using Legesher.
+Batch transpilation of Python source files from English into Chinese (zh), Spanish (es), and Urdu (ur) using Legesher.
 
 ## Contents
 
-- `scripts/` — Batch transpilation wrapper, stress test, HuggingFace upload
-- `configs/` — Language targets, file counts, path configuration
+- `scripts/` — Batch transpilation wrapper, stress test
 - `results/` — Stress test reports and batch run logs
 
 ## Dependencies
 
 - Legesher CLI (`legesher translate`)
 - Filtered Python files from `../data-pipeline/`
-- Language packs: `legesher-i18n-python-zh`, `legesher-i18n-python-am`, `legesher-i18n-python-ur`
+- Language packs: `legesher-i18n-python-zh`, `legesher-i18n-python-es`, `legesher-i18n-python-ur`
 
-## Suggested Entrypoints
-
-These scripts are suggested starting points — adapt as needed:
+## Usage
 
 ```bash
-# Run batch transpilation (after filtered files are ready)
+# Run batch transpilation
 python scripts/batch_transpile.py --config configs/transpile_config.yaml
 
-# Upload to HuggingFace
-python scripts/upload_to_hf.py --lang zh --dataset-name legesher/transpiled-python-zh
+# Run stress test for a language
+python scripts/stress_test_transpiler.py --lang zh --num-files 1000
 ```
+
+## Output
+
+Transpiled files are packaged and uploaded to [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data) as condition-2 configs.

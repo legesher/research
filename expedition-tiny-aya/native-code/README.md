@@ -1,21 +1,14 @@
 # Native Code Collection
 
-**Owner:** Native Code Lead (crew:native-code)
-
-Collect code written by developers who think in Chinese, Amharic, or Urdu — not translated from English.
+Collect code written by developers who think in Chinese, Spanish, or Urdu — not translated from English.
 
 ## Contents
 
-- `exercises/` — 3-tier coding exercises for contributors
-- Suggested: `contributor-guide.md` — How to install Legesher, write native code, submit
-- Suggested: `quality-rubric.md` — 1-5 scoring criteria for reviewing submissions
 - `review-log/` — Per-language review tracking
 
 ## Collection Goals
 
-- 150–500 native code files across zh, am, ur
-- 3–5 developers per language × 50–100 files each
-- Focus on code that reflects natural thinking patterns in each language
+Native code samples for zh, es, ur contributed to [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community) on HuggingFace.
 
 ## Why Native Code Matters
 

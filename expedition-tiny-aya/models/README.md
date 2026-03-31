@@ -1,18 +1,22 @@
-# Model Cards
+# Models
 
-HuggingFace model cards for each fine-tuned adapter. Trained models live on HuggingFace — this directory holds the cards for version control and review.
+All trained adapters live on HuggingFace in the unified lora repo. This directory is no longer used for model cards.
 
-## Models
+## Adapter Repo
 
-| Directory | Condition | Description | HuggingFace Link |
-| --- | --- | --- | --- |
-| `condition-1-english/` | English code | QLoRA fine-tune on English Python | TBD |
-| `condition-2-multilingual/` | Multilingual transpiled | QLoRA fine-tune on zh/am/ur transpiled code | TBD |
-| `condition-3-nl-text/` | NL text control | QLoRA fine-tune on volume-matched NL text | TBD |
-| `condition-4-native/` | Native code | QLoRA fine-tune on human-written native code | TBD |
+[legesher/language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora) — one subfolder per condition.
+
+| Subfolder             | Condition            | Description                                    |
+| --------------------- | -------------------- | ---------------------------------------------- |
+| `condition-1-en-32k/` | English code (full)  | QLoRA fine-tune on 31,818 English Python files |
+| `condition-1-en-5k/`  | English code (5K)    | QLoRA fine-tune on 5K English subset           |
+| `condition-2-zh-5k/`  | Chinese transpiled   | QLoRA fine-tune on zh keyword-swapped code     |
+| `condition-2-es-5k/`  | Spanish transpiled   | QLoRA fine-tune on es keyword-swapped code     |
+| `condition-2-ur-5k/`  | Urdu transpiled      | QLoRA fine-tune on ur keyword-swapped code     |
+| `condition-3-zh-5k/`  | Chinese mixed native | QLoRA fine-tune on transpiled + native blend   |
 
 ## Base Model
 
-- **Tiny Aya** (3.35B params) by Cohere
-- QLoRA 4-bit quantization
-- Training on Kaggle T4 GPUs (~5.4GB VRAM)
+- [CohereLabs/tiny-aya-base](https://huggingface.co/CohereLabs/tiny-aya-base) (3.35B params)
+- QLoRA 4-bit quantization via Unsloth
+- Training on Kaggle T4 x2 (DDP)

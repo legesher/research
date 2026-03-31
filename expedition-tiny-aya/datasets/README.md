@@ -1,35 +1,26 @@
-# HuggingFace Dataset Cards
+# Datasets
 
-Dataset cards and metadata for all datasets produced during the hackathon. Actual data lives on HuggingFace — this directory holds the cards for version control and review.
+All datasets live on HuggingFace. This directory is no longer used for dataset cards.
 
-## Datasets
+## HuggingFace Repos
 
-### Transpiled Code
+| Repo                                                                                                  | Description                       |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------- |
+| [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training data for all conditions  |
+| [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community)     | Human-written native code samples |
+| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Eval results and training configs |
 
-| Dataset | Language | Source | HuggingFace Link |
-| --- | --- | --- | --- |
-| `transpiled-zh/` | Chinese | The Stack → Legesher | TBD |
-| `transpiled-am/` | Amharic | The Stack → Legesher | TBD |
-| `transpiled-ur/` | Urdu | The Stack → Legesher | TBD |
+## Data Configs (on `language-decoded-data`)
 
-### English Code (Baseline)
-
-| Dataset | Source | HuggingFace Link |
-| --- | --- | --- |
-| `english-code/` | The Stack Python subset | TBD |
-
-### Natural Language Text (Control)
-
-| Dataset | Language | Source | HuggingFace Link |
-| --- | --- | --- | --- |
-| `nl-text-zh/` | Chinese | CC-100/OSCAR | TBD |
-| `nl-text-am/` | Amharic | CC-100/OSCAR | TBD |
-| `nl-text-ur/` | Urdu | CC-100/OSCAR | TBD |
-
-### Native Code
-
-| Dataset | Language | Source | HuggingFace Link |
-| --- | --- | --- | --- |
-| `native-zh/` | Chinese | Human contributors | TBD |
-| `native-am/` | Amharic | Human contributors | TBD |
-| `native-ur/` | Urdu | Human contributors | TBD |
+| Config               | Description                                   | Files  |
+| -------------------- | --------------------------------------------- | ------ |
+| `condition-1-en-32k` | English Python from The Stack                 | 31,818 |
+| `condition-1-en-5k`  | English Python 5K subset                      | 5,000  |
+| `condition-2-zh-5k`  | Chinese keyword-swapped (Legesher transpiled) | 5,000  |
+| `condition-2-es-5k`  | Spanish keyword-swapped (Legesher transpiled) | 5,000  |
+| `condition-2-ur-5k`  | Urdu keyword-swapped (Legesher transpiled)    | 5,000  |
+| `condition-2-zh-32k` | Chinese keyword-swapped (full)                | 31,818 |
+| `condition-2-es-32k` | Spanish keyword-swapped (full)                | 31,818 |
+| `condition-2-ur-32k` | Urdu keyword-swapped (full)                   | 31,818 |
+| `condition-3-zh-5k`  | Chinese mixed native blend                    | 5,000  |
+| `condition-4-zh-5k`  | Chinese strictly native code                  | varies |
