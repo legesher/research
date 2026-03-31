@@ -41,3 +41,7 @@ Thumbs.db
 
 # Large logs
 *.log
+
+# Local script output (results live on HuggingFace)
+rescored_results/
+**/rescored_results/
