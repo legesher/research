@@ -1,37 +1,66 @@
 # Training Pipeline
 
-**Owner:** Saad (crew:saad)
-
-QLoRA fine-tuning of Tiny Aya (3.35B params) on T4 GPUs across 4 experimental conditions.
+QLoRA fine-tuning of Tiny Aya (3.35B params) on Kaggle T4 GPUs across experimental conditions.
 
 ## Contents
 
-- `configs/` — Per-condition QLoRA configuration files
-- `scripts/` — Training entrypoint, adapter merge, orchestration
-- `logs/` — Training logs and W&B dashboard links
+- `scripts/qlora.ipynb` — Training notebook (pretokenization + DDP training)
 
-## Conditions
+## How It Works
 
-| Suggested Config | Condition | Data Source |
-| --- | --- | --- |
-| `condition_1_en.yaml` | English code | The Stack Python subset |
-| `condition_2_multi.yaml` | Multilingual transpiled code | Legesher-transpiled zh/am/ur |
-| `condition_3_nl.yaml` | NL text control | CC-100/OSCAR volume-matched |
-| `condition_4_native.yaml` | Native code | Human-written native code |
+The notebook writes two Python scripts to disk via `%%writefile`, then runs them:
 
-## Suggested Entrypoints
-
-These scripts are suggested starting points — adapt as needed:
+1. **`pretokenize.py`** — Downloads dataset from HuggingFace, tokenizes with Tiny Aya tokenizer, saves to disk
+2. **`train.py`** — Loads pretokenized data, runs QLoRA training with Unsloth + SFTTrainer, uploads adapter to HuggingFace
 
 ```bash
-# Train a single condition
-python scripts/train.py --config configs/condition_1_en.yaml
+# Cell 3: pretokenize
+!python pretokenize.py
 
-# Run all conditions
-bash scripts/run_all_conditions.sh
+# Cell 4: train with DDP on 2 GPUs
+!torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py
 ```
+
+## Configuration
+
+Set `CONDITION_NAME` at the top of both cells before running. Available conditions:
+
+| Condition            | Data Config                        | Description               |
+| -------------------- | ---------------------------------- | ------------------------- |
+| `condition-1-en-32k` | Full English Python (31,818 files) | Replicates original paper |
+| `condition-1-en-5k`  | English Python 5K subset           | Controlled comparison     |
+| `condition-2-zh-5k`  | Chinese keyword-swapped (5K)       | Legesher transpiled       |
+| `condition-2-es-5k`  | Spanish keyword-swapped (5K)       | Legesher transpiled       |
+| `condition-2-ur-5k`  | Urdu keyword-swapped (5K)          | Legesher transpiled       |
+| `condition-3-zh-5k`  | Chinese mixed native (5K)          | Transpiled + native blend |
+
+## QLoRA Hyperparameters
+
+| Parameter             | Value            |
+| --------------------- | ---------------- |
+| LoRA r                | 16               |
+| LoRA alpha            | 32               |
+| LoRA dropout          | 0.0              |
+| Learning rate         | 2e-4             |
+| Batch size            | 8 per GPU        |
+| Gradient accumulation | 1                |
+| Epochs                | 1                |
+| Optimizer             | paged_adamw_8bit |
+| Scheduler             | cosine           |
+| Max sequence length   | 1024             |
+| Packing               | enabled          |
+
+Full config documented at [`configs/qlora-base.json`](https://huggingface.co/datasets/legesher/language-decoded-experiments/blob/main/configs/qlora-base.json) on HuggingFace.
+
+## Data and Output Repos
+
+| Repo                                                                                                  | Purpose                                     |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training data (per-condition configs)       |
+| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained adapters (per-condition subfolders) |
+| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Training config + eval results              |
 
 ## Compute
 
-- Kaggle T4 GPUs (team-pooled, 300-420 hours)
-- QLoRA 4-bit: ~5.4GB VRAM per run
+- Kaggle T4 x2 (DDP)
+- ~5.4GB VRAM per GPU with QLoRA 4-bit
