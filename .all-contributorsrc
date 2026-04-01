@@ -29,35 +29,35 @@
       "name": "Rashik Shahjahan",
       "avatar_url": "https://avatars.githubusercontent.com/u/20547252?v=4",
       "profile": "https://github.com/RashikShahjahan",
-      "contributions": ["code", "data"]
+      "contributions": ["research", "code", "data"]
     },
     {
       "login": "vulcan-332",
       "name": "Khojasteh Mirza",
       "avatar_url": "https://avatars.githubusercontent.com/u/92639453?v=4",
       "profile": "https://github.com/vulcan-332",
-      "contributions": ["code", "data"]
+      "contributions": ["research", "code", "data"]
     },
     {
       "login": "rafaym1",
       "name": "Rafay Mustafa",
       "avatar_url": "https://avatars.githubusercontent.com/u/97275763?v=4",
       "profile": "https://github.com/rafaym1",
-      "contributions": ["review", "translation"]
+      "contributions": ["research", "data", "translation"]
     },
     {
       "login": "sarr266",
       "name": "Sarah Jawaid",
       "avatar_url": "https://avatars.githubusercontent.com/u/104586011?v=4",
       "profile": "https://github.com/sarr266",
-      "contributions": ["review", "translation"]
+      "contributions": ["research", "data", "translation"]
     },
     {
       "login": "SohaibBazaz",
       "name": "Sohaib Ahmed Bazaz",
       "avatar_url": "https://avatars.githubusercontent.com/u/146986818?v=4",
       "profile": "https://github.com/SohaibBazaz",
-      "contributions": ["review", "translation"]
+      "contributions": ["research", "data", "translation"]
     }
   ],
   "contributorsPerLine": 7,
