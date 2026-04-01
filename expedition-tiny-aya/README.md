@@ -1,8 +1,8 @@
 # Expedition Tiny Aya
 
-Language, Decoded: Investigating Language-Dependent vs. Structure-Dependent Reasoning Benefits of Code
+Language, Decoded: Exploring the Impact of Native-Language Code on Multilingual Models
 
-> Authors: Madison Edgar, Saad Ahmed Bazaz, et al. | Collaboration: Cohere / Expedition Tiny Aya
+> Captains: Madison Edgar (Legesher), Saad Ahmed Bazaz (Grayhat), et al. | Collaboration: Cohere / Expedition Tiny Aya
 > Hackathon: March 10–24, 2026
 
 ## Research Question
@@ -43,16 +43,16 @@ English benchmarks are included to detect catastrophic forgetting.
 
 ## Team
 
-| Role                        | Person             | GitHub                                                 |
-| --------------------------- | ------------------ | ------------------------------------------------------ |
-| Research Lead               | Madi Edgar         | [@madiedgar](https://github.com/madiedgar)             |
-| Technical Lead              | Saad A. Bazaz      | [@SaadBazaz](https://github.com/SaadBazaz)             |
-| Training Engineer           | Rashik Shahjahan   | [@RashikShahjahan](https://github.com/RashikShahjahan) |
-| Evaluation Engineer         | Khojasteh Mirza    | [@vulcan-332](https://github.com/vulcan-332)           |
-| Language Reviewer (Urdu)    | Rafay Mustafa      | [@rafaym1](https://github.com/rafaym1)                 |
-| Language Reviewer (Urdu)    | Sarah Jawaid       | [@sarr266](https://github.com/sarr266)                 |
-| Language Reviewer (Spanish) | Sohaib Ahmed Bazaz | [@SohaibBazaz](https://github.com/SohaibBazaz)         |
-| Mentor (Cohere)             | Tom Sherborne      | —                                                      |
+| Person             | GitHub                                                 |
+| ------------------ | ------------------------------------------------------ |
+| Madi Edgar         | [@madiedgar](https://github.com/madiedgar)             |
+| Saad A. Bazaz      | [@SaadBazaz](https://github.com/SaadBazaz)             |
+| Rashik Shahjahan   | [@RashikShahjahan](https://github.com/RashikShahjahan) |
+| Khojasteh Mirza    | [@vulcan-332](https://github.com/vulcan-332)           |
+| Rafay Mustafa      | [@rafaym1](https://github.com/rafaym1)                 |
+| Sarah Jawaid       | [@sarr266](https://github.com/sarr266)                 |
+| Sohaib Ahmed Bazaz | [@SohaibBazaz](https://github.com/SohaibBazaz)         |
+| Tom Sherborne      | Cohere                                                 |
 
 ## Repository Structure
 
@@ -88,6 +88,5 @@ expedition-tiny-aya/
 
 ## Links
 
-- [Linear Project](https://linear.app/legesher-research)
 - [Legesher Monorepo](https://github.com/MadiEdgar/legesher) (transpilation tooling)
 - [HuggingFace Collection](https://huggingface.co/collections/legesher/language-decoded)
