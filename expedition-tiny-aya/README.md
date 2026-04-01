@@ -54,6 +54,10 @@ English benchmarks are included to detect catastrophic forgetting.
 | Sohaib Ahmed Bazaz | [@SohaibBazaz](https://github.com/SohaibBazaz)         |
 | Tom Sherborne      | Cohere                                                 |
 
+## Native Code
+
+Transpiled code is English logic wearing non-English syntax. Native code captures how developers actually think in their language. If native code produces better model improvements than transpiled code, it suggests that linguistic cognition embedded in code matters — not just token exposure. Native code samples are collected in [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community) on HuggingFace.
+
 ## Repository Structure
 
 ```
@@ -65,18 +69,19 @@ expedition-tiny-aya/
 ├── evaluation/         # Benchmark scripts and notebooks
 ├── analysis/           # Evaluation analysis and visualization
 ├── data-pipeline/      # The Stack streaming, filtering, packaging
-├── language-review/    # Per-language keyword review and sign-off
-└── native-code/        # Native code collection guide and review
+└── language-review/    # Per-language keyword review and sign-off
 ```
 
 ## HuggingFace Repos
 
-| Repo                                                                                                  | Purpose                                            |
-| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training datasets (per-condition configs)          |
-| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained LoRA adapters (per-condition subfolders)   |
-| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Eval results, training configs, condition metadata |
-| [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community)     | Human-written native code samples                  |
+All datasets, trained adapters, and results live on HuggingFace — not in this repo.
+
+| Repo                                                                                                  | Purpose                                                    |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training datasets (per-condition configs, 5k and 32k)      |
+| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained LoRA adapters (per-condition subfolders)           |
+| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Eval results, training configs, condition metadata         |
+| [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community)     | Human-written native code samples (Condition 3 and 4 data) |
 
 ## Key References
 
