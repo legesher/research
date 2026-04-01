@@ -7,9 +7,59 @@
     "README.md"
   ],
   "imageSize": 100,
-  "commit": true,
+  "commit": false,
   "commitConvention": "angular",
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "madiedgar",
+      "name": "Madi (Pfaff) Edgar",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7844510?v=4",
+      "profile": "https://github.com/madiedgar",
+      "contributions": ["research", "code", "data", "projectManagement"]
+    },
+    {
+      "login": "SaadBazaz",
+      "name": "Saad A. Bazaz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/51885228?v=4",
+      "profile": "https://github.com/SaadBazaz",
+      "contributions": ["research", "code", "data"]
+    },
+    {
+      "login": "RashikShahjahan",
+      "name": "Rashik Shahjahan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20547252?v=4",
+      "profile": "https://github.com/RashikShahjahan",
+      "contributions": ["research", "code", "data"]
+    },
+    {
+      "login": "vulcan-332",
+      "name": "Khojasteh Mirza",
+      "avatar_url": "https://avatars.githubusercontent.com/u/92639453?v=4",
+      "profile": "https://github.com/vulcan-332",
+      "contributions": ["research", "code", "data"]
+    },
+    {
+      "login": "rafaym1",
+      "name": "Rafay Mustafa",
+      "avatar_url": "https://avatars.githubusercontent.com/u/97275763?v=4",
+      "profile": "https://github.com/rafaym1",
+      "contributions": ["research", "data", "translation"]
+    },
+    {
+      "login": "sarr266",
+      "name": "Sarah Jawaid",
+      "avatar_url": "https://avatars.githubusercontent.com/u/104586011?v=4",
+      "profile": "https://github.com/sarr266",
+      "contributions": ["research", "data", "translation"]
+    },
+    {
+      "login": "SohaibBazaz",
+      "name": "Sohaib Ahmed Bazaz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/146986818?v=4",
+      "profile": "https://github.com/SohaibBazaz",
+      "contributions": ["research", "data", "translation"]
+    }
+  ],
   "contributorsPerLine": 7,
   "linkToUsage": true
 }

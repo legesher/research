@@ -1,104 +1,85 @@
 # Evaluation Pipeline
 
-**Owner:** Khojasteh
-
-Benchmark evaluation across 3 langauges and 3 datasets. There are 2 ways to evaluate:
-1: Dataset in chosen language + english prompt
-2: Dataset in chosen langugae + prompt in chosen langugae
+Benchmark evaluation across 3 languages (zh, es, ur) + English, using 3 benchmark suites.
+Each condition is evaluated twice: with English prompts and with native-language prompts.
 
 ## Contents
 
-- `scripts/baseline_benchmarking.ipynb` — Benchmark running notebook
-- `results/` — Per-condition benchmark scores
-  - `baseline/` — Pre-training scores (Tiny Aya base)
-  - `condition-1/` through `condition-4/` — Post-training scores
-- `configs/` — Benchmark suite configuration
-- `README` - You are here
-- `requirements.txt` - Requirements to run the evaluations
+- `scripts/baseline_benchmarking.ipynb` — Baseline evaluation (no adapter)
+- `scripts/finetuned-benchmarking.ipynb` — Fine-tuned adapter evaluation
+- `scripts/eval_pipeline.py` — Reusable CLI evaluation runner
+- `scripts/rescore_xnli.py` — One-time XNLI re-scoring correction script
+- `requirements.txt` — Python dependencies
+
+Results are stored on HuggingFace, not in this directory.
 
 ## Benchmark Suite
 
-| Benchmark | What It Measures | es | zh | ur
-| --- | --- | --- | --- | --- |
-| MGSM | Multilingual math reasoning on grade-school word problems; evaluates whether the model can reason through quantitative problems and produce the correct final numeric answer language inference | ✓ | ✓ | ✓ |
-| XNLI | Multilingual natural language inference; evaluates whether the model can determine if a hypothesis is entailed by, contradicted by, or neutral with respect to a premise | ✓ | ✓ | ✓ |
-| X-CSQA | Multilingual commonsense reasoning in multiple-choice format; evaluates whether the model can choose the most plausible answer based on everyday world knowledge | ✓ | ✓ | ✓ |
+| Benchmark  | What It Measures                                                  | Languages      |
+| ---------- | ----------------------------------------------------------------- | -------------- |
+| **MGSM**   | Multilingual math reasoning (grade-school word problems)          | zh, es, ur, en |
+| **XNLI**   | Natural language inference (entailment / contradiction / neutral) | zh, es, ur, en |
+| **X-CSQA** | Commonsense reasoning (5-way multiple choice)                     | zh, es, ur, en |
 
-## Suggested Entrypoints # to edit based on draft pr 
+English benchmarks detect catastrophic forgetting from fine-tuning.
 
-## Evaluation Script
-# `eval_pipeline.py`
+## Notebooks
 
-Reusable evaluation runner for Tiny Aya adapters.
+### Baseline (`baseline_benchmarking.ipynb`)
 
-### What it does
+Evaluates the raw Tiny Aya base model (no fine-tuning). Run once to establish floor scores.
 
-- Loads the base model from Hugging Face: `CohereForAI/tiny-aya-base`
-- Loads a PEFT / QLoRA adapter from a local path or HF Hub
-- Merges the adapter into the base model for inference
-- Runs selected benchmarks for one language
-- Writes all results to a JSON file
-- Supports batch mode by repeating `--adapter-path`
-- Tracks compute time per benchmark
+### Fine-tuned (`finetuned-benchmarking.ipynb`)
 
-### Inputs
+Set `cond` in Cell 1 before running. Loads adapter from the unified lora repo:
+
+```python
+cond = "condition-1-en-5k"  # <-- SET BEFORE RUNNING
+```
+
+Available conditions: `condition-1-en-32k`, `condition-1-en-5k`, `condition-2-zh-5k`,
+`condition-2-es-5k`, `condition-2-ur-5k`, `condition-3-zh-5k`
+
+Results are uploaded directly to HuggingFace (`legesher/language-decoded-experiments`).
+
+## CLI Script (`eval_pipeline.py`)
+
+Reusable evaluation runner for batch evaluation.
 
 ```bash
 python eval_pipeline.py \
-  --adapter-path path/to/adapter \
+  --adapter-path legesher/language-decoded-lora \
+  --subfolder condition-2-zh-5k \
   --language zh \
-  --benchmarks xnli xstorycloze tydiqa mmlu \
-  --output-file ../results/condition-2/zh.json
+  --benchmarks xnli xstorycloze \
+  --output-file results.json
 ```
 
 Arguments:
 
-- `--adapter-path`: adapter checkpoint path or HF Hub id. Repeat this flag to evaluate multiple adapters in sequence.
-- `--language`: language code such as `zh`, `ur`, `am`, or `en`
-- `--benchmarks`: benchmark names to run, or `all`
-- `--output-file`: path to the JSON results file
+- `--adapter-path` — HF Hub id or local path. Repeat for batch mode.
+- `--subfolder` — Subfolder within adapter repo (for unified lora repo)
+- `--language` — Language code: `zh`, `es`, `ur`, or `en`
+- `--benchmarks` — Benchmark names to run, or `all`
+- `--output-file` — Path to JSON results file
 
-### Supported Benchmarks
+Base model: `CohereLabs/tiny-aya-base`
 
-- `xnli`: returns `accuracy`
-- `xstorycloze`: returns `accuracy`
-- `tydiqa`: returns `f1` and `em`
-- `mmlu`: returns `accuracy_per_subject`
+## Data Sources
 
-`multinrc` and `ai4math` are not implemented yet.
+| Benchmark         | Source                                                                                               |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| MGSM (zh, es, en) | [google-research-datasets/MGSM-Rev2](https://github.com/google-research-datasets/MGSM-Rev2)          |
+| MGSM (ur)         | [large-traversaal/mgsm_urdu_final](https://huggingface.co/datasets/large-traversaal/mgsm_urdu_final) |
+| XNLI              | [facebook/xnli](https://huggingface.co/datasets/facebook/xnli)                                       |
+| X-CSQA            | [INK-USC/xcsr](https://huggingface.co/datasets/INK-USC/xcsr)                                         |
 
-### Batch Mode
+## Results
 
-```bash
-python eval_pipeline.py \
-  --adapter-path adapter-one \
-  --adapter-path adapter-two \
-  --language ur \
-  --benchmarks all \
-  --output-file ../results/condition-4/ur-batch.json
-```
+All results are stored on HuggingFace:
 
-The output JSON contains one entry per adapter under `runs`.
+| Repo                                                                                                  | Contents                                              |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Per-condition results (english + native prompt JSONs) |
 
-### Output Format
-
-The script writes a JSON file with:
-
-- `base_model`
-- `language`
-- `benchmarks`
-- `runs`
-
-Each run contains:
-
-- `adapter_path`
-- `language`
-- `benchmarks`
-- `timing_seconds`
-
-### Notes
-
-- The script assumes the fine-tuned artifact is an adapter checkpoint, not a fully merged standalone model.
-- The base model is always loaded from Hugging Face.
-- `mmlu` is currently wired to the default public English dataset, so non-English MMLU will need a translated dataset later.
-- Public datasets may not fully match every project language, especially for translated benchmark variants.
+See [analysis/evaluation-summary.md](../analysis/evaluation-summary.md) for the full analysis.

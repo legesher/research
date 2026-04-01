@@ -1,76 +1,119 @@
 # Expedition Tiny Aya
 
-**Language, Decoded: Exploring the Impact of Native-Language Code on Multilingual Models**
+Language, Decoded: Exploring the Impact of Native-Language Code on Multilingual Models
 
-Authors: Madi Edgar + Saad | Collaboration: Cohere / Expedition Tiny Aya
-Hackathon: March 10–24, 2026
+> Captains: Madison Edgar (Legesher), Saad Ahmed Bazaz (Grayhat), et al. | Collaboration: Cohere / Expedition Tiny Aya
+> Hackathon: March 10–24, 2026
 
 ## Research Question
 
 **Primary:** Does multilingual code improve Tiny Aya's reasoning, world knowledge, and instruction following in the language that code is written in?
 
-**Secondary:** Does it matter *how* code is created? Does code natively written by developers who think in a language produce better improvements than code mechanically transpiled from English?
+**Secondary:** Does it matter _how_ code is created? Does code natively written by developers who think in a language produce better improvements than code mechanically transpiled from English?
 
 ## Experimental Design
 
 Fine-tune Tiny Aya base (3.35B params) with QLoRA under 4 conditions:
 
-| Condition | Data Source | What It Tests |
-| --- | --- | --- |
-| Baseline | Tiny Aya base, no additional training | Floor |
-| 1. English code | English Python from The Stack | Replicates original paper |
-| 2. Transpiled code | English code transpiled via Legesher | Token exposure alone |
-| 3. NL text (control) | Equivalent token volume of NL text | Code structure vs. more data |
-| 4. Native code | Code written by native-language developers | Token exposure + cognitive patterns |
+| Condition          | Data Config                               | Data Source                           | What It Tests                       |
+| ------------------ | ----------------------------------------- | ------------------------------------- | ----------------------------------- |
+| Baseline           | —                                         | Tiny Aya base, no additional training | Floor                               |
+| 1. English code    | `condition-1-en-32k`, `condition-1-en-5k` | English Python from The Stack         | Replicates original paper           |
+| 2. Transpiled code | `condition-2-{zh,es,ur}-5k`               | English code transpiled via Legesher  | Token exposure alone                |
+| 3. Mixed native    | `condition-3-zh-5k`                       | Transpiled + native code blend        | Code structure + native patterns    |
+| 4. Combined native | `condition-4-zh-5k`                       | All strictly native code              | Token exposure + cognitive patterns |
 
 ## Target Languages
 
-| Language | Script | Tiny Aya Variant | Why |
-| --- | --- | --- | --- |
-| Chinese (zh) | CJK (Simplified) | Water | Best-documented identifier paradox |
-| Amharic (am) | Ge'ez (Ethiopic) | Earth | Genuinely low-resource, unique script |
-| Urdu (ur) | Nastaliq (RTL) | Fire | RTL, cross-lingual transfer test with Hindi |
+| Language     | Script           | Why                                         |
+| ------------ | ---------------- | ------------------------------------------- |
+| Chinese (zh) | CJK (Simplified) | Best-documented identifier paradox          |
+| Spanish (es) | Latin            | High-resource, cross-lingual transfer test  |
+| Urdu (ur)    | Nastaliq (RTL)   | RTL, cross-lingual transfer test with Hindi |
 
 ## Evaluation Benchmarks
 
-- **Reasoning:** XNLI, XStoryCloze in target languages
-- **World Knowledge:** MMLU translated subsets, TyDi QA
-- **Instruction Following:** LLM-as-judge evaluation
-- **Culturally-grounded:** MultiNRC, AI4Math, native speaker evaluation
-- **Cross-lingual Transfer:** Does code in one language help related languages?
+| Benchmark  | What It Measures                                              | Languages      |
+| ---------- | ------------------------------------------------------------- | -------------- |
+| **MGSM**   | Multilingual math reasoning (grade-school word problems)      | zh, es, ur, en |
+| **XNLI**   | Natural language inference (entailment/contradiction/neutral) | zh, es, ur, en |
+| **X-CSQA** | Commonsense reasoning (5-way multiple choice)                 | zh, es, ur, en |
+
+English benchmarks are included to detect catastrophic forgetting.
 
 ## Team
 
-| Role | Person | Directory |
-| --- | --- | --- |
-| Captain / Research Lead | Madi | `transpilation/`, `demo/` |
-| Captain / Technical Lead | Saad | `training/`, `evaluation/`, `analysis/` |
-| Pipeline Engineer | TBD | `data-pipeline/` |
-| NL Curator | TBD | `nl-text/` |
-| Language Champions | TBD | `language-review/` |
-| Native Code Lead | TBD | `native-code/` |
+| Person             | GitHub                                                 |
+| ------------------ | ------------------------------------------------------ |
+| Madi Edgar         | [@madiedgar](https://github.com/madiedgar)             |
+| Saad A. Bazaz      | [@SaadBazaz](https://github.com/SaadBazaz)             |
+| Rashik Shahjahan   | [@RashikShahjahan](https://github.com/RashikShahjahan) |
+| Khojasteh Mirza    | [@vulcan-332](https://github.com/vulcan-332)           |
+| Rafay Mustafa      | [@rafaym1](https://github.com/rafaym1)                 |
+| Sarah Jawaid       | [@sarr266](https://github.com/sarr266)                 |
+| Sohaib Ahmed Bazaz | [@SohaibBazaz](https://github.com/SohaibBazaz)         |
+| Tom Sherborne      | Cohere                                                 |
+
+## Native Code
+
+Transpiled code is English logic wearing non-English syntax. Native code captures how developers actually think in their language. If native code produces better model improvements than transpiled code, it suggests that linguistic cognition embedded in code matters — not just token exposure. Native code samples are collected in [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community) on HuggingFace.
 
 ## Repository Structure
 
 ```
 expedition-tiny-aya/
-├── paper/              # Research write-up (shared across team)
+├── paper/              # Research write-up (LaTeX)
 ├── demo/               # Presentation slides, speaker notes
-├── transpilation/      # Batch transpilation scripts, configs, results
-├── training/           # QLoRA training configs, scripts, W&B links
-├── evaluation/         # Benchmark scripts, per-condition results
-├── analysis/           # Jupyter notebooks, generated figures
+├── transpilation/      # Batch transpilation scripts and stress tests
+├── training/           # QLoRA training notebook (qlora.ipynb)
+├── evaluation/         # Benchmark scripts and notebooks
+├── analysis/           # Evaluation analysis and visualization
 ├── data-pipeline/      # The Stack streaming, filtering, packaging
-├── nl-text/            # CC-100/OSCAR pull, clean, tokenize, package
-├── language-review/    # Per-language review notes and sign-off
-├── native-code/        # Contributor exercises, guide, quality rubric
-├── datasets/           # HuggingFace dataset cards (data lives on HF)
-└── models/             # HuggingFace model cards per condition
+└── language-review/    # Per-language keyword review and sign-off
 ```
+
+## HuggingFace Repos
+
+All datasets, trained adapters, and results live on HuggingFace — not in this repo.
+
+| Repo                                                                                                  | Purpose                                                  |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training datasets (per-condition configs, 5k and 32k)    |
+| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained LoRA adapters (per-condition subfolders)         |
+| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Eval results, training configs, condition metadata       |
+| [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community)     | Human-written native code samples (Condition 3 & 4 data) |
+
+### Data Configs ([language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data))
+
+| Config               | Description                                   | Files  |
+| -------------------- | --------------------------------------------- | ------ |
+| `condition-1-en-32k` | English Python from The Stack                 | 31,818 |
+| `condition-1-en-5k`  | English Python 5K subset                      | 5,000  |
+| `condition-2-zh-5k`  | Chinese keyword-swapped (Legesher transpiled) | 5,000  |
+| `condition-2-es-5k`  | Spanish keyword-swapped (Legesher transpiled) | 5,000  |
+| `condition-2-ur-5k`  | Urdu keyword-swapped (Legesher transpiled)    | 5,000  |
+| `condition-2-zh-32k` | Chinese keyword-swapped (full)                | 31,818 |
+| `condition-2-es-32k` | Spanish keyword-swapped (full)                | 31,818 |
+| `condition-2-ur-32k` | Urdu keyword-swapped (full)                   | 31,818 |
+| `condition-3-zh-5k`  | Chinese mixed native blend                    | 5,000  |
+| `condition-4-zh-5k`  | Chinese strictly native code                  | varies |
+
+### Trained Adapters ([language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora))
+
+Base model: [CohereLabs/tiny-aya-base](https://huggingface.co/CohereLabs/tiny-aya-base) (3.35B params), QLoRA 4-bit via Unsloth.
+
+| Subfolder             | Condition            |
+| --------------------- | -------------------- |
+| `condition-1-en-32k/` | English code (full)  |
+| `condition-1-en-5k/`  | English code (5K)    |
+| `condition-2-zh-5k/`  | Chinese transpiled   |
+| `condition-2-es-5k/`  | Spanish transpiled   |
+| `condition-2-ur-5k/`  | Urdu transpiled      |
+| `condition-3-zh-5k/`  | Chinese mixed native |
 
 ## Key References
 
-- "To Code, or Not To Code?" (Cohere, 2024) — code improves NL reasoning ~8%
+- "To Code, or Not To Code?" (Aryabumi et al., 2024) — code improves NL reasoning ~8%
 - "Unveiling the Impact of Coding Data Instruction Fine-Tuning" (Luo et al., AAAI 2025) — 20-30% improvement
 - "Linguistic Relativity and Programming Languages" (Chen, 2018) — Sapir-Whorf applies to code
 - "The Stack" (Kocetkov et al., 2022) — 6.4TB code, all English keywords
@@ -78,6 +121,5 @@ expedition-tiny-aya/
 
 ## Links
 
-- [Linear Project](https://linear.app/legesher-research)
 - [Legesher Monorepo](https://github.com/MadiEdgar/legesher) (transpilation tooling)
-- HuggingFace Organization: TBD
+- [HuggingFace Collection](https://huggingface.co/collections/legesher/language-decoded)
