@@ -76,12 +76,40 @@ expedition-tiny-aya/
 
 All datasets, trained adapters, and results live on HuggingFace — not in this repo.
 
-| Repo                                                                                                  | Purpose                                                    |
-| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training datasets (per-condition configs, 5k and 32k)      |
-| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained LoRA adapters (per-condition subfolders)           |
-| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Eval results, training configs, condition metadata         |
-| [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community)     | Human-written native code samples (Condition 3 and 4 data) |
+| Repo                                                                                                  | Purpose                                                  |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training datasets (per-condition configs, 5k and 32k)    |
+| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained LoRA adapters (per-condition subfolders)         |
+| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Eval results, training configs, condition metadata       |
+| [language-decoded-community](https://huggingface.co/datasets/legesher/language-decoded-community)     | Human-written native code samples (Condition 3 & 4 data) |
+
+### Data Configs ([language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data))
+
+| Config               | Description                                   | Files  |
+| -------------------- | --------------------------------------------- | ------ |
+| `condition-1-en-32k` | English Python from The Stack                 | 31,818 |
+| `condition-1-en-5k`  | English Python 5K subset                      | 5,000  |
+| `condition-2-zh-5k`  | Chinese keyword-swapped (Legesher transpiled) | 5,000  |
+| `condition-2-es-5k`  | Spanish keyword-swapped (Legesher transpiled) | 5,000  |
+| `condition-2-ur-5k`  | Urdu keyword-swapped (Legesher transpiled)    | 5,000  |
+| `condition-2-zh-32k` | Chinese keyword-swapped (full)                | 31,818 |
+| `condition-2-es-32k` | Spanish keyword-swapped (full)                | 31,818 |
+| `condition-2-ur-32k` | Urdu keyword-swapped (full)                   | 31,818 |
+| `condition-3-zh-5k`  | Chinese mixed native blend                    | 5,000  |
+| `condition-4-zh-5k`  | Chinese strictly native code                  | varies |
+
+### Trained Adapters ([language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora))
+
+Base model: [CohereLabs/tiny-aya-base](https://huggingface.co/CohereLabs/tiny-aya-base) (3.35B params), QLoRA 4-bit via Unsloth.
+
+| Subfolder             | Condition            |
+| --------------------- | -------------------- |
+| `condition-1-en-32k/` | English code (full)  |
+| `condition-1-en-5k/`  | English code (5K)    |
+| `condition-2-zh-5k/`  | Chinese transpiled   |
+| `condition-2-es-5k/`  | Spanish transpiled   |
+| `condition-2-ur-5k/`  | Urdu transpiled      |
+| `condition-3-zh-5k/`  | Chinese mixed native |
 
 ## Key References
 
