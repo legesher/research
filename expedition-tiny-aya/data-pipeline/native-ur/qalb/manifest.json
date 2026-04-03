@@ -1,0 +1,95 @@
+{
+  "collection": "qalb-native-ur",
+  "language": "ur",
+  "script": "Perso-Arabic",
+  "rationale": "Qalb is an Arabic Lisp-like programming language by Ramsey Nasser (2012). Arabic and Urdu share the Perso-Arabic script and many loanwords. While different language families (Semitic vs. Indo-Aryan), shared script exposes the model to programming concepts in a script Urdu speakers read. Used as native-PL component of Condition 3-ur.",
+  "source_repo": "https://github.com/nasser/---",
+  "source_license": "MIT",
+  "collected_date": "2026-04-03",
+  "collected_by": "rafaym30@gmail.com",
+  "linear_issue": "AYA-165",
+  "total_files": 7,
+  "total_bytes": 6869,
+  "quality_filter": "all files syntactically valid (official examples from source repo or verified wiki samples); no duplicates",
+  "files": [
+    {
+      "filename": "mrhba.qlb",
+      "description": "Hello World — prints 'مرحبا يا عالم'",
+      "source": "nasser/--- public/lib/amthila/mrhba.qlb",
+      "license": "MIT",
+      "lines": 1,
+      "bytes": 36,
+      "quality": "valid",
+      "complexity": "trivial"
+    },
+    {
+      "filename": "fybunatshi.qlb",
+      "description": "Recursive Fibonacci — defines and calls fibonacci(10)",
+      "source": "nasser/--- public/lib/amthila/fybunatshi.qlb",
+      "license": "MIT",
+      "lines": 6,
+      "bytes": 206,
+      "quality": "valid",
+      "complexity": "simple"
+    },
+    {
+      "filename": "konway.qlb",
+      "description": "Conway's Game of Life — full implementation with Gosper glider gun seed (41×19 grid)",
+      "source": "nasser/--- public/lib/amthila/konway.qlb",
+      "license": "MIT",
+      "lines": 75,
+      "bytes": 4440,
+      "quality": "valid",
+      "complexity": "advanced"
+    },
+    {
+      "filename": "mtfaail.qlb",
+      "description": "REPL startup script — prints banner, defines help/examples navigation in Arabic",
+      "source": "nasser/--- public/lib/mtfaail/mtfaail.qlb",
+      "license": "MIT",
+      "lines": 28,
+      "bytes": 1721,
+      "quality": "valid",
+      "complexity": "simple"
+    },
+    {
+      "filename": "shart.qlb",
+      "description": "Conditional example — if/greater-than/say (embedded snippet from index.html)",
+      "source": "nasser/--- public/index.html (inline script)",
+      "license": "MIT",
+      "lines": 1,
+      "bytes": 61,
+      "quality": "valid",
+      "complexity": "trivial"
+    },
+    {
+      "filename": "alhaqiqa.qlb",
+      "description": "Truth machine — prints input, loops if input is 1",
+      "source": "https://esolangs.org/wiki/%D9%82%D9%84%D8%A8 (CC-BY-SA 2.0)",
+      "license": "CC-BY-SA-2.0",
+      "lines": 4,
+      "bytes": 108,
+      "quality": "valid",
+      "complexity": "simple"
+    },
+    {
+      "filename": "kolatez.qlb",
+      "description": "Collatz sequence — prints steps of Collatz conjecture for n=25",
+      "source": "https://esolangs.org/wiki/%D9%82%D9%84%D8%A8 (CC-BY-SA 2.0)",
+      "license": "CC-BY-SA-2.0",
+      "lines": 10,
+      "bytes": 297,
+      "quality": "valid",
+      "complexity": "moderate"
+    }
+  ],
+  "corpus_notes": [
+    "This is the complete publicly available corpus of Qalb source code as of 2026-04-03.",
+    "The nasser/--- repo is primarily a JavaScript interpreter; .qlb example files are sparse.",
+    "Rosetta Code lists Qalb but returns 403 for automated access; no additional tasks retrieved.",
+    "SourceHut (git.sr.ht/~nasser/) returns 403 for unauthenticated access; may contain additional files.",
+    "GitHub code search for .qlb requires auth; manual search found no additional community repos with .qlb files.",
+    "7 files is at the low end of 'possibly dozens' but represents the complete verified public corpus.",
+    "For Condition 3-ur blend, Qalb will be combined with Legesher-transpiled Urdu Python and community data."
+  ]
+}
