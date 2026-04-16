@@ -1,6 +1,6 @@
 # Training Pipeline
 
-QLoRA fine-tuning of Tiny Aya (3.35B params) on Kaggle T4 GPUs across experimental conditions.
+QLoRA fine-tuning on Kaggle T4 GPUs across experimental conditions, with model-specific settings loaded from YAML configs.
 
 ## Contents
 
@@ -10,8 +10,8 @@ QLoRA fine-tuning of Tiny Aya (3.35B params) on Kaggle T4 GPUs across experiment
 
 The notebook writes two Python scripts to disk via `%%writefile`, then runs them:
 
-1. **`pretokenize.py`** — Downloads dataset from HuggingFace, tokenizes with Tiny Aya tokenizer, saves to disk
-2. **`train.py`** — Loads pretokenized data, runs QLoRA training with Unsloth + SFTTrainer, uploads adapter to HuggingFace
+1. **`pretokenize.py`** — Loads a model config, downloads dataset from HuggingFace, tokenizes with that model's tokenizer, saves to disk
+2. **`train.py`** — Loads the same model config, runs QLoRA training with Unsloth + SFTTrainer, uploads the adapter to HuggingFace
 
 ```bash
 # Cell 3: pretokenize
@@ -23,7 +23,16 @@ The notebook writes two Python scripts to disk via `%%writefile`, then runs them
 
 ## Configuration
 
-Set `CONDITION_NAME` at the top of both cells before running. Available conditions:
+Set `MODEL_CONFIG_NAME` and `CONDITION_NAME` at the top of both notebook script cells before running.
+
+Available model configs:
+
+- `tiny-aya-base`
+- `qwen25-3b`
+- `gemma4-e4b`
+- `aya-expanse-8b`
+
+Available conditions:
 
 | Condition            | Data Config                        | Description               |
 | -------------------- | ---------------------------------- | ------------------------- |
@@ -34,30 +43,34 @@ Set `CONDITION_NAME` at the top of both cells before running. Available conditio
 | `condition-2-ur-5k`  | Urdu keyword-swapped (5K)          | Legesher transpiled       |
 | `condition-3-zh-5k`  | Chinese mixed native (5K)          | Transpiled + native blend |
 
-## QLoRA Hyperparameters
+## Model Configs
 
-| Parameter             | Value            |
-| --------------------- | ---------------- |
-| LoRA r                | 16               |
-| LoRA alpha            | 32               |
-| LoRA dropout          | 0.0              |
-| Learning rate         | 2e-4             |
-| Batch size            | 8 per GPU        |
-| Gradient accumulation | 1                |
-| Epochs                | 1                |
-| Optimizer             | paged_adamw_8bit |
-| Scheduler             | cosine           |
-| Max sequence length   | 1024             |
-| Packing               | enabled          |
+Model configs live in [`configs`](configs/) as YAML files. They define model selection, tokenizer length, LoRA target modules, and training hyperparameters, for example:
 
-Full config documented at [`configs/qlora-base.json`](https://huggingface.co/datasets/legesher/language-decoded-experiments/blob/main/configs/qlora-base.json) on HuggingFace.
+```yaml
+model_id: CohereLabs/tiny-aya-base
+max_seq_length: 1024
+target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.0
+load_in_4bit: true
+learning_rate: 2.0e-4
+per_device_train_batch_size: 8
+num_train_epochs: 1
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+use_unsloth: true
+```
+
+Adding a new model now only requires adding another YAML file and setting `MODEL_CONFIG_NAME` to its filename stem.
 
 ## Data and Output Repos
 
 | Repo                                                                                                  | Purpose                                     |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training data (per-condition configs)       |
-| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained adapters (per-condition subfolders) |
+| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained adapters (per-model/per-condition subfolders) |
 | [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Training config + eval results              |
 
 ## Compute
