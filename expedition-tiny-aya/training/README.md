@@ -45,7 +45,7 @@ Available conditions:
 
 ## Model Configs
 
-Model configs live in [`training/configs`](/Users/rashik/research/expedition-tiny-aya/training/configs) as YAML files. They define model selection, tokenizer length, LoRA target modules, and training hyperparameters, for example:
+Model configs live in [`configs`](configs/) as YAML files. They define model selection, tokenizer length, LoRA target modules, and training hyperparameters, for example:
 
 ```yaml
 model_id: CohereLabs/tiny-aya-base
