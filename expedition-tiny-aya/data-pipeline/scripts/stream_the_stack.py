@@ -490,8 +490,7 @@ def make_s3_client():
         from botocore.client import Config
     except ImportError as exc:
         raise RuntimeError(
-            "Unsigned S3 access for The Stack v2 requires botocore. "
-            "Install botocore."
+            "Unsigned S3 access for The Stack v2 requires botocore. Install botocore."
         ) from exc
 
     return boto3.client("s3", config=Config(signature_version=UNSIGNED))
@@ -512,11 +511,18 @@ def download_stack_v2_content(
     return decoded_bytes.decode(encoding, errors="replace")
 
 
-def iter_records(args: argparse.Namespace):
-    dataset = load_streaming_dataset(args)
+def iter_records(dataset: Iterable[dict[str, Any]], args: argparse.Namespace):
     if not is_stack_v2_dataset(args.dataset):
         yield from dataset
         return
+
+    try:
+        from botocore.exceptions import BotoCoreError, ClientError
+    except ImportError as exc:
+        raise RuntimeError(
+            "The Stack v2 requires botocore exception types for S3 error handling. "
+            "Install botocore."
+        ) from exc
 
     s3_client = make_s3_client()
     for record in dataset:
@@ -526,11 +532,18 @@ def iter_records(args: argparse.Namespace):
             continue
 
         hydrated_record = dict(record)
-        hydrated_record["content"] = download_stack_v2_content(
-            s3_client,
-            blob_id=blob_id,
-            src_encoding=get_first(record, ("src_encoding",), default="utf-8"),
-        )
+        try:
+            hydrated_record["content"] = download_stack_v2_content(
+                s3_client,
+                blob_id=blob_id,
+                src_encoding=get_first(record, ("src_encoding",), default="utf-8"),
+            )
+        except (BotoCoreError, ClientError) as exc:
+            print(
+                f"Skipping blob_id={blob_id!r} after S3 download failure: {exc}",
+                file=sys.stderr,
+            )
+            continue
         yield hydrated_record
 
 
@@ -541,11 +554,16 @@ def main() -> int:
     progress = load_progress(paths["progress"])
     conn = init_db(paths["db"])
 
-    dataset = iter_records(args)
+    dataset = load_streaming_dataset(args)
 
     start_index = to_int(progress.get("last_index"), default=0)
     if start_index:
-        dataset = itertools.islice(dataset, start_index, None)
+        if is_stack_v2_dataset(args.dataset):
+            dataset = dataset.skip(start_index)
+        else:
+            dataset = itertools.islice(dataset, start_index, None)
+
+    dataset = iter_records(dataset, args)
 
     processed = to_int(progress.get("processed"))
     accepted = to_int(progress.get("accepted"))
