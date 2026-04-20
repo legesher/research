@@ -36,3 +36,20 @@ python scripts/filter_pipeline.py --input raw/ --output filtered/
 # Package for HuggingFace
 python scripts/package_dataset.py --input filtered/ --name legesher/the-stack-python-filtered
 ```
+
+## Stream Outputs
+
+`scripts/stream_the_stack.py` now writes two filtering summaries into the run output directory:
+
+- `filter_stats.json` with raw counters for each reject reason and pipeline checkpoint
+- `data_filtering_pipeline.md` with a StarCoder-2-style table:
+
+| Stage | Count |
+| --- | ---: |
+| Input count | ... |
+| License filter | ... |
+| AST validation | ... |
+| Length filter | ... |
+| Exact dedup | ... |
+| Near dedup | ... |
+| Final count | ... |
