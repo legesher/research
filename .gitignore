@@ -45,3 +45,5 @@ Thumbs.db
 # Local script output (results live on HuggingFace)
 rescored_results/
 **/rescored_results/
+
+expedition-tiny-aya/data-pipeline/output/
