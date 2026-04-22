@@ -140,6 +140,16 @@ def parse_args() -> argparse.Namespace:
         help="Keep test files (test_*, tests/) instead of rejecting them",
     )
     parser.add_argument("--hf-token", default=os.environ.get("HF_TOKEN"))
+    parser.add_argument(
+        "--fetch-workers",
+        type=int,
+        default=16,
+        help=(
+            "Number of parallel worker threads used to fetch file contents "
+            "from Software Heritage S3 for The Stack v2 datasets. Default: 16. "
+            "Set to 1 to restore sequential behavior. Ignored for v1 datasets."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -347,7 +357,9 @@ def tokenize_code(content: str) -> list[str]:
         tokenize.DEDENT,
         tokenize.COMMENT,
     }
-    for token_info in tokenize.generate_tokens(io.StringIO(normalized_content).readline):
+    for token_info in tokenize.generate_tokens(
+        io.StringIO(normalized_content).readline
+    ):
         if token_info.type in ignored_types:
             continue
         token = token_info.string.strip()
@@ -361,7 +373,10 @@ def shingle_tokens(tokens: list[str], size: int = SHINGLE_SIZE) -> list[str]:
         return []
     if len(tokens) < size:
         return [" ".join(tokens)]
-    return [" ".join(tokens[index : index + size]) for index in range(len(tokens) - size + 1)]
+    return [
+        " ".join(tokens[index : index + size])
+        for index in range(len(tokens) - size + 1)
+    ]
 
 
 def build_minhash(content: str) -> MinHash:
@@ -478,7 +493,9 @@ def build_candidate(
         return None, "failed_length", "pipeline_ast"
 
     stars = to_int(
-        get_first(record, ("star_events_count", "max_stars_count", "stars", "star_count"))
+        get_first(
+            record, ("star_events_count", "max_stars_count", "stars", "star_count")
+        )
     )
     if stars < min_stars:
         return None, "failed_stars", "pipeline_length"
@@ -543,7 +560,9 @@ def deserialize_minhash(payload: bytes) -> LeanMinHash:
     return LeanMinHash.deserialize(payload)
 
 
-def rebuild_lsh_state(conn: sqlite3.Connection, metadata_dir: Path) -> list[tuple[Any, ...]]:
+def rebuild_lsh_state(
+    conn: sqlite3.Connection, metadata_dir: Path
+) -> list[tuple[Any, ...]]:
     conn.execute("DELETE FROM accepted_minhashes")
     conn.commit()
     backfill_lsh_state(conn, metadata_dir)
@@ -787,17 +806,27 @@ def iter_records(dataset: Iterable[dict[str, Any]], args: argparse.Namespace):
             "Install botocore."
         ) from exc
 
-    s3_client = make_s3_client()
-    for record in dataset:
+    import threading
+    from collections import deque
+    from concurrent.futures import ThreadPoolExecutor
+
+    # boto3 clients are not guaranteed thread-safe when shared across threads,
+    # so each worker gets its own via threading.local().
+    tls = threading.local()
+
+    def client_for_thread() -> Any:
+        if not hasattr(tls, "client"):
+            tls.client = make_s3_client()
+        return tls.client
+
+    def hydrate(record: dict[str, Any]) -> dict[str, Any] | None:
         blob_id = get_first(record, ("blob_id",))
         if not isinstance(blob_id, str) or not blob_id:
-            yield record
-            continue
-
+            return record
         hydrated_record = dict(record)
         try:
             hydrated_record["content"] = download_stack_v2_content(
-                s3_client,
+                client_for_thread(),
                 blob_id=blob_id,
                 src_encoding=get_first(record, ("src_encoding",), default="utf-8"),
             )
@@ -806,8 +835,40 @@ def iter_records(dataset: Iterable[dict[str, Any]], args: argparse.Namespace):
                 f"Skipping blob_id={blob_id!r} after S3 download failure: {exc}",
                 file=sys.stderr,
             )
-            continue
-        yield hydrated_record
+            return None
+        return hydrated_record
+
+    # Hand-rolled bounded pipeline: submit up to `buffer_size` fetches ahead of
+    # the consumer, then refill one-for-one as each result is yielded. Preserves
+    # source order (FIFO deque + result()) and caps memory at ~buffer_size
+    # records in flight. ThreadPoolExecutor.map is not suitable here because it
+    # eagerly exhausts the streaming iterable before yielding results.
+    workers = max(1, args.fetch_workers)
+    buffer_size = workers * 2
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        pending: deque = deque()
+        stream_iter = iter(dataset)
+
+        for _ in range(buffer_size):
+            try:
+                record = next(stream_iter)
+            except StopIteration:
+                break
+            pending.append(pool.submit(hydrate, record))
+
+        while pending:
+            future = pending.popleft()
+            result = future.result()
+
+            try:
+                record = next(stream_iter)
+                pending.append(pool.submit(hydrate, record))
+            except StopIteration:
+                pass
+
+            if result is not None:
+                yield result
 
 
 def main() -> int:
