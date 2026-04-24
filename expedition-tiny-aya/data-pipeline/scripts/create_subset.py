@@ -1,31 +1,22 @@
 #!/usr/bin/env python3
 """Create a deterministic subset of files from a HuggingFace dataset.
 
-Designed for multi-condition experimental pools (e.g., condition-1-en,
-condition-2-zh, condition-2-es, condition-2-ur) where all conditions
-share the same file_path set. Selects a subset via the file_path
+Designed for multi-condition experimental pools where all conditions
+share the same ``file_path`` set (e.g., an English source and its
+keyword-translated variants). Selects a subset via the ``file_path``
 intersection with a fixed random seed, then writes one subset dataset
 per source config (naming configurable via ``--target-configs``).
 
 Also works with a single source config, in which case the intersection
 is trivially that one config's file_paths — useful for the Phase 3
-bootstrap scenario where only condition-1 has been populated yet.
+bootstrap scenario where only one condition has been populated yet.
 
 Linked issue: AYA-173 (original); Phase 3 configurability follow-up.
 
 Requirements:
     pip install datasets tqdm
 
-Usage (multi-config, Phase 2 shape):
-    python scripts/create_subset.py \\
-        --dataset legesher/language-decoded-data \\
-        --source-configs condition-1-en,condition-2-zh,condition-2-es,condition-2-ur \\
-        --target-configs condition-1-en-5k,condition-2-zh-5k,condition-2-es-5k,condition-2-ur-5k \\
-        --size 5000 \\
-        --output ./subset-5k/ \\
-        --push legesher/language-decoded-data
-
-Usage (single config, Phase 3 bootstrap):
+Usage (single config, Phase 3 bootstrap — current recommended form):
     python scripts/create_subset.py \\
         --dataset legesher/language-decoded-data \\
         --source-configs condition-1-en-103k \\
@@ -33,6 +24,20 @@ Usage (single config, Phase 3 bootstrap):
         --size 5000 \\
         --output ./subset-5k/ \\
         --push legesher/language-decoded-data
+
+Usage (multi-config, once conditions 2/3/4 are transpiled):
+    python scripts/create_subset.py \\
+        --dataset legesher/language-decoded-data \\
+        --source-configs <cond-1>,<cond-2>,<cond-3>,<cond-4> \\
+        --target-configs <cond-1-5k>,<cond-2-5k>,<cond-3-5k>,<cond-4-5k> \\
+        --size 5000 \\
+        --output ./subset-5k/ \\
+        --push legesher/language-decoded-data
+
+    (Phase 2 used e.g. ``condition-1-en``, ``condition-2-zh`` — those
+    configs were renamed on HF to ``phase-2-the-stack-v1-condition-*``
+    and are no longer a valid source for new subsets; substitute the
+    actual current config names.)
 
 Manifest-only mode (streaming, no data download):
     python scripts/create_subset.py \\
@@ -421,7 +426,7 @@ def validate_subsets(
                     {
                         "config": config_name,
                         "file_path": fp,
-                        "reason": "file_path not found in condition-1-en",
+                        "reason": f"file_path not found in {reference_config}",
                     }
                 )
                 code_en_match = False
@@ -522,9 +527,11 @@ def parse_args() -> argparse.Namespace:
         required=True,
         type=_split_csv,
         help=(
-            "Comma-separated list of source config names on the dataset "
-            "(e.g., 'condition-1-en,condition-2-zh,condition-2-es,condition-2-ur' "
-            "for Phase 2, or 'condition-1-en-103k' for Phase 3 bootstrap)"
+            "Comma-separated list of source config names on the dataset. "
+            "Example (Phase 3 bootstrap, single config): 'condition-1-en-103k'. "
+            "For multi-config runs, list every condition that should share the "
+            "same subset file_path set, in consistent ordering with "
+            "--target-configs."
         ),
     )
     parser.add_argument(
@@ -533,8 +540,8 @@ def parse_args() -> argparse.Namespace:
         type=_split_csv,
         help=(
             "Comma-separated list of target config names to push as, one per "
-            "source config, in the same order (e.g., "
-            "'condition-1-en-5k,condition-2-zh-5k,condition-2-es-5k,condition-2-ur-5k')"
+            "source config, in the same order. Example (Phase 3 bootstrap): "
+            "'condition-1-en-5k'."
         ),
     )
     parser.add_argument(
