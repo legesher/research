@@ -19,3 +19,14 @@ Each section can be edited independently to enable parallel work:
 ## Figures
 
 Place generated figures (PNG/SVG) in `figures/` and reference them from section files.
+
+## How to:
+
+This paper uses the template from: [https://github.com/SaadBazaz/quick-research-paper-proposal-template]
+
+### Setup
+- Prerequisite: Install Latex (I recommend [TexLive](http://tug.org/texlive/))
+- Open this repository in VS Code
+- Use the [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop) plugin
+- Just edit the [paper_template.tex](./paper_template.tex) file
+- The plugin will build the file to the PDF file
