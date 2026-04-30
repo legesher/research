@@ -276,7 +276,12 @@ def _build_rows(
         else:
             code_en = ""
 
-        meta = file_metadata.get(str(relative), {})
+        # Fall back to basename when CSV keys are basenames (cond5
+        # populator's `filename` column) but `relative` is a nested path
+        # (e.g. batch_transpile.py output).
+        meta = (
+            file_metadata.get(str(relative)) or file_metadata.get(relative.name) or {}
+        )
         license_name = meta.get("license", default_license or "unknown")
         file_path_str = meta.get("file_path", str(relative))
 
@@ -447,7 +452,7 @@ def package_from_files(args: argparse.Namespace) -> None:
         **split_meta,
     }
     meta_path = output / "run_metadata.json"
-    with open(meta_path, "w") as f:
+    with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(run_meta, f, indent=2)
     print(f"  Metadata: {meta_path}")
 
