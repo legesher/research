@@ -210,14 +210,26 @@ def package_from_files(args: argparse.Namespace) -> None:
     transpiled_files = sorted(transpiled_dir.glob("**/*.py"))
     print(f"Found {len(transpiled_files)} transpiled files")
 
-    # Load metadata CSV if available (from batch_transpile.py output)
+    # Load metadata CSV if available (from batch_transpile.py output, or
+    # cond5 populator). Prefer `filename` as the lookup key when it's
+    # populated — the cond5 schema uses `filename: 000.py` for lookup AND
+    # `file_path: <stack-v2-attribution>` so source provenance survives onto
+    # the published HF dataset's `file_path` column. Older CSVs without
+    # `filename` fall back to `file_path` for the key (preserving backward
+    # compatibility with batch_transpile.py output).
     metadata_path = transpiled_dir / "metadata.csv"
     file_metadata = {}
     if metadata_path.exists():
-        with open(metadata_path) as f:
+        # populate_cond5_datasets writes metadata.csv as UTF-8; the
+        # `file_path` column contains source-attribution paths that may
+        # include non-ASCII characters. Open with explicit encoding +
+        # newline="" so csv.DictReader handles \r\n correctly on all
+        # locales, not just where the OS default is utf-8.
+        with open(metadata_path, encoding="utf-8", newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                file_metadata[row.get("file_path", row.get("filename", ""))] = row
+                lookup_key = row.get("filename") or row.get("file_path") or ""
+                file_metadata[lookup_key] = row
 
     rows = []
     skipped = 0
