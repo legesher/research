@@ -284,6 +284,16 @@ def _build_rows(
         )
         license_name = meta.get("license", default_license or "unknown")
         file_path_str = meta.get("file_path", str(relative))
+        # Propagate `idx` (source parquet row index) from metadata.csv when
+        # available — the cond5 populator and the materialize_cond1_source
+        # manifest both populate it. Lets cross-condition joins use a
+        # deterministic integer key instead of string-matching file_path.
+        # Stored as int for clean parquet typing; -1 sentinel when absent.
+        idx_raw = meta.get("idx")
+        try:
+            idx_val = int(idx_raw) if idx_raw not in (None, "") else -1
+        except (TypeError, ValueError):
+            idx_val = -1
 
         token_count = count_tokens(tokenizer, code)
 
@@ -294,6 +304,7 @@ def _build_rows(
                 "language": language,
                 "file_path": file_path_str,
                 "license": license_name,
+                "idx": idx_val,
                 "token_count": token_count,
             }
         )
