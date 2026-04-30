@@ -220,7 +220,12 @@ def package_from_files(args: argparse.Namespace) -> None:
     metadata_path = transpiled_dir / "metadata.csv"
     file_metadata = {}
     if metadata_path.exists():
-        with open(metadata_path) as f:
+        # populate_cond5_datasets writes metadata.csv as UTF-8; the
+        # `file_path` column contains source-attribution paths that may
+        # include non-ASCII characters. Open with explicit encoding +
+        # newline="" so csv.DictReader handles \r\n correctly on all
+        # locales, not just where the OS default is utf-8.
+        with open(metadata_path, encoding="utf-8", newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 lookup_key = row.get("filename") or row.get("file_path") or ""

@@ -424,10 +424,18 @@ def run_pilot(
     """Translate ``files`` to ``target_lang`` and capture per-file outcomes.
 
     When ``concurrency > 1``, files are translated in parallel via a
-    ``ThreadPoolExecutor``. Each worker thread gets its own
-    ``OpenAICompatBackend`` (and therefore its own ``httpx.AsyncClient``)
-    via ``threading.local`` — sharing one ``AsyncClient`` across threads
-    that each call ``asyncio.run`` is unsupported by httpx's transport pool.
+    ``ThreadPoolExecutor``. Each worker thread gets its own backend
+    instance via ``threading.local``. Backend lifecycle differs by provider:
+
+    - ``OpenAICompatBackend`` caches its async client across calls; the
+      threading.local guard prevents the cached httpx ``AsyncClient`` from
+      being shared across threads that each call ``asyncio.run`` (an
+      unsupported pattern for httpx's transport pool).
+    - ``CohereBackend`` constructs a fresh ``CohereAyaProvider`` (and
+      therefore a fresh ``AsyncClientV2``) inside each ``asyncio.run``
+      invocation rather than caching it. The threading.local guard is
+      effectively a no-op for Cohere, but kept symmetric with the
+      OpenAI-compat path so the dispatch logic is uniform.
 
     ``resume=True`` skips files that already have an output ``.py`` in
     ``output_dir`` (typical use: long runs that got interrupted). ``retry=True``
@@ -466,6 +474,15 @@ def run_pilot(
             # package_dataset.
             if not original_path.exists():
                 original_path.write_text(code_en, encoding="utf-8")
+            # Read the existing translation to compute output_chars in
+            # Unicode code points, matching the non-resumed path. Using
+            # st_size (bytes) here would over-report by ~3× on RTL/CJK
+            # output and skew the run summary.
+            try:
+                resumed_text = out_path.read_text(encoding="utf-8")
+                resumed_output_chars = len(resumed_text)
+            except (UnicodeDecodeError, OSError):
+                resumed_output_chars = out_path.stat().st_size
             return {
                 "idx": idx,
                 "file_path": file_path,
@@ -474,7 +491,7 @@ def run_pilot(
                 "ast": "skipped",
                 "elapsed_seconds": 0.0,
                 "input_chars": len(code_en),
-                "output_chars": out_path.stat().st_size,
+                "output_chars": resumed_output_chars,
             }
 
         translator = LLMTranslator(
