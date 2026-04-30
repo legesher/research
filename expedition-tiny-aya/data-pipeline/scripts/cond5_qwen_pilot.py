@@ -64,14 +64,14 @@ from legesher_core.tree_sitter.llm_translator import LLMTranslator
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PARQUET = (
-    "/Users/madisonedgar/GitHub/Legesher/research/expedition-tiny-aya/"
-    "data-pipeline/packaged/condition-1-en-103k/train.parquet"
+# Defaults derived relative to this script's location so the pilot is
+# portable across checkouts. `parents[1]` resolves to `data-pipeline/`
+# (the parent of `scripts/`).
+DATA_PIPELINE_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PARQUET = str(
+    DATA_PIPELINE_ROOT / "packaged" / "condition-1-en-103k" / "train.parquet"
 )
-DEFAULT_OUTPUT_DIR = (
-    "/Users/madisonedgar/GitHub/Legesher/research/expedition-tiny-aya/"
-    "data-pipeline/cond5-qwen-pilot"
-)
+DEFAULT_OUTPUT_DIR = str(DATA_PIPELINE_ROOT / "cond5-qwen-pilot")
 
 
 class OpenAICompatBackend:
@@ -213,6 +213,24 @@ def reverse_keywords_and_builtins(
     return result
 
 
+def _positive_int(value: str) -> int:
+    """argparse type for ``--n-files``: must be a strictly positive integer.
+
+    Rejecting 0 and negatives at parse time avoids a downstream
+    ``ZeroDivisionError`` in the per-language average-chars print and
+    keeps every code path that assumes ``len(files) >= 1`` honest.
+    """
+    try:
+        n = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"expected an integer, got {value!r}") from exc
+    if n <= 0:
+        raise argparse.ArgumentTypeError(
+            f"--n-files must be positive (got {n}); pass at least 1"
+        )
+    return n
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -227,7 +245,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--n-files",
-        type=int,
+        type=_positive_int,
         default=20,
         help="Number of files to translate per language (default: 20)",
     )
