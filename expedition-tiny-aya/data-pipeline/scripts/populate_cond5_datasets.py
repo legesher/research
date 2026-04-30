@@ -1,41 +1,46 @@
 #!/usr/bin/env python3
-"""Cond-5 translation pilot — Qwen via Ollama, full AYA-191 pipeline.
+"""Populate Condition 5 datasets — full LLM translation of Cond-1 files.
 
-Translates a small slice of ``condition-1-en-103k`` Python files to
-``{zh, es, ur}`` (or any subset) using a local Qwen model served by Ollama,
-exercising the full Legesher Cond-5 pipeline:
+Translates ``condition-1-en-{size}`` Python files into target languages
+({es, zh, ur}, etc.) for the AYA-213 Cond-5 datasets, exercising the full
+Legesher Cond-5 pipeline:
 
-    TreeSitterTranslator (keywords/builtins via language packs)
+    TreeSitterTranslator (keywords/builtins/reserved_words via packs)
         +
-    OpenAICompatProvider (LLM for identifiers/comments/docstrings/strings)
+    {OpenAICompatProvider | CohereAyaProvider}
+        (LLM for identifiers/comments/docstrings/strings)
         ↓
     LLMTranslator.translate_code(...)
 
-Designed to:
-1. Validate that the AYA-191 pipeline runs end-to-end against a local LLM
-2. Surface per-language quality issues (e.g., AYA-202 already showed Urdu is
-   weak with smaller models)
-3. Give a wall-clock estimate before scaling to the 5k subset or 103k pool
+Outputs land in a layout that ``package_dataset.py from-files`` consumes
+directly:
 
-Linked Linear issue: AYA-213 (Condition 5 dataset rebuild — 9 datasets)
+    {output_dir}/{lang}/000.py            (translation)
+    {output_dir}/{lang}/metadata.csv      (filename + file_path + license)
+    {output_dir}/{lang}.originals/000.py  (English source mirror)
 
-Usage:
-    # Default: 20 files × {es, zh, ur}, qwen2.5:7b-instruct-q4_K_M
-    python scripts/cond5_qwen_pilot.py
+Linked Linear issue: AYA-213 (Cond-5 dataset rebuild — 6 datasets:
+3 langs × 2 backends).
 
-    # Faster iteration (smaller model, fewer files)
-    python scripts/cond5_qwen_pilot.py --model qwen2.5:3b-instruct-q4_K_M --n-files 5
+Usage examples:
+    # Cohere production run (recommended for AYA-213)
+    COHERE_API_KEY=$(pass-cli ...) \\
+    python scripts/populate_cond5_datasets.py \\
+        --provider cohere --cohere-model c4ai-aya-expanse-32b \\
+        --target-langs ur --n-files 5000 --concurrency 4 \\
+        --source-parquet packaged/condition-1-en-5k/train.parquet \\
+        --output-dir packaged/condition-5-ur-5k-c4ai-aya-expanse-32b \\
+        --resume
 
-    # One language only
-    python scripts/cond5_qwen_pilot.py --target-langs es
-
-    # Different source parquet
-    python scripts/cond5_qwen_pilot.py \\
-        --source-parquet /path/to/train.parquet --n-files 10
-
-    # Parallel files (requires OLLAMA_NUM_PARALLEL>=N on the server)
+    # Local Ollama dev iteration
     OLLAMA_NUM_PARALLEL=4 ollama serve  # in a separate shell
-    python scripts/cond5_qwen_pilot.py --concurrency 4 --n-files 20
+    python scripts/populate_cond5_datasets.py \\
+        --model gemma3:12b --target-langs es \\
+        --concurrency 4 --n-files 20
+
+    # Single language, single file (smoke test)
+    python scripts/populate_cond5_datasets.py \\
+        --provider cohere --target-langs ur --n-files 1
 """
 
 from __future__ import annotations
@@ -43,6 +48,7 @@ from __future__ import annotations
 import argparse
 import ast
 import asyncio
+import csv
 import json
 import logging
 import os
@@ -72,6 +78,67 @@ DEFAULT_PARQUET = str(
     DATA_PIPELINE_ROOT / "packaged" / "condition-1-en-103k" / "train.parquet"
 )
 DEFAULT_OUTPUT_DIR = str(DATA_PIPELINE_ROOT / "cond5-qwen-pilot")
+
+# Tiny Aya (cohere `tiny-aya-global`) returns identifier translations as
+# `original_name_<en>_translated_name_<tgt>` glued strings instead of just
+# the bare translated identifier — a structured-format prompt-following
+# failure that CORE-950's no-explanation rule didn't catch. We strip the
+# wrapper here so output is shaped like every other backend's output.
+# Idempotent on backends that don't produce the artifact (c4ai-aya-expanse-32b,
+# command-a-translate, gemma3, etc.) — the pattern is specific enough that
+# false positives in legitimate code are vanishingly unlikely.
+_LABELED_MAPPING_PATTERN = re.compile(
+    r"original_name_(\w+?)_translated_name_(\w+)", re.UNICODE
+)
+
+
+def strip_labeled_mappings(code: str) -> tuple[str, int]:
+    """Strip the tiny-aya `original_name_X_translated_name_Y` artifact.
+
+    Returns the cleaned code plus the count of substitutions applied.
+    Counters surface in the per-file summary so we can see how often
+    a given backend triggered the artifact.
+    """
+    return _LABELED_MAPPING_PATTERN.subn(r"\2", code)
+
+
+def write_metadata_csv(output_dir: Path, per_file: list[dict[str, Any]]) -> Path | None:
+    """Emit a metadata.csv that ``package_dataset.py from-files`` consumes.
+
+    Schema:
+    - ``filename`` (e.g. ``000.py``): used by ``package_dataset`` as the
+      lookup key against the relative path of each translated file. The
+      companion patch in this PR makes ``package_dataset`` prefer this
+      column over ``file_path`` when building its metadata dict.
+    - ``file_path``: the **source attribution** (Stack v2 path) carried
+      forward into the published HF dataset's ``file_path`` column so
+      provenance survives the trip from local run → HF.
+    - ``license`` and ``idx`` round out the row.
+
+    Resumed entries are included so a fully-resumed run still produces a
+    complete metadata.csv that ``package_dataset`` can consume. Runtime
+    errors are skipped — those files have no valid output to package.
+    """
+    rows = [r for r in per_file if r["status"] in ("ok", "resumed")]
+    if not rows:
+        return None
+    metadata_path = output_dir / "metadata.csv"
+    with metadata_path.open("w", newline="", encoding="utf-8") as fp:
+        writer = csv.DictWriter(
+            fp,
+            fieldnames=["filename", "file_path", "license", "idx"],
+        )
+        writer.writeheader()
+        for r in rows:
+            writer.writerow(
+                {
+                    "filename": f"{r['idx']:03d}.py",
+                    "file_path": r.get("file_path", ""),
+                    "license": r.get("license", ""),
+                    "idx": r["idx"],
+                }
+            )
+    return metadata_path
 
 
 class OpenAICompatBackend:
@@ -378,16 +445,31 @@ def run_pilot(
             local.backend = b
         return b
 
+    # Originals dir is a sibling of the per-language output dir. Layout:
+    #   output_root/{lang}/000.py            (translation)
+    #   output_root/{lang}.originals/000.py  (English source)
+    # package_dataset.py from-files maps these via --transpiled / --originals.
+    originals_dir = output_dir.parent / f"{output_dir.name}.originals"
+    originals_dir.mkdir(parents=True, exist_ok=True)
+
     def _translate_one(idx: int, row: dict[str, Any]) -> dict[str, Any]:
         code_en = row["code"]
         file_path = row.get("file_path") or row.get("metadata_file") or f"row_{idx}"
+        license_str = row.get("license") or ""
         out_path = output_dir / f"{idx:03d}.py"
+        original_path = originals_dir / f"{idx:03d}.py"
 
         # Resume: short-circuit if output already exists from a prior run.
         if resume and out_path.exists():
+            # Best-effort: also write the original if it's missing, so a
+            # resumed run still produces a complete originals/ tree for
+            # package_dataset.
+            if not original_path.exists():
+                original_path.write_text(code_en, encoding="utf-8")
             return {
                 "idx": idx,
                 "file_path": file_path,
+                "license": license_str,
                 "status": "resumed",
                 "ast": "skipped",
                 "elapsed_seconds": 0.0,
@@ -457,6 +539,10 @@ def run_pilot(
                 "input_chars": len(code_en),
             }
 
+        # Strip tiny-aya labeled-mapping artifact (if present). Idempotent on
+        # backends that don't produce it. Count surfaces in per_file output.
+        translated, stripped_count = strip_labeled_mappings(translated)
+
         # `elapsed` is already set to the successful attempt's duration
         # by the for loop above. `out_path` was bound at the top of the
         # function for the resume short-circuit; reuse it for the write.
@@ -468,6 +554,9 @@ def run_pilot(
             ast_status = f"fail: {syn_exc.msg} at line {syn_exc.lineno}"
 
         out_path.write_text(translated, encoding="utf-8")
+        # Mirror the English source so package_dataset.py from-files can pair
+        # transpiled ↔ original by relative path (000.py ↔ 000.py).
+        original_path.write_text(code_en, encoding="utf-8")
 
         preview_path = output_dir / f"{idx:03d}.preview.md"
         preview_path.write_text(
@@ -486,11 +575,13 @@ def run_pilot(
         return {
             "idx": idx,
             "file_path": file_path,
+            "license": license_str,
             "status": "ok",
             "ast": ast_status,
             "elapsed_seconds": round(elapsed, 2),
             "input_chars": len(code_en),
             "output_chars": len(translated),
+            "stripped_labeled_mappings": stripped_count,
         }
 
     per_file: list[dict[str, Any]] = []
@@ -509,6 +600,12 @@ def run_pilot(
         per_file.sort(key=lambda r: r["idx"])
 
     wall_seconds = time.perf_counter() - wall_t0
+
+    # Emit metadata.csv so package_dataset.py from-files can pick up
+    # license + source attribution per row.
+    metadata_path = write_metadata_csv(output_dir, per_file)
+    if metadata_path is not None:
+        logger.info("Wrote metadata.csv: %s", metadata_path)
 
     parse_pass = 0
     parse_fail = 0
