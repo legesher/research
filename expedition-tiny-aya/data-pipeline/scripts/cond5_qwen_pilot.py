@@ -32,6 +32,10 @@ Usage:
     # Different source parquet
     python scripts/cond5_qwen_pilot.py \\
         --source-parquet /path/to/train.parquet --n-files 10
+
+    # Parallel files (requires OLLAMA_NUM_PARALLEL>=N on the server)
+    OLLAMA_NUM_PARALLEL=4 ollama serve  # in a separate shell
+    python scripts/cond5_qwen_pilot.py --concurrency 4 --n-files 20
 """
 
 from __future__ import annotations
@@ -41,9 +45,13 @@ import ast
 import asyncio
 import json
 import logging
+import os
 import re
 import sys
+import threading
 import time
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -51,6 +59,7 @@ from typing import Any
 from datasets import load_dataset
 from legesher_i18n import load_language_pack
 from legesher_i18n.api.providers import OpenAICompatProvider
+from legesher_i18n.api.providers.cohere_aya import CohereAyaProvider
 from legesher_core.tree_sitter.llm_translator import LLMTranslator
 
 DEFAULT_PARQUET = (
@@ -104,6 +113,64 @@ class OpenAICompatBackend:
         async def _run_concurrent() -> list[str]:
             tasks = [
                 self._provider.translate(
+                    item["text"], source_lang, target_lang, item.get("context")
+                )
+                for item in items
+            ]
+            results = await asyncio.gather(*tasks, return_exceptions=False)
+            return [r.text for r in results]
+
+        return asyncio.run(_run_concurrent())
+
+
+class CohereBackend:
+    """Sync backend adapter over async ``CohereAyaProvider``.
+
+    Same surface as ``OpenAICompatBackend`` but routes through Cohere's hosted
+    API (Aya Expanse 32B by default). Useful for AYA-213 production runs where
+    local gemma3 is too slow (~16s/call vs ~0.7s/call via Cohere).
+
+    Creates a fresh ``CohereAyaProvider`` (and therefore a fresh
+    ``AsyncClientV2``) inside each ``asyncio.run`` invocation. Caching the
+    provider across calls would bind the underlying httpx connection pool to
+    a now-closed event loop, causing ``RuntimeError: Event loop is closed``.
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "c4ai-aya-expanse-32b",
+    ) -> None:
+        self._api_key = api_key
+        self._model = model
+
+    def _new_provider(self) -> CohereAyaProvider:
+        return CohereAyaProvider(api_key=self._api_key, model=self._model)
+
+    def translate_text(
+        self,
+        text: str,
+        source_lang: str,
+        target_lang: str,
+        context: dict[str, Any] | None = None,
+    ) -> str:
+        async def _run() -> str:
+            provider = self._new_provider()
+            result = await provider.translate(text, source_lang, target_lang, context)
+            return result.text
+
+        return asyncio.run(_run())
+
+    def translate_batch(
+        self,
+        items: list[dict[str, Any]],
+        source_lang: str,
+        target_lang: str,
+    ) -> list[str]:
+        async def _run_concurrent() -> list[str]:
+            provider = self._new_provider()
+            tasks = [
+                provider.translate(
                     item["text"], source_lang, target_lang, item.get("context")
                 )
                 for item in items
@@ -193,6 +260,40 @@ def parse_args() -> argparse.Namespace:
         help="Python version for language pack loading (default: 3.13)",
     )
     parser.add_argument(
+        "--timeout",
+        type=float,
+        default=180.0,
+        help="Per-request timeout in seconds (default: 180; bump for larger models)",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=1,
+        help=(
+            "Number of files to translate in parallel (default: 1). "
+            "The Ollama server must be started with OLLAMA_NUM_PARALLEL>=N "
+            "for this to actually parallelize; otherwise Ollama queues."
+        ),
+    )
+    parser.add_argument(
+        "--provider",
+        choices=("ollama", "cohere"),
+        default="ollama",
+        help=(
+            "LLM provider (default: ollama). With 'cohere', requires "
+            "COHERE_API_KEY in env and uses --cohere-model instead of --model."
+        ),
+    )
+    parser.add_argument(
+        "--cohere-model",
+        default="c4ai-aya-expanse-32b",
+        help=(
+            "Cohere model when --provider=cohere "
+            "(default: c4ai-aya-expanse-32b; alternatives: "
+            "command-a-translate-08-2025, command-a-03-2025)"
+        ),
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Verbose logging",
@@ -204,32 +305,40 @@ def run_pilot(
     source_lang: str,
     target_lang: str,
     files: list[dict[str, Any]],
-    backend: OpenAICompatBackend,
+    backend_factory: Callable[[], OpenAICompatBackend],
     keyword_map: dict[str, str],
     builtin_map: dict[str, str],
     output_dir: Path,
+    concurrency: int = 1,
+    reserved_word_map: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Translate ``files`` to ``target_lang`` and capture per-file outcomes."""
-    translator = LLMTranslator(
-        keyword_map=keyword_map,
-        builtin_map=builtin_map,
-        backend=backend,
-    )
+    """Translate ``files`` to ``target_lang`` and capture per-file outcomes.
+
+    When ``concurrency > 1``, files are translated in parallel via a
+    ``ThreadPoolExecutor``. Each worker thread gets its own
+    ``OpenAICompatBackend`` (and therefore its own ``httpx.AsyncClient``)
+    via ``threading.local`` — sharing one ``AsyncClient`` across threads
+    that each call ``asyncio.run`` is unsupported by httpx's transport pool.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
+    local = threading.local()
 
-    per_file: list[dict[str, Any]] = []
-    parse_pass = 0
-    parse_fail = 0
-    runtime_fail = 0
-    total_input_chars = 0
-    total_output_chars = 0
-    total_seconds = 0.0
+    def _backend() -> OpenAICompatBackend:
+        b = getattr(local, "backend", None)
+        if b is None:
+            b = backend_factory()
+            local.backend = b
+        return b
 
-    for idx, row in enumerate(files):
+    def _translate_one(idx: int, row: dict[str, Any]) -> dict[str, Any]:
         code_en = row["code"]
         file_path = row.get("file_path") or row.get("metadata_file") or f"row_{idx}"
-        total_input_chars += len(code_en)
-
+        translator = LLMTranslator(
+            keyword_map=keyword_map,
+            builtin_map=builtin_map,
+            backend=_backend(),
+            reserved_word_map=reserved_word_map,
+        )
         t0 = time.perf_counter()
         try:
             translated_raw = translator.translate_code(
@@ -242,44 +351,32 @@ def run_pilot(
             )
         except Exception as exc:
             elapsed = time.perf_counter() - t0
-            runtime_fail += 1
             err_path = output_dir / f"{idx:03d}.error.txt"
             err_path.write_text(
                 f"file_path: {file_path}\nelapsed: {elapsed:.2f}s\n\n"
                 f"{type(exc).__name__}: {exc}\n",
                 encoding="utf-8",
             )
-            per_file.append(
-                {
-                    "idx": idx,
-                    "file_path": file_path,
-                    "status": "runtime_error",
-                    "error": f"{type(exc).__name__}: {exc}",
-                    "elapsed_seconds": round(elapsed, 2),
-                }
-            )
-            continue
+            return {
+                "idx": idx,
+                "file_path": file_path,
+                "status": "runtime_error",
+                "error": f"{type(exc).__name__}: {exc}",
+                "elapsed_seconds": round(elapsed, 2),
+                "input_chars": len(code_en),
+            }
 
         elapsed = time.perf_counter() - t0
-        total_seconds += elapsed
-        total_output_chars += len(translated)
-
-        # AST validation: reverse-translate keywords/builtins to English first,
-        # then ast.parse. Cond-5 outputs use target-language keywords, which
-        # standard Python ast.parse doesn't recognize.
         en_for_ast = reverse_keywords_and_builtins(translated, keyword_map, builtin_map)
         try:
             ast.parse(en_for_ast)
             ast_status = "pass"
-            parse_pass += 1
         except SyntaxError as syn_exc:
             ast_status = f"fail: {syn_exc.msg} at line {syn_exc.lineno}"
-            parse_fail += 1
 
         out_path = output_dir / f"{idx:03d}.py"
         out_path.write_text(translated, encoding="utf-8")
 
-        # Side-by-side preview file (first 30 lines each side)
         preview_path = output_dir / f"{idx:03d}.preview.md"
         preview_path.write_text(
             f"# {file_path}\n\n"
@@ -294,27 +391,64 @@ def run_pilot(
             encoding="utf-8",
         )
 
-        per_file.append(
-            {
-                "idx": idx,
-                "file_path": file_path,
-                "status": "ok",
-                "ast": ast_status,
-                "elapsed_seconds": round(elapsed, 2),
-                "input_chars": len(code_en),
-                "output_chars": len(translated),
-            }
-        )
+        return {
+            "idx": idx,
+            "file_path": file_path,
+            "status": "ok",
+            "ast": ast_status,
+            "elapsed_seconds": round(elapsed, 2),
+            "input_chars": len(code_en),
+            "output_chars": len(translated),
+        }
 
+    per_file: list[dict[str, Any]] = []
+    wall_t0 = time.perf_counter()
+
+    if concurrency <= 1:
+        for idx, row in enumerate(files):
+            per_file.append(_translate_one(idx, row))
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            futures = [
+                pool.submit(_translate_one, idx, row) for idx, row in enumerate(files)
+            ]
+            for fut in as_completed(futures):
+                per_file.append(fut.result())
+        per_file.sort(key=lambda r: r["idx"])
+
+    wall_seconds = time.perf_counter() - wall_t0
+
+    parse_pass = 0
+    parse_fail = 0
+    runtime_fail = 0
+    total_input_chars = 0
+    total_output_chars = 0
+    total_seconds = 0.0
+    for r in per_file:
+        total_input_chars += r.get("input_chars", 0)
+        if r["status"] == "runtime_error":
+            runtime_fail += 1
+            continue
+        total_output_chars += r.get("output_chars", 0)
+        total_seconds += r["elapsed_seconds"]
+        if r["ast"] == "pass":
+            parse_pass += 1
+        else:
+            parse_fail += 1
+
+    successful = max(1, len(files) - runtime_fail)
     return {
         "target_lang": target_lang,
         "n_files": len(files),
+        "concurrency": concurrency,
         "ast_pass": parse_pass,
         "ast_fail": parse_fail,
         "runtime_fail": runtime_fail,
+        "wall_seconds": round(wall_seconds, 2),
         "total_seconds": round(total_seconds, 2),
-        "avg_seconds_per_file": (
-            round(total_seconds / max(1, len(files) - runtime_fail), 2)
+        "avg_seconds_per_file": round(total_seconds / successful, 2),
+        "throughput_files_per_min": (
+            round(60 * len(files) / wall_seconds, 2) if wall_seconds > 0 else 0.0
         ),
         "total_input_chars": total_input_chars,
         "total_output_chars": total_output_chars,
@@ -336,6 +470,15 @@ def main() -> int:
         print("error: --target-langs produced an empty list", file=sys.stderr)
         return 2
 
+    if args.concurrency > 1:
+        ollama_parallel = os.environ.get("OLLAMA_NUM_PARALLEL")
+        print(
+            f"Concurrency: {args.concurrency} files in parallel per language. "
+            f"OLLAMA_NUM_PARALLEL={ollama_parallel or '(unset; Ollama default is 1)'}. "
+            "If unset or smaller than --concurrency, Ollama will queue requests "
+            "and you won't see real speedup."
+        )
+
     print(f"Loading source files from {args.source_parquet}")
     ds = load_dataset("parquet", data_files=args.source_parquet, split="train")
     if args.n_files > len(ds):
@@ -355,10 +498,30 @@ def main() -> int:
     output_root = Path(args.output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
 
+    if args.provider == "cohere":
+        cohere_key = os.environ.get("COHERE_API_KEY")
+        if not cohere_key:
+            print(
+                "error: --provider=cohere requires COHERE_API_KEY in environment",
+                file=sys.stderr,
+            )
+            return 2
+        active_model = args.cohere_model
+        print(f"Provider: Cohere API, model={active_model}")
+    else:
+        cohere_key = None
+        active_model = args.model
+        print(f"Provider: Ollama, model={active_model}, url={args.ollama_url}")
+
     summary: dict[str, Any] = {
-        "model": args.model,
-        "ollama_url": args.ollama_url,
+        "provider": args.provider,
+        "model": active_model,
+        "ollama_url": args.ollama_url if args.provider == "ollama" else None,
         "n_files": args.n_files,
+        "concurrency": args.concurrency,
+        "ollama_num_parallel": (
+            os.environ.get("OLLAMA_NUM_PARALLEL") if args.provider == "ollama" else None
+        ),
         "source_parquet": args.source_parquet,
         "source_lang": args.source_lang,
         "target_langs": target_langs,
@@ -366,18 +529,29 @@ def main() -> int:
         "by_language": {},
     }
 
-    backend = OpenAICompatBackend(
-        base_url=args.ollama_url,
-        model=args.model,
-        api_key="ollama",
-    )
+    def backend_factory() -> Any:
+        if args.provider == "cohere":
+            assert cohere_key is not None
+            return CohereBackend(api_key=cohere_key, model=args.cohere_model)
+        return OpenAICompatBackend(
+            base_url=args.ollama_url,
+            model=args.model,
+            api_key="ollama",
+            timeout=args.timeout,
+        )
 
     for lang in target_langs:
-        print(f"\n=== Translating {len(files)} files: {args.source_lang} → {lang} ===")
+        print(
+            f"\n=== Translating {len(files)} files: "
+            f"{args.source_lang} → {lang} (concurrency={args.concurrency}) ==="
+        )
         try:
             pack = load_language_pack(lang, "python", args.python_version)
         except Exception as exc:
-            print(f"  failed to load language pack for {lang}: {exc}", file=sys.stderr)
+            print(
+                f"  failed to load language pack for {lang}: {exc}",
+                file=sys.stderr,
+            )
             summary["by_language"][lang] = {
                 "error": f"language_pack_load_failed: {exc}"
             }
@@ -387,10 +561,12 @@ def main() -> int:
             source_lang=args.source_lang,
             target_lang=lang,
             files=files,
-            backend=backend,
+            backend_factory=backend_factory,
             keyword_map=pack.keywords,
             builtin_map=pack.builtins,
             output_dir=output_root / lang,
+            concurrency=args.concurrency,
+            reserved_word_map=getattr(pack, "reserved_words", None),
         )
         summary["by_language"][lang] = result
 
@@ -399,7 +575,8 @@ def main() -> int:
             f"AST fail: {result['ast_fail']} | "
             f"runtime fail: {result['runtime_fail']} | "
             f"avg {result['avg_seconds_per_file']}s/file | "
-            f"total {result['total_seconds']}s"
+            f"wall {result['wall_seconds']}s | "
+            f"throughput {result['throughput_files_per_min']} files/min"
         )
 
     summary["finished_at"] = datetime.now(timezone.utc).isoformat()
@@ -414,6 +591,8 @@ def main() -> int:
                     "ast_fail": r.get("ast_fail"),
                     "runtime_fail": r.get("runtime_fail"),
                     "avg_seconds_per_file": r.get("avg_seconds_per_file"),
+                    "wall_seconds": r.get("wall_seconds"),
+                    "throughput_files_per_min": r.get("throughput_files_per_min"),
                 }
                 for lang, r in summary["by_language"].items()
             },
