@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile identifier frequency across the first N files of a parquet.
+"""Compile identifier frequency across the first N source files.
 
 Goal: identify identifiers that repeat across files, so we can decide which
 ones belong in the language pack (special / dunder / convention) vs. which
@@ -15,9 +15,21 @@ Categories help triage which identifiers should be:
 - pinned to a known translation in the pack (self, cls, args, kwargs)
 - left for the LLM (everything else)
 
+Source can be either a parquet (e.g. ``condition-1-en-5k/train.parquet``)
+or a directory of ``.py`` files (e.g. a cond5 populator output dir like
+``condition-5-ur-5k-c4ai-aya-expanse-32b/ur/``). The ``--lang`` flag
+labels the output for cross-language comparison.
+
 Usage:
+    # English source (default parquet)
     python scripts/identifier_frequency_analysis.py --n-files 20
-    python scripts/identifier_frequency_analysis.py --n-files 50 --top 100
+
+    # Translated Spanish output from a cond5 run
+    python scripts/identifier_frequency_analysis.py --lang es --n-files 50 \\
+        --source packaged/condition-5-es-5k-c4ai-aya-expanse-32b/es/
+
+    # Larger sample, more rows in report
+    python scripts/identifier_frequency_analysis.py --n-files 200 --top 100
 """
 
 from __future__ import annotations
@@ -27,14 +39,81 @@ import ast
 import builtins
 import json
 import keyword
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import Any
 
-from datasets import load_dataset
 
-DEFAULT_PARQUET = (
-    "/Users/madisonedgar/GitHub/Legesher/research/expedition-tiny-aya/"
-    "data-pipeline/packaged/condition-1-en-103k/train.parquet"
+def _positive_int(value: str) -> int:
+    """argparse type for ``--n-files`` / ``--top``: strictly positive int."""
+    try:
+        n = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"expected an integer, got {value!r}") from exc
+    if n <= 0:
+        raise argparse.ArgumentTypeError(
+            f"value must be positive (got {n}); pass at least 1"
+        )
+    return n
+
+
+def load_source_files(source: str, n_files: int) -> list[dict[str, Any]]:
+    """Load N source files from a parquet OR a directory of ``.py`` files.
+
+    Each returned dict has a ``code`` key (file content as a string) and,
+    when sourced from a directory, a ``file_path`` key (relative path of
+    the source file). Parquets are expected to have a ``code`` column;
+    rows are taken in order, capped at ``n_files``.
+
+    Directory mode walks ``**/*.py``, sorts deterministically, and reads
+    each as UTF-8. Files with decode errors are skipped silently.
+    """
+    source_path = Path(source).expanduser()
+    if not source_path.exists():
+        raise FileNotFoundError(f"--source does not exist: {source}")
+
+    if source_path.is_file():
+        ds = load_dataset("parquet", data_files=str(source_path), split="train")
+        sample = ds.select(range(min(n_files, len(ds))))
+        return [dict(row) for row in sample]
+
+    # Directory mode: walk *.py files
+    py_files = sorted(source_path.glob("**/*.py"))[:n_files]
+    rows: list[dict[str, Any]] = []
+    for p in py_files:
+        try:
+            code = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        rows.append(
+            {
+                "code": code,
+                "file_path": str(p.relative_to(source_path)),
+            }
+        )
+    return rows
+
+
+try:
+    from datasets import load_dataset
+except ImportError as exc:
+    print(
+        f"error: this script requires the `datasets` package "
+        f"({exc.name or 'datasets'} not importable). "
+        "Run via `uv run` from the data-pipeline checkout, e.g.:\n"
+        "    cd expedition-tiny-aya/data-pipeline\n"
+        "    uv run python scripts/identifier_frequency_analysis.py --n-files 20",
+        file=sys.stderr,
+    )
+    raise
+
+# Defaults derived relative to this script's location so the tool is
+# portable across checkouts. `parents[1]` resolves to `data-pipeline/`
+# (the parent of `scripts/`).
+DATA_PIPELINE_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PARQUET = str(
+    DATA_PIPELINE_ROOT / "packaged" / "condition-1-en-103k" / "train.parquet"
 )
 
 PYTHON_KEYWORDS = set(keyword.kwlist) | set(keyword.softkwlist)
@@ -99,15 +178,50 @@ def extract_identifiers(code: str) -> list[str]:
             names.append(node.attr)
         elif isinstance(node, ast.keyword) and node.arg is not None:
             names.append(node.arg)
+        # `import X as Y` / `from M import X as Y`: Y is the actual binding.
+        elif isinstance(node, ast.alias) and node.asname is not None:
+            names.append(node.asname)
+        # `except E as e:` — the bound exception variable.
+        elif isinstance(node, ast.ExceptHandler) and node.name is not None:
+            names.append(node.name)
 
     return [n for n in names if n not in PYTHON_KEYWORDS and n not in PYTHON_BUILTINS]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-parquet", default=DEFAULT_PARQUET)
-    parser.add_argument("--n-files", type=int, default=20)
-    parser.add_argument("--top", type=int, default=60)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--source",
+        default=DEFAULT_PARQUET,
+        help=(
+            "Parquet file or directory of .py files to analyze "
+            f"(default: {DEFAULT_PARQUET})"
+        ),
+    )
+    parser.add_argument(
+        "--lang",
+        default="en",
+        help=(
+            "Language code label for the report (default: en). "
+            "Just metadata — labels the output and JSON for cross-language "
+            "comparison; does not change parsing behavior."
+        ),
+    )
+    parser.add_argument(
+        "--n-files",
+        type=_positive_int,
+        default=20,
+        help="Number of files to analyze (default: 20). Must be positive.",
+    )
+    parser.add_argument(
+        "--top",
+        type=_positive_int,
+        default=60,
+        help="Number of top-frequency identifiers to print (default: 60).",
+    )
     parser.add_argument(
         "--output-json",
         default=None,
@@ -115,10 +229,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    print(f"Loading {args.n_files} files from {args.source_parquet}")
-    ds = load_dataset("parquet", data_files=args.source_parquet, split="train")
-    sample = ds.select(range(min(args.n_files, len(ds))))
-    files = [dict(row) for row in sample]
+    print(f"Loading {args.n_files} files [{args.lang}] from {args.source}")
+    files = load_source_files(args.source, args.n_files)
 
     total_occurrences: Counter[str] = Counter()
     files_seen_in: dict[str, set[int]] = defaultdict(set)
@@ -187,6 +299,8 @@ def main() -> int:
         out_path.write_text(
             json.dumps(
                 {
+                    "lang": args.lang,
+                    "source": args.source,
                     "n_files_sampled": len(files),
                     "n_files_parsed": parsed_ok,
                     "total_unique_identifiers": len(rows),
