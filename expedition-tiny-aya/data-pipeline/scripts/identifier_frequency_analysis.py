@@ -8,7 +8,14 @@ should keep going through the LLM.
 For each identifier, reports:
 - total_occurrences: how many times it appears across all sampled files
 - files_seen_in: how many distinct files contain it
-- category: dunder / convention / single_letter / typing_special / other
+- category: one of
+  - dunder              — `__init__`, `__repr__`, `__name__`, ...
+  - convention          — `self`, `cls`, `args`, `kwargs`
+  - typing_special      — `T`, `K`, `V`, `T_co`, ...
+  - single_letter       — `i`, `j`, `k`, `x`, `y`, ...
+  - private_convention  — `_underscore_prefixed`
+  - constant_style      — `ALL_UPPER_NAMES`
+  - other               — everything else
 
 Categories help triage which identifiers should be:
 - preserved as-is (dunders like __init__, __name__, __all__)
@@ -117,7 +124,17 @@ DEFAULT_PARQUET = str(
 )
 
 PYTHON_KEYWORDS = set(keyword.kwlist) | set(keyword.softkwlist)
-PYTHON_BUILTINS = set(dir(builtins))
+
+# Filter out dunder names (e.g., __name__, __doc__, __build_class__,
+# __debug__, __import__, __loader__, __package__, __spec__) from the
+# builtins exclusion. `dir(builtins)` includes these as module-level
+# attributes, but they are first-class members of the dunder category we
+# want to measure (most notably `__name__`, which appears in every
+# `if __name__ == "__main__":` block). Without this filter, the
+# downstream identifier list would silently undercount dunders.
+PYTHON_BUILTINS = {
+    n for n in dir(builtins) if not (n.startswith("__") and n.endswith("__"))
+}
 
 CONVENTION_IDENTIFIERS = {
     "self",
@@ -160,11 +177,12 @@ def extract_identifiers(code: str) -> list[str]:
 
     Filters out Python keywords and builtins (they are handled by the language
     pack, not the LLM).
+
+    Raises ``SyntaxError`` to the caller on parse failure so the caller can
+    distinguish "couldn't parse" from "parsed but no non-builtin identifiers".
+    Returning ``[]`` for both cases conflated them in the run summary.
     """
-    try:
-        tree = ast.parse(code)
-    except SyntaxError:
-        return []
+    tree = ast.parse(code)
 
     names: list[str] = []
     for node in ast.walk(tree):
@@ -237,19 +255,28 @@ def main() -> int:
 
     parsed_ok = 0
     parsed_fail = 0
+    parsed_empty = 0
     for idx, row in enumerate(files):
-        ids = extract_identifiers(row["code"])
-        if not ids:
+        try:
+            ids = extract_identifiers(row["code"])
+        except SyntaxError:
             parsed_fail += 1
             continue
         parsed_ok += 1
+        if not ids:
+            # File parsed cleanly but contained zero non-keyword/builtin
+            # identifiers (rare — empty/comment-only/all-stdlib-name files).
+            # Counted separately so `parsed_fail` stays accurate.
+            parsed_empty += 1
+            continue
         total_occurrences.update(ids)
         for name in set(ids):
             files_seen_in[name].add(idx)
 
     print(
         f"Parsed {parsed_ok}/{len(files)} files "
-        f"({parsed_fail} failed to parse with stdlib ast)"
+        f"({parsed_fail} failed to parse with stdlib ast, "
+        f"{parsed_empty} parsed but had no non-builtin identifiers)"
     )
 
     rows = []
