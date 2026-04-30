@@ -62,6 +62,8 @@ from legesher_i18n.api.providers import OpenAICompatProvider
 from legesher_i18n.api.providers.cohere_aya import CohereAyaProvider
 from legesher_core.tree_sitter.llm_translator import LLMTranslator
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_PARQUET = (
     "/Users/madisonedgar/GitHub/Legesher/research/expedition-tiny-aya/"
     "data-pipeline/packaged/condition-1-en-103k/train.parquet"
@@ -294,6 +296,25 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--resume",
+        action="store_true",
+        help=(
+            "Skip files that already have an output `.py` in the per-language "
+            "output dir. Required for resumable 5K+ runs that get interrupted."
+        ),
+    )
+    parser.add_argument(
+        "--no-retry",
+        action="store_true",
+        help="Disable automatic single retry on transient API/translation errors.",
+    )
+    parser.add_argument(
+        "--retry-delay",
+        type=float,
+        default=5.0,
+        help="Seconds to wait between retries (default: 5).",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Verbose logging",
@@ -311,6 +332,9 @@ def run_pilot(
     output_dir: Path,
     concurrency: int = 1,
     reserved_word_map: dict[str, str] | None = None,
+    resume: bool = False,
+    retry: bool = True,
+    retry_delay: float = 5.0,
 ) -> dict[str, Any]:
     """Translate ``files`` to ``target_lang`` and capture per-file outcomes.
 
@@ -319,6 +343,12 @@ def run_pilot(
     ``OpenAICompatBackend`` (and therefore its own ``httpx.AsyncClient``)
     via ``threading.local`` — sharing one ``AsyncClient`` across threads
     that each call ``asyncio.run`` is unsupported by httpx's transport pool.
+
+    ``resume=True`` skips files that already have an output ``.py`` in
+    ``output_dir`` (typical use: long runs that got interrupted). ``retry=True``
+    retries a failing translation once after ``retry_delay`` seconds — covers
+    transient 429s, 5xx, and connection blips on hosted APIs without needing
+    to restart the whole run.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     local = threading.local()
@@ -333,40 +363,85 @@ def run_pilot(
     def _translate_one(idx: int, row: dict[str, Any]) -> dict[str, Any]:
         code_en = row["code"]
         file_path = row.get("file_path") or row.get("metadata_file") or f"row_{idx}"
+        out_path = output_dir / f"{idx:03d}.py"
+
+        # Resume: short-circuit if output already exists from a prior run.
+        if resume and out_path.exists():
+            return {
+                "idx": idx,
+                "file_path": file_path,
+                "status": "resumed",
+                "ast": "skipped",
+                "elapsed_seconds": 0.0,
+                "input_chars": len(code_en),
+                "output_chars": out_path.stat().st_size,
+            }
+
         translator = LLMTranslator(
             keyword_map=keyword_map,
             builtin_map=builtin_map,
             backend=_backend(),
             reserved_word_map=reserved_word_map,
         )
-        t0 = time.perf_counter()
-        try:
-            translated_raw = translator.translate_code(
-                code_en, source_lang, target_lang
-            )
-            # translate_code returns str by default; tuple only when
-            # return_metadata=True. Narrow for the type checker + safety.
-            translated = (
-                translated_raw if isinstance(translated_raw, str) else translated_raw[0]
-            )
-        except Exception as exc:
-            elapsed = time.perf_counter() - t0
+
+        # Translate with one optional retry on any exception. Most production
+        # failures are transient (429, 5xx, ReadTimeout); retrying once covers
+        # them without a full run restart.
+        max_attempts = 2 if retry else 1
+        translated: str | None = None
+        elapsed = 0.0
+        last_exc: BaseException | None = None
+        for attempt in range(1, max_attempts + 1):
+            t0 = time.perf_counter()
+            try:
+                translated_raw = translator.translate_code(
+                    code_en, source_lang, target_lang
+                )
+                translated = (
+                    translated_raw
+                    if isinstance(translated_raw, str)
+                    else translated_raw[0]
+                )
+                elapsed = time.perf_counter() - t0
+                last_exc = None
+                break
+            except Exception as exc:
+                elapsed = time.perf_counter() - t0
+                last_exc = exc
+                if attempt < max_attempts:
+                    logger.warning(
+                        "Translate attempt %d/%d failed for %s after %.1fs: "
+                        "%s: %s; retrying in %.1fs",
+                        attempt,
+                        max_attempts,
+                        file_path,
+                        elapsed,
+                        type(exc).__name__,
+                        exc,
+                        retry_delay,
+                    )
+                    time.sleep(retry_delay)
+
+        if last_exc is not None or translated is None:
             err_path = output_dir / f"{idx:03d}.error.txt"
             err_path.write_text(
-                f"file_path: {file_path}\nelapsed: {elapsed:.2f}s\n\n"
-                f"{type(exc).__name__}: {exc}\n",
+                f"file_path: {file_path}\nelapsed: {elapsed:.2f}s\n"
+                f"attempts: {max_attempts}\n\n"
+                f"{type(last_exc).__name__}: {last_exc}\n",
                 encoding="utf-8",
             )
             return {
                 "idx": idx,
                 "file_path": file_path,
                 "status": "runtime_error",
-                "error": f"{type(exc).__name__}: {exc}",
+                "error": f"{type(last_exc).__name__}: {last_exc}",
                 "elapsed_seconds": round(elapsed, 2),
                 "input_chars": len(code_en),
             }
 
-        elapsed = time.perf_counter() - t0
+        # `elapsed` is already set to the successful attempt's duration
+        # by the for loop above. `out_path` was bound at the top of the
+        # function for the resume short-circuit; reuse it for the write.
         en_for_ast = reverse_keywords_and_builtins(translated, keyword_map, builtin_map)
         try:
             ast.parse(en_for_ast)
@@ -374,7 +449,6 @@ def run_pilot(
         except SyntaxError as syn_exc:
             ast_status = f"fail: {syn_exc.msg} at line {syn_exc.lineno}"
 
-        out_path = output_dir / f"{idx:03d}.py"
         out_path.write_text(translated, encoding="utf-8")
 
         preview_path = output_dir / f"{idx:03d}.preview.md"
@@ -421,6 +495,7 @@ def run_pilot(
     parse_pass = 0
     parse_fail = 0
     runtime_fail = 0
+    resumed_count = 0
     total_input_chars = 0
     total_output_chars = 0
     total_seconds = 0.0
@@ -429,6 +504,12 @@ def run_pilot(
         if r["status"] == "runtime_error":
             runtime_fail += 1
             continue
+        if r["status"] == "resumed":
+            # Resumed files contribute output_chars but not LLM time or AST
+            # status (we trust prior-run validity rather than re-parsing).
+            resumed_count += 1
+            total_output_chars += r.get("output_chars", 0)
+            continue
         total_output_chars += r.get("output_chars", 0)
         total_seconds += r["elapsed_seconds"]
         if r["ast"] == "pass":
@@ -436,7 +517,9 @@ def run_pilot(
         else:
             parse_fail += 1
 
-    successful = max(1, len(files) - runtime_fail)
+    # Only files actually translated this run count toward the per-file
+    # average; resumed files would skew it to ~0s.
+    fresh_translated = len(files) - runtime_fail - resumed_count
     return {
         "target_lang": target_lang,
         "n_files": len(files),
@@ -444,11 +527,16 @@ def run_pilot(
         "ast_pass": parse_pass,
         "ast_fail": parse_fail,
         "runtime_fail": runtime_fail,
+        "resumed": resumed_count,
         "wall_seconds": round(wall_seconds, 2),
         "total_seconds": round(total_seconds, 2),
-        "avg_seconds_per_file": round(total_seconds / successful, 2),
+        "avg_seconds_per_file": (
+            round(total_seconds / fresh_translated, 2) if fresh_translated > 0 else 0.0
+        ),
         "throughput_files_per_min": (
-            round(60 * len(files) / wall_seconds, 2) if wall_seconds > 0 else 0.0
+            round(60 * fresh_translated / wall_seconds, 2)
+            if wall_seconds > 0 and fresh_translated > 0
+            else 0.0
         ),
         "total_input_chars": total_input_chars,
         "total_output_chars": total_output_chars,
@@ -462,6 +550,11 @@ def main() -> int:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
+    # Quiet noisy per-request HTTP logs unless --verbose. At ~25 LLM calls per
+    # file × 5,000 files = 125K log lines that bury anything actionable.
+    if not args.verbose:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     target_langs = [
         lang.strip() for lang in args.target_langs.split(",") if lang.strip()
@@ -567,6 +660,9 @@ def main() -> int:
             output_dir=output_root / lang,
             concurrency=args.concurrency,
             reserved_word_map=getattr(pack, "reserved_words", None),
+            resume=args.resume,
+            retry=not args.no_retry,
+            retry_delay=args.retry_delay,
         )
         summary["by_language"][lang] = result
 
@@ -574,6 +670,7 @@ def main() -> int:
             f"  AST pass: {result['ast_pass']}/{len(files)} | "
             f"AST fail: {result['ast_fail']} | "
             f"runtime fail: {result['runtime_fail']} | "
+            f"resumed: {result.get('resumed', 0)} | "
             f"avg {result['avg_seconds_per_file']}s/file | "
             f"wall {result['wall_seconds']}s | "
             f"throughput {result['throughput_files_per_min']} files/min"
@@ -590,6 +687,7 @@ def main() -> int:
                     "ast_pass": r.get("ast_pass"),
                     "ast_fail": r.get("ast_fail"),
                     "runtime_fail": r.get("runtime_fail"),
+                    "resumed": r.get("resumed", 0),
                     "avg_seconds_per_file": r.get("avg_seconds_per_file"),
                     "wall_seconds": r.get("wall_seconds"),
                     "throughput_files_per_min": r.get("throughput_files_per_min"),
