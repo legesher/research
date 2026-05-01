@@ -427,6 +427,24 @@ def package_from_files(args: argparse.Namespace) -> None:
             f"Keep-idx filter: {len(keep_train)} train idx + "
             f"{len(keep_validation)} validation idx loaded from {keep_dir}"
         )
+        # Empty keep set means EVERY row of that split will be dropped — the
+        # downstream "non-empty train AND validation" check will fail with a
+        # generic message, so flag the cause loudly here instead.
+        if not keep_train or not keep_validation:
+            empty_splits = [
+                name
+                for name, idx_set in (
+                    ("train", keep_train),
+                    ("validation", keep_validation),
+                )
+                if not idx_set
+            ]
+            print(
+                f"warning: keep-idx is empty for split(s) {empty_splits} — "
+                f"all rows in those splits will be dropped. Check "
+                f"{keep_dir / 'report.json'} for which cells diverged.",
+                file=sys.stderr,
+            )
 
     if pre_split:
         train_rows, train_skipped, train_dropped = _build_rows(
@@ -475,22 +493,18 @@ def package_from_files(args: argparse.Namespace) -> None:
         skipped = train_skipped + val_skipped
         dropped_via_keep_idx = train_dropped + val_dropped
     else:
-        # Random-split mode applies keep-idx (if present) to the single
-        # input dir before the split. The same keep set is reused for
-        # both splits since the random split happens AFTER filtering.
-        keep_random = keep_train if keep_train is not None else keep_validation
+        # Random-split mode. --keep-idx-from is rejected for this mode at
+        # argparse time (see _validate_from_files_args), so keep_idx is
+        # always None here.
         rows, skipped, dropped_via_keep_idx = _build_rows(
             Path(args.transpiled),
             Path(args.originals),
             args.language,
             tokenizer,
             args.default_license,
-            keep_idx=keep_random,
+            keep_idx=None,
         )
-        print(
-            f"Packaged {len(rows)} files, skipped {skipped}, "
-            f"dropped via keep-idx {dropped_via_keep_idx}"
-        )
+        print(f"Packaged {len(rows)} files, skipped {skipped}")
         if not rows:
             print("Error: no files packaged", file=sys.stderr)
             sys.exit(1)
@@ -705,6 +719,17 @@ def _validate_from_files_args(
                 f"{', '.join(missing)}."
             )
         return
+
+    # Random-split mode below. --keep-idx-from is harmonize output (per-split
+    # train.idx + validation.idx); random-split shuffles AFTER filtering, so
+    # there's no meaningful way to apply per-split keep sets. Reject the
+    # combo at parse time rather than silently picking one half.
+    if args.keep_idx_from is not None:
+        parser.error(
+            "from-files: --keep-idx-from requires pre-split mode "
+            "(--train-transpiled etc.). It cannot be used with random-split "
+            "(--transpiled + --originals)."
+        )
 
     if not (args.transpiled and args.originals):
         parser.error(

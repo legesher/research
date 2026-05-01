@@ -165,10 +165,6 @@ def _build_report(
             for name, splits in sorted(cell_sets.items())
         }
         intersection = intersections.get(split, set())
-        union_size = sum(per_cell_counts.values()) and (
-            max(per_cell_counts.values()) if per_cell_counts else 0
-        )
-        # Real union (not just max — that was a wrong shortcut)
         union_size = len(
             set().union(*(splits.get(split, set()) for splits in cell_sets.values()))
         )
@@ -204,7 +200,14 @@ def _print_summary(report: dict[str, object]) -> None:
         for cell, count in sorted(per_cell.items()):
             in_int = stats["intersection_size"]  # type: ignore[index]
             shortfall = count - in_int
-            marker = "" if shortfall == 0 else f" (cell has {shortfall} extras dropped)"
+            marker = (
+                ""
+                if shortfall == 0
+                else (
+                    f" ({shortfall} not in intersection — will be dropped "
+                    f"when this cell is re-packaged with --keep-idx-from)"
+                )
+            )
             print(f"  {cell}: {count} rows{marker}")
 
 
@@ -231,7 +234,11 @@ def cmd_compute(args: argparse.Namespace) -> int:
             f"{metadata_path}"
         )
 
-    # Sanity: every cell should contribute to every expected split
+    # Hard-fail on partial cells: a cell missing from one split silently
+    # excludes itself from that split's intersection, producing the wrong
+    # keep set (intersection of the remaining cells, not all of them).
+    # Better to error and force the user to either provide all splits for
+    # every cell or omit the cell entirely.
     incomplete = [
         (name, split)
         for name, splits in cell_sets.items()
@@ -241,9 +248,11 @@ def cmd_compute(args: argparse.Namespace) -> int:
     if incomplete:
         for name, split in incomplete:
             print(
-                f"warning: cell {name!r} missing --cell {name}:{split}=...",
+                f"error: cell {name!r} missing --cell {name}:{split}=...; "
+                f"every cell must specify all splits in {EXPECTED_SPLITS}",
                 file=sys.stderr,
             )
+        return 2
 
     intersections, dropped_attribution = _compute_intersection(cell_sets)
     report = _build_report(cell_sets, intersections, dropped_attribution)
