@@ -87,23 +87,28 @@ def _parse_cell_flag(spec: str) -> tuple[str, str, Path]:
 def _read_cell_idx_set(metadata_path: Path) -> set[int]:
     """Read the ``idx`` column from ``metadata_path`` as a set of ints.
 
-    Skips rows with missing/non-integer idx (logged to stderr).
+    Raises ``FileNotFoundError`` if the file doesn't exist (a missing
+    metadata.csv is almost always a config error — pointed at the wrong
+    dir, or the upstream populator never wrote it). Raises ``ValueError``
+    if the file exists but lacks an ``idx`` column (incompatible with the
+    cond5/batch_transpile schema). Both surface to ``cmd_compute`` as
+    hard exits so users don't end up with a silent empty intersection.
+
+    Skips rows with missing/non-integer idx values within the file (those
+    are usually transient — partial/corrupt rows from interrupted writes).
     """
     if not metadata_path.exists():
-        print(
-            f"  warning: metadata.csv not found: {metadata_path}",
-            file=sys.stderr,
-        )
-        return set()
+        raise FileNotFoundError(f"metadata.csv not found: {metadata_path}")
     out: set[int] = set()
     with metadata_path.open(encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         if "idx" not in (reader.fieldnames or []):
-            print(
-                f"  warning: no 'idx' column in {metadata_path}",
-                file=sys.stderr,
+            raise ValueError(
+                f"no 'idx' column in {metadata_path} "
+                f"(found: {reader.fieldnames}); "
+                f"expected cond5/batch_transpile schema "
+                f"(filename, file_path, license, idx)"
             )
-            return set()
         for row in reader:
             raw = row.get("idx")
             if raw in (None, ""):
@@ -228,7 +233,11 @@ def cmd_compute(args: argparse.Namespace) -> int:
             )
             return 2
         metadata_path = path / "metadata.csv"
-        cell_sets[name][split] = _read_cell_idx_set(metadata_path)
+        try:
+            cell_sets[name][split] = _read_cell_idx_set(metadata_path)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"error: {name}/{split}: {exc}", file=sys.stderr)
+            return 2
         print(
             f"  {name}/{split}: {len(cell_sets[name][split])} rows from "
             f"{metadata_path}"

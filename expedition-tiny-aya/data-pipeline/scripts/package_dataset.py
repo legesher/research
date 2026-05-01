@@ -446,6 +446,42 @@ def package_from_files(args: argparse.Namespace) -> None:
                 file=sys.stderr,
             )
 
+        # Pre-flight: verify each cell has metadata.csv with idx column.
+        # Without it, every row gets idx=-1 which never matches a real
+        # keep set → silent drop of EVERY row → opaque "Packaged 0 files"
+        # error downstream. Fail fast with a pointer at the bad cell.
+        cells_to_check = (
+            [
+                ("train", Path(args.train_transpiled)),
+                ("validation", Path(args.validation_transpiled)),
+            ]
+            if pre_split
+            else []
+        )
+        for split_label, cell_dir in cells_to_check:
+            meta_path = cell_dir / "metadata.csv"
+            if not meta_path.exists():
+                print(
+                    f"Error: --keep-idx-from requires metadata.csv in each "
+                    f"cell, but {meta_path} ({split_label}) is missing. "
+                    f"Was the cell produced by populate_cond5_datasets or "
+                    f"batch_transpile (with a manifest)?",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            with meta_path.open(encoding="utf-8", newline="") as f:
+                cols = csv.DictReader(f).fieldnames or []
+                if "idx" not in cols:
+                    print(
+                        f"Error: --keep-idx-from requires an 'idx' column in "
+                        f"metadata.csv, but {meta_path} ({split_label}) has "
+                        f"columns {cols}. Re-package the cell with a pipeline "
+                        f"that emits the cond5-aligned schema "
+                        f"(filename, file_path, license, idx).",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+
     if pre_split:
         train_rows, train_skipped, train_dropped = _build_rows(
             Path(args.train_transpiled),
