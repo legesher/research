@@ -231,6 +231,26 @@ def _load_metadata_csv(transpiled_dir: Path) -> dict[str, dict[str, str]]:
     return out
 
 
+def _load_keep_idx(path: Path) -> set[int]:
+    """Read a newline-separated set of ``idx`` integers from ``path``.
+
+    Blank lines and ``#`` comment lines are ignored. Non-integer lines
+    are silently skipped (mirrors the tolerant behavior used elsewhere
+    when reading metadata.csv idx values).
+    """
+    out: set[int] = set()
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            try:
+                out.add(int(line))
+            except ValueError:
+                continue
+    return out
+
+
 def _build_rows(
     transpiled_dir: Path,
     originals_dir: Path,
@@ -238,12 +258,17 @@ def _build_rows(
     tokenizer: AutoTokenizer,
     default_license: str | None,
     desc: str = "Packaging",
-) -> tuple[list[dict[str, object]], int]:
-    """Walk a transpiled dir and produce HF dataset rows + skipped count.
+    keep_idx: set[int] | None = None,
+) -> tuple[list[dict[str, object]], int, int]:
+    """Walk a transpiled dir and produce HF dataset rows + skipped + dropped.
 
     Pairs each transpiled ``*.py`` with its English counterpart in
     ``originals_dir`` (via path relative to ``transpiled_dir``), reads the
     metadata.csv if present, and tokenizes the transpiled code.
+
+    When ``keep_idx`` is provided, drops any row whose ``idx`` (from
+    metadata.csv) isn't in the set. Use this to enforce cross-cell
+    consistency before publishing — see ``harmonize_splits.py``.
     """
     if not transpiled_dir.exists():
         print(
@@ -258,6 +283,7 @@ def _build_rows(
 
     rows: list[dict[str, object]] = []
     skipped = 0
+    dropped_via_keep_idx = 0
 
     for tf in tqdm(transpiled_files, desc=desc):
         try:
@@ -295,6 +321,14 @@ def _build_rows(
         except (TypeError, ValueError):
             idx_val = -1
 
+        # Cross-cell consistency filter (CORE-1172). Rows whose idx isn't
+        # in the keep set are silently dropped — see harmonize_splits.py.
+        # Sentinel idx (-1) never matches a real keep set; if a caller is
+        # filtering, files without metadata.csv idx values should drop too.
+        if keep_idx is not None and idx_val not in keep_idx:
+            dropped_via_keep_idx += 1
+            continue
+
         token_count = count_tokens(tokenizer, code)
 
         rows.append(
@@ -309,7 +343,7 @@ def _build_rows(
             }
         )
 
-    return rows, skipped
+    return rows, skipped, dropped_via_keep_idx
 
 
 def _print_split_stats(ds: DatasetDict) -> None:
@@ -372,26 +406,105 @@ def package_from_files(args: argparse.Namespace) -> None:
 
     pre_split = args.train_transpiled is not None
 
+    # Optional cross-cell consistency filter (CORE-1172). Loaded once and
+    # reused across both train + validation calls in pre-split mode.
+    keep_train: set[int] | None = None
+    keep_validation: set[int] | None = None
+    if args.keep_idx_from is not None:
+        keep_dir = Path(args.keep_idx_from)
+        train_idx_path = keep_dir / "train.idx"
+        val_idx_path = keep_dir / "validation.idx"
+        if not train_idx_path.exists() or not val_idx_path.exists():
+            print(
+                f"Error: --keep-idx-from {keep_dir} must contain "
+                f"train.idx and validation.idx",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        keep_train = _load_keep_idx(train_idx_path)
+        keep_validation = _load_keep_idx(val_idx_path)
+        print(
+            f"Keep-idx filter: {len(keep_train)} train idx + "
+            f"{len(keep_validation)} validation idx loaded from {keep_dir}"
+        )
+        # Empty keep set means EVERY row of that split will be dropped — the
+        # downstream "non-empty train AND validation" check will fail with a
+        # generic message, so flag the cause loudly here instead.
+        if not keep_train or not keep_validation:
+            empty_splits = [
+                name
+                for name, idx_set in (
+                    ("train", keep_train),
+                    ("validation", keep_validation),
+                )
+                if not idx_set
+            ]
+            print(
+                f"warning: keep-idx is empty for split(s) {empty_splits} — "
+                f"all rows in those splits will be dropped. Check "
+                f"{keep_dir / 'report.json'} for which cells diverged.",
+                file=sys.stderr,
+            )
+
+        # Pre-flight: verify each cell has metadata.csv with idx column.
+        # Without it, every row gets idx=-1 which never matches a real
+        # keep set → silent drop of EVERY row → opaque "Packaged 0 files"
+        # error downstream. Fail fast with a pointer at the bad cell.
+        cells_to_check = (
+            [
+                ("train", Path(args.train_transpiled)),
+                ("validation", Path(args.validation_transpiled)),
+            ]
+            if pre_split
+            else []
+        )
+        for split_label, cell_dir in cells_to_check:
+            meta_path = cell_dir / "metadata.csv"
+            if not meta_path.exists():
+                print(
+                    f"Error: --keep-idx-from requires metadata.csv in each "
+                    f"cell, but {meta_path} ({split_label}) is missing. "
+                    f"Was the cell produced by populate_cond5_datasets or "
+                    f"batch_transpile (with a manifest)?",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            with meta_path.open(encoding="utf-8", newline="") as f:
+                cols = csv.DictReader(f).fieldnames or []
+                if "idx" not in cols:
+                    print(
+                        f"Error: --keep-idx-from requires an 'idx' column in "
+                        f"metadata.csv, but {meta_path} ({split_label}) has "
+                        f"columns {cols}. Re-package the cell with a pipeline "
+                        f"that emits the cond5-aligned schema "
+                        f"(filename, file_path, license, idx).",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+
     if pre_split:
-        train_rows, train_skipped = _build_rows(
+        train_rows, train_skipped, train_dropped = _build_rows(
             Path(args.train_transpiled),
             Path(args.train_originals),
             args.language,
             tokenizer,
             args.default_license,
             desc="Packaging train",
+            keep_idx=keep_train,
         )
-        val_rows, val_skipped = _build_rows(
+        val_rows, val_skipped, val_dropped = _build_rows(
             Path(args.validation_transpiled),
             Path(args.validation_originals),
             args.language,
             tokenizer,
             args.default_license,
             desc="Packaging validation",
+            keep_idx=keep_validation,
         )
         print(
             f"Packaged {len(train_rows)} train + {len(val_rows)} validation files, "
-            f"skipped {train_skipped + val_skipped}"
+            f"skipped {train_skipped + val_skipped}, "
+            f"dropped via keep-idx {train_dropped + val_dropped}"
         )
         if not train_rows or not val_rows:
             print(
@@ -414,13 +527,18 @@ def package_from_files(args: argparse.Namespace) -> None:
         }
         total_files = len(train_rows) + len(val_rows)
         skipped = train_skipped + val_skipped
+        dropped_via_keep_idx = train_dropped + val_dropped
     else:
-        rows, skipped = _build_rows(
+        # Random-split mode. --keep-idx-from is rejected for this mode at
+        # argparse time (see _validate_from_files_args), so keep_idx is
+        # always None here.
+        rows, skipped, dropped_via_keep_idx = _build_rows(
             Path(args.transpiled),
             Path(args.originals),
             args.language,
             tokenizer,
             args.default_license,
+            keep_idx=None,
         )
         print(f"Packaged {len(rows)} files, skipped {skipped}")
         if not rows:
@@ -456,6 +574,10 @@ def package_from_files(args: argparse.Namespace) -> None:
         "tokenizer": args.tokenizer,
         "total_files": total_files,
         "skipped_files": skipped,
+        "dropped_via_keep_idx": dropped_via_keep_idx,
+        "keep_idx_source": (
+            str(args.keep_idx_from) if args.keep_idx_from is not None else None
+        ),
         "train_rows": len(ds["train"]),
         "validation_rows": len(ds["validation"]),
         "train_tokens": sum(ds["train"]["token_count"]),
@@ -564,6 +686,19 @@ def parse_args() -> argparse.Namespace:
         "--default-license", default=None, help="Default license if not in metadata"
     )
     files.add_argument(
+        "--keep-idx-from",
+        default=None,
+        help=(
+            "Directory containing train.idx + validation.idx (newline-"
+            "separated source idx values). When set, drop any row whose "
+            "metadata.csv idx isn't in the corresponding split's keep set. "
+            "Use to enforce cross-cell row alignment before publishing — "
+            "produced by harmonize_splits.py compute. In random-split "
+            "mode the train.idx (or validation.idx) keep set is applied "
+            "to the single input dir before the random split runs."
+        ),
+    )
+    files.add_argument(
         "--config-name",
         default=None,
         help="Config/subset name within umbrella dataset (e.g., condition-1-en)",
@@ -620,6 +755,17 @@ def _validate_from_files_args(
                 f"{', '.join(missing)}."
             )
         return
+
+    # Random-split mode below. --keep-idx-from is harmonize output (per-split
+    # train.idx + validation.idx); random-split shuffles AFTER filtering, so
+    # there's no meaningful way to apply per-split keep sets. Reject the
+    # combo at parse time rather than silently picking one half.
+    if args.keep_idx_from is not None:
+        parser.error(
+            "from-files: --keep-idx-from requires pre-split mode "
+            "(--train-transpiled etc.). It cannot be used with random-split "
+            "(--transpiled + --originals)."
+        )
 
     if not (args.transpiled and args.originals):
         parser.error(
