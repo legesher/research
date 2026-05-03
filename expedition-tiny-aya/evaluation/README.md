@@ -1,6 +1,6 @@
 # Evaluation Pipeline
 
-Benchmark evaluation across 3 languages (zh, es, ur) + English, using 3 benchmark suites.
+Benchmark evaluation across 3 languages (zh, es, ur), using 4 benchmark suites.
 Each condition is evaluated twice: with English prompts and with native-language prompts.
 
 ## Contents
@@ -17,11 +17,23 @@ Results are stored on HuggingFace, not in this directory.
 
 | Benchmark  | What It Measures                                                  | Languages      |
 | ---------- | ----------------------------------------------------------------- | -------------- |
-| **MGSM**   | Multilingual math reasoning (grade-school word problems)          | zh, es, ur, en |
-| **XNLI**   | Natural language inference (entailment / contradiction / neutral) | zh, es, ur, en |
-| **X-CSQA** | Commonsense reasoning (5-way multiple choice)                     | zh, es, ur, en |
+| **XNLI**   | Natural language inference (entailment / contradiction / neutral) | zh, es, ur |
+| **X-CSQA** | Commonsense reasoning (5-way multiple choice)                     | zh, es, ur |
+| **SIB-200** | Topic classification (7-way concrete categories)                 | zh, es, ur |
+| **Belebele** | Reading comprehension (4-way multiple choice)                   | zh, es, ur |
 
-English benchmarks detect catastrophic forgetting from fine-tuning.
+English prompts provide a cross-lingual instruction baseline for each dataset language.
+
+## Prompt Templates
+
+The preprocessing notebook now caches two prompt templates for ablation tests:
+
+| Template | Benchmarks |
+| -------- | ---------- |
+| `template1` | Belebele, SIB-200, X-CSQA, XNLI |
+| `template2` | Belebele, SIB-200, X-CSQA, XNLI |
+
+Each template has English, Spanish, Urdu, and Chinese wording for the same benchmark structure. Template 2 is a slight natural rephrasing of Template 1, intended to test whether small prompt wording changes affect model performance.
 
 ## Notebooks
 
@@ -69,10 +81,10 @@ Base model: `CohereLabs/tiny-aya-base`
 
 | Benchmark         | Source                                                                                               |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| MGSM (zh, es, en) | [google-research-datasets/MGSM-Rev2](https://github.com/google-research-datasets/MGSM-Rev2)          |
-| MGSM (ur)         | [large-traversaal/mgsm_urdu_final](https://huggingface.co/datasets/large-traversaal/mgsm_urdu_final) |
 | XNLI              | [facebook/xnli](https://huggingface.co/datasets/facebook/xnli)                                       |
 | X-CSQA            | [INK-USC/xcsr](https://huggingface.co/datasets/INK-USC/xcsr)                                         |
+| SIB-200           | [mteb/sib200](https://huggingface.co/datasets/mteb/sib200)                                           |
+| Belebele          | [facebook/belebele](https://huggingface.co/datasets/facebook/belebele)                               |
 
 ## Results
 
