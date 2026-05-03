@@ -280,6 +280,31 @@ def reverse_keywords_and_builtins(
     return result
 
 
+class _RateLimiter:
+    """Per-process rate limiter: enforce a minimum delay between calls.
+
+    Used to proactively match Cohere's per-minute cap on
+    ``c4ai-aya-expanse-32b`` (empirically ~2 RPM steady-state, far below
+    the published 500 RPM for prod chat keys). Issuing calls faster than
+    the cap produces 429 rejections that still bill input tokens —
+    waiting between calls is materially cheaper than retrying.
+    """
+
+    def __init__(self, min_delay_seconds: float) -> None:
+        self.min_delay = max(0.0, min_delay_seconds)
+        self._last_call_t = 0.0
+        self._lock = threading.Lock()
+
+    def wait(self) -> None:
+        if self.min_delay <= 0:
+            return
+        with self._lock:
+            wait_for = self.min_delay - (time.perf_counter() - self._last_call_t)
+            if wait_for > 0:
+                time.sleep(wait_for)
+            self._last_call_t = time.perf_counter()
+
+
 def _positive_int(value: str) -> int:
     """argparse type for ``--n-files``: must be a strictly positive integer.
 
@@ -400,6 +425,17 @@ def parse_args() -> argparse.Namespace:
         help="Seconds to wait between retries (default: 5).",
     )
     parser.add_argument(
+        "--min-call-delay",
+        type=float,
+        default=0.0,
+        help=(
+            "Minimum seconds between consecutive backend calls per process. "
+            "Default 0 = no rate limit. Set to ~30 for c4ai-aya-expanse-32b "
+            "to match its empirical ~2 RPM cap and avoid paying input tokens "
+            "for 429-rejected calls. Applied across all worker threads."
+        ),
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Verbose logging",
@@ -420,6 +456,7 @@ def run_pilot(
     resume: bool = False,
     retry: bool = True,
     retry_delay: float = 5.0,
+    min_call_delay: float = 0.0,
 ) -> dict[str, Any]:
     """Translate ``files`` to ``target_lang`` and capture per-file outcomes.
 
@@ -445,6 +482,7 @@ def run_pilot(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     local = threading.local()
+    rate_limiter = _RateLimiter(min_call_delay)
 
     def _backend() -> OpenAICompatBackend:
         b = getattr(local, "backend", None)
@@ -509,6 +547,7 @@ def run_pilot(
         elapsed = 0.0
         last_exc: BaseException | None = None
         for attempt in range(1, max_attempts + 1):
+            rate_limiter.wait()
             t0 = time.perf_counter()
             try:
                 translated_raw = translator.translate_code(
@@ -795,6 +834,7 @@ def main() -> int:
             resume=args.resume,
             retry=not args.no_retry,
             retry_delay=args.retry_delay,
+            min_call_delay=args.min_call_delay,
         )
         summary["by_language"][lang] = result
 
