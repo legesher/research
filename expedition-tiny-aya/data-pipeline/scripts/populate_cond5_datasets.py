@@ -323,6 +323,23 @@ def _positive_int(value: str) -> int:
     return n
 
 
+def _non_negative_float(value: str) -> float:
+    """argparse type for ``--min-call-delay``: must be a non-negative float.
+
+    Rejecting negatives at parse time surfaces user mistakes with a clear
+    error rather than silently clamping inside ``_RateLimiter``.
+    """
+    try:
+        x = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"expected a number, got {value!r}") from exc
+    if x < 0:
+        raise argparse.ArgumentTypeError(
+            f"--min-call-delay must be >= 0 (got {x}); use 0 to disable"
+        )
+    return x
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -426,13 +443,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--min-call-delay",
-        type=float,
+        type=_non_negative_float,
         default=0.0,
         help=(
             "Minimum seconds between consecutive backend calls per process. "
             "Default 0 = no rate limit. Set to ~30 for c4ai-aya-expanse-32b "
             "to match its empirical ~2 RPM cap and avoid paying input tokens "
-            "for 429-rejected calls. Applied across all worker threads."
+            "for 429-rejected calls. Applied across all worker threads and "
+            "shared across all target languages within a single run."
         ),
     )
     parser.add_argument(
@@ -456,7 +474,7 @@ def run_pilot(
     resume: bool = False,
     retry: bool = True,
     retry_delay: float = 5.0,
-    min_call_delay: float = 0.0,
+    rate_limiter: _RateLimiter | None = None,
 ) -> dict[str, Any]:
     """Translate ``files`` to ``target_lang`` and capture per-file outcomes.
 
@@ -479,10 +497,17 @@ def run_pilot(
     retries a failing translation once after ``retry_delay`` seconds — covers
     transient 429s, 5xx, and connection blips on hosted APIs without needing
     to restart the whole run.
+
+    ``rate_limiter`` enforces a minimum gap between consecutive backend
+    calls, shared across all worker threads (and across multi-language
+    runs when the same instance is reused). Pass ``None`` for no pacing.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     local = threading.local()
-    rate_limiter = _RateLimiter(min_call_delay)
+    # Default to a no-op limiter when caller doesn't supply one (preserves
+    # legacy behavior where each run_pilot() invocation manages its own pacing).
+    if rate_limiter is None:
+        rate_limiter = _RateLimiter(0.0)
 
     def _backend() -> OpenAICompatBackend:
         b = getattr(local, "backend", None)
@@ -804,6 +829,11 @@ def main() -> int:
             timeout=args.timeout,
         )
 
+    # One limiter shared across every target language so the cap really is
+    # per-process. Constructed here (not inside run_pilot) to ensure
+    # `_last_call_t` carries across the lang boundary in multi-lang runs.
+    shared_rate_limiter = _RateLimiter(args.min_call_delay)
+
     for lang in target_langs:
         print(
             f"\n=== Translating {len(files)} files: "
@@ -834,7 +864,7 @@ def main() -> int:
             resume=args.resume,
             retry=not args.no_retry,
             retry_delay=args.retry_delay,
-            min_call_delay=args.min_call_delay,
+            rate_limiter=shared_rate_limiter,
         )
         summary["by_language"][lang] = result
 
