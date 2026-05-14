@@ -57,7 +57,7 @@ import sys
 import threading
 import time
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -520,9 +520,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "Cumulative spend cap (USD, estimated). Run aborts when "
-            "estimated_spend > N with a partial summary.json and exit code "
-            "5. Default: no cap. CORE-974: prevents runaway 429 storms from "
-            "burning the credit budget."
+            "estimated_spend >= N with a partial summary.json and exit code "
+            "5. Note: --max-credits-usd 0 trips the breaker on the first "
+            "recorded call (>= compares both equal and over). Default: no "
+            "cap. CORE-974: prevents runaway 429 storms from burning the "
+            "credit budget."
         ),
     )
     parser.add_argument(
@@ -790,29 +792,79 @@ def run_pilot(
     aborted_reason: str | None = None
     wall_t0 = time.perf_counter()
 
-    try:
-        if concurrency <= 1:
+    if concurrency <= 1:
+        # Sequential path. Sentinels propagate cleanly out of the for-loop
+        # at the next file iteration, no executor lifecycle to manage.
+        try:
             for idx, row in enumerate(files):
                 per_file.append(_safe_translate(idx, row))
-        else:
-            with ThreadPoolExecutor(max_workers=concurrency) as pool:
-                futures = [
-                    pool.submit(_safe_translate, idx, row)
-                    for idx, row in enumerate(files)
-                ]
-                for fut in as_completed(futures):
-                    # If a worker raised a circuit-breaker sentinel,
-                    # ``fut.result()`` re-raises here and unwinds the
-                    # ``with`` block. Other workers' in-flight calls finish
-                    # normally; any not yet started are abandoned.
-                    per_file.append(fut.result())
-            per_file.sort(key=lambda r: r["idx"])
-    except _WallTimeExceeded as exc:
-        aborted_reason = f"wall_time_exceeded: {exc}"
-        logger.warning("Aborted: %s", aborted_reason)
-    except _BudgetExceeded as exc:
-        aborted_reason = f"budget_exceeded: {exc}"
-        logger.warning("Aborted: %s", aborted_reason)
+        except _WallTimeExceeded as exc:
+            aborted_reason = f"wall_time_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
+        except _BudgetExceeded as exc:
+            aborted_reason = f"budget_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
+    else:
+        # Concurrent path. CORE-974 / PR #44 review: manual executor
+        # lifecycle (vs. the natural `with ThreadPoolExecutor(...) as
+        # pool:` pattern) so the abort path can call
+        # ``shutdown(cancel_futures=True)`` BEFORE the implicit
+        # ``shutdown(wait=True)`` runs at block exit. Without this,
+        # queued workers would drain one-by-one (each cheap because they
+        # re-raise the sentinel at the deadline check, but still seconds
+        # of overhead per queued worker), and any in-flight workers'
+        # results would never reach ``per_file`` because we'd have
+        # already broken out of the ``as_completed`` loop.
+        #
+        # Limitation: Python cannot cancel a thread that's already past
+        # the deadline check, inside ``translator.translate_code(...)``.
+        # Those calls finish on their own. The wall-time cap therefore
+        # overshoots by up to ``concurrency × longest_inflight_call``
+        # seconds — bounded, not zero. The drain block below reconciles
+        # ``per_file`` with the .py outputs those in-flight workers
+        # write to disk, so summary counts don't under-report relative
+        # to ``estimated_spend_usd`` and to files actually present.
+        pool = ThreadPoolExecutor(max_workers=concurrency)
+        futures: list[Future[dict[str, Any]]] = []
+        try:
+            futures = [
+                pool.submit(_safe_translate, idx, row) for idx, row in enumerate(files)
+            ]
+            for fut in as_completed(futures):
+                # Sentinel propagates here via ``fut.result()`` and is
+                # caught below; we then cancel queued + drain in-flight.
+                per_file.append(fut.result())
+        except _WallTimeExceeded as exc:
+            aborted_reason = f"wall_time_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
+            pool.shutdown(wait=True, cancel_futures=True)
+        except _BudgetExceeded as exc:
+            aborted_reason = f"budget_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
+            pool.shutdown(wait=True, cancel_futures=True)
+        finally:
+            pool.shutdown(wait=True)  # idempotent; happy-path shutdown
+
+        # On abort: drain in-flight workers' results so per_file matches
+        # what's actually on disk + what budget already counted. On the
+        # happy path this loop is a no-op (every future was already
+        # collected via as_completed).
+        if aborted_reason is not None:
+            collected_idxs = {r["idx"] for r in per_file if isinstance(r, dict)}
+            for fut in futures:
+                if fut.cancelled():
+                    continue
+                try:
+                    r = fut.result()
+                except (_WallTimeExceeded, _BudgetExceeded):
+                    continue  # the originator(s) — not a per_file row
+                except Exception:
+                    continue  # _translate_one catches its own; safety net
+                if isinstance(r, dict) and r.get("idx") not in collected_idxs:
+                    per_file.append(r)
+                    collected_idxs.add(r["idx"])
+
+        per_file.sort(key=lambda r: r["idx"])
 
     wall_seconds = time.perf_counter() - wall_t0
 
