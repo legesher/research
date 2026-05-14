@@ -57,7 +57,7 @@ import sys
 import threading
 import time
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -305,6 +305,56 @@ class _RateLimiter:
             self._last_call_t = time.perf_counter()
 
 
+# CORE-974: circuit-breaker exceptions raised from inside _translate_one to
+# unwind the iteration loop cleanly when a budget or wall-time cap is hit.
+# Caught at the run_pilot level so a partial summary still lands on disk.
+class _WallTimeExceeded(Exception):
+    """Raised when ``--max-wall-seconds`` is exceeded mid-run."""
+
+
+class _BudgetExceeded(Exception):
+    """Raised when ``--max-credits-usd`` is exceeded mid-run."""
+
+
+class _BudgetTracker:
+    """Thread-safe cumulative cost tracker with a configurable cap.
+
+    Cost-per-call is an estimate (defaults from AYA-213 spend reconciliation,
+    overridable via CLI). For circuit-breaker purposes this is sufficient:
+    "off by 2x in the right direction" still prevents runaway spend. Precise
+    per-token accounting via ``CohereBackend`` accumulation is a follow-up.
+    """
+
+    def __init__(
+        self,
+        max_credits_usd: float | None,
+        cost_per_success_usd: float,
+        cost_per_failure_usd: float,
+    ) -> None:
+        self.max_credits_usd = max_credits_usd
+        self.cost_per_success_usd = cost_per_success_usd
+        self.cost_per_failure_usd = cost_per_failure_usd
+        self._spent_usd = 0.0
+        self._lock = threading.Lock()
+
+    def record(self, success: bool) -> float:
+        """Increment cumulative spend; return the new total."""
+        with self._lock:
+            self._spent_usd += (
+                self.cost_per_success_usd if success else self.cost_per_failure_usd
+            )
+            return self._spent_usd
+
+    def spent_usd(self) -> float:
+        with self._lock:
+            return self._spent_usd
+
+    def is_exceeded(self) -> bool:
+        if self.max_credits_usd is None:
+            return False
+        return self.spent_usd() >= self.max_credits_usd
+
+
 def _positive_int(value: str) -> int:
     """argparse type for ``--n-files``: must be a strictly positive integer.
 
@@ -444,13 +494,56 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--min-call-delay",
         type=_non_negative_float,
-        default=0.0,
+        default=None,
         help=(
             "Minimum seconds between consecutive backend calls per process. "
-            "Default 0 = no rate limit. Set to ~30 for c4ai-aya-expanse-32b "
-            "to match its empirical ~2 RPM cap and avoid paying input tokens "
-            "for 429-rejected calls. Applied across all worker threads and "
-            "shared across all target languages within a single run."
+            "When omitted, defaults to 30s for --provider=cohere (matches "
+            "c4ai-aya-expanse-32b's empirical ~2 RPM cap) and 0s for "
+            "--provider=ollama. Pass an explicit value to override either "
+            "default. Applied across all worker threads and shared across "
+            "all target languages within a single run."
+        ),
+    )
+    parser.add_argument(
+        "--max-wall-seconds",
+        type=_non_negative_float,
+        default=None,
+        help=(
+            "Hard wall-clock cap. Run aborts after N seconds with a partial "
+            "summary.json and exit code 4. Default: no cap. CORE-974: "
+            "prevents wedged retry loops from running for hours unattended."
+        ),
+    )
+    parser.add_argument(
+        "--max-credits-usd",
+        type=_non_negative_float,
+        default=None,
+        help=(
+            "Cumulative spend cap (USD, estimated). Run aborts when "
+            "estimated_spend >= N with a partial summary.json and exit code "
+            "5. Note: --max-credits-usd 0 trips the breaker on the first "
+            "recorded call (>= compares both equal and over). Default: no "
+            "cap. CORE-974: prevents runaway 429 storms from burning the "
+            "credit budget."
+        ),
+    )
+    parser.add_argument(
+        "--cost-per-success-usd",
+        type=_non_negative_float,
+        default=0.05,
+        help=(
+            "Estimated cost in USD for a successful translation. Used by "
+            "--max-credits-usd. Default 0.05 (empirical from AYA-213)."
+        ),
+    )
+    parser.add_argument(
+        "--cost-per-failure-usd",
+        type=_non_negative_float,
+        default=0.025,
+        help=(
+            "Estimated cost in USD for a failed translation (input tokens "
+            "only — 429-rejected calls still bill). Used by "
+            "--max-credits-usd. Default 0.025 (empirical from AYA-213)."
         ),
     )
     parser.add_argument(
@@ -475,6 +568,8 @@ def run_pilot(
     retry: bool = True,
     retry_delay: float = 5.0,
     rate_limiter: _RateLimiter | None = None,
+    deadline: float | None = None,
+    budget: _BudgetTracker | None = None,
 ) -> dict[str, Any]:
     """Translate ``files`` to ``target_lang`` and capture per-file outcomes.
 
@@ -529,6 +624,17 @@ def run_pilot(
         license_str = row.get("license") or ""
         out_path = output_dir / f"{idx:03d}.py"
         original_path = originals_dir / f"{idx:03d}.py"
+
+        # CORE-974: circuit breakers checked BEFORE any work for this file.
+        # Resume short-circuit (below) is exempt — checking existing output
+        # is essentially free and counts as making forward progress.
+        if deadline is not None and time.perf_counter() > deadline:
+            raise _WallTimeExceeded(f"--max-wall-seconds reached before file idx={idx}")
+        if budget is not None and budget.is_exceeded():
+            raise _BudgetExceeded(
+                f"--max-credits-usd reached "
+                f"(spent ~${budget.spent_usd():.2f}) before file idx={idx}"
+            )
 
         # Resume: short-circuit if output already exists from a prior run.
         if resume and out_path.exists():
@@ -611,6 +717,9 @@ def run_pilot(
                 f"{type(last_exc).__name__}: {last_exc}\n",
                 encoding="utf-8",
             )
+            # CORE-974: record failed attempt for cost-cap accounting.
+            if budget is not None:
+                budget.record(success=False)
             return {
                 "idx": idx,
                 "file_path": file_path,
@@ -665,19 +774,96 @@ def run_pilot(
             "stripped_labeled_mappings": stripped_count,
         }
 
+    def _safe_translate(idx: int, row: dict[str, Any]) -> dict[str, Any]:
+        """Wrap ``_translate_one`` to record success cost on the happy path.
+
+        ``_translate_one`` records failure cost itself (because it has the
+        try/except context). Success cost is recorded here to avoid mutating
+        ``_translate_one``'s return-dict construction. Sentinel exceptions
+        (``_WallTimeExceeded`` / ``_BudgetExceeded``) propagate up to the
+        iteration loop unchanged.
+        """
+        result = _translate_one(idx, row)
+        if budget is not None and result.get("status") == "ok":
+            budget.record(success=True)
+        return result
+
     per_file: list[dict[str, Any]] = []
+    aborted_reason: str | None = None
     wall_t0 = time.perf_counter()
 
     if concurrency <= 1:
-        for idx, row in enumerate(files):
-            per_file.append(_translate_one(idx, row))
+        # Sequential path. Sentinels propagate cleanly out of the for-loop
+        # at the next file iteration, no executor lifecycle to manage.
+        try:
+            for idx, row in enumerate(files):
+                per_file.append(_safe_translate(idx, row))
+        except _WallTimeExceeded as exc:
+            aborted_reason = f"wall_time_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
+        except _BudgetExceeded as exc:
+            aborted_reason = f"budget_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
     else:
-        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        # Concurrent path. CORE-974 / PR #44 review: manual executor
+        # lifecycle (vs. the natural `with ThreadPoolExecutor(...) as
+        # pool:` pattern) so the abort path can call
+        # ``shutdown(cancel_futures=True)`` BEFORE the implicit
+        # ``shutdown(wait=True)`` runs at block exit. Without this,
+        # queued workers would drain one-by-one (each cheap because they
+        # re-raise the sentinel at the deadline check, but still seconds
+        # of overhead per queued worker), and any in-flight workers'
+        # results would never reach ``per_file`` because we'd have
+        # already broken out of the ``as_completed`` loop.
+        #
+        # Limitation: Python cannot cancel a thread that's already past
+        # the deadline check, inside ``translator.translate_code(...)``.
+        # Those calls finish on their own. The wall-time cap therefore
+        # overshoots by up to ``concurrency × longest_inflight_call``
+        # seconds — bounded, not zero. The drain block below reconciles
+        # ``per_file`` with the .py outputs those in-flight workers
+        # write to disk, so summary counts don't under-report relative
+        # to ``estimated_spend_usd`` and to files actually present.
+        pool = ThreadPoolExecutor(max_workers=concurrency)
+        futures: list[Future[dict[str, Any]]] = []
+        try:
             futures = [
-                pool.submit(_translate_one, idx, row) for idx, row in enumerate(files)
+                pool.submit(_safe_translate, idx, row) for idx, row in enumerate(files)
             ]
             for fut in as_completed(futures):
+                # Sentinel propagates here via ``fut.result()`` and is
+                # caught below; we then cancel queued + drain in-flight.
                 per_file.append(fut.result())
+        except _WallTimeExceeded as exc:
+            aborted_reason = f"wall_time_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
+            pool.shutdown(wait=True, cancel_futures=True)
+        except _BudgetExceeded as exc:
+            aborted_reason = f"budget_exceeded: {exc}"
+            logger.warning("Aborted: %s", aborted_reason)
+            pool.shutdown(wait=True, cancel_futures=True)
+        finally:
+            pool.shutdown(wait=True)  # idempotent; happy-path shutdown
+
+        # On abort: drain in-flight workers' results so per_file matches
+        # what's actually on disk + what budget already counted. On the
+        # happy path this loop is a no-op (every future was already
+        # collected via as_completed).
+        if aborted_reason is not None:
+            collected_idxs = {r["idx"] for r in per_file if isinstance(r, dict)}
+            for fut in futures:
+                if fut.cancelled():
+                    continue
+                try:
+                    r = fut.result()
+                except (_WallTimeExceeded, _BudgetExceeded):
+                    continue  # the originator(s) — not a per_file row
+                except Exception:
+                    continue  # _translate_one catches its own; safety net
+                if isinstance(r, dict) and r.get("idx") not in collected_idxs:
+                    per_file.append(r)
+                    collected_idxs.add(r["idx"])
+
         per_file.sort(key=lambda r: r["idx"])
 
     wall_seconds = time.perf_counter() - wall_t0
@@ -714,16 +900,23 @@ def run_pilot(
             parse_fail += 1
 
     # Only files actually translated this run count toward the per-file
-    # average; resumed files would skew it to ~0s.
-    fresh_translated = len(files) - runtime_fail - resumed_count
+    # average; resumed files would skew it to ~0s. When aborted mid-run the
+    # processed count comes from per_file, not the original file list.
+    processed_count = len(per_file)
+    fresh_translated = processed_count - runtime_fail - resumed_count
     return {
         "target_lang": target_lang,
         "n_files": len(files),
+        "n_processed": processed_count,
         "concurrency": concurrency,
         "ast_pass": parse_pass,
         "ast_fail": parse_fail,
         "runtime_fail": runtime_fail,
         "resumed": resumed_count,
+        "aborted_reason": aborted_reason,
+        "estimated_spend_usd": (
+            round(budget.spent_usd(), 4) if budget is not None else None
+        ),
         "wall_seconds": round(wall_seconds, 2),
         "total_seconds": round(total_seconds, 2),
         "avg_seconds_per_file": (
@@ -829,10 +1022,48 @@ def main() -> int:
             timeout=args.timeout,
         )
 
+    # CORE-974 (#3): auto-pace cohere when --min-call-delay was not passed.
+    # Sentinel `None` from argparse means "use the per-provider default."
+    # Existing explicit users (passing `--min-call-delay 0`, `30`, etc.)
+    # are unaffected — only the omit-the-flag case picks up the new default.
+    if args.min_call_delay is None:
+        if args.provider == "cohere":
+            args.min_call_delay = 30.0
+            print(
+                "Auto-set --min-call-delay=30.0 for --provider=cohere "
+                "(c4ai-aya-expanse-32b empirical ~2 RPM cap). "
+                "Pass --min-call-delay 0 to disable."
+            )
+        else:
+            args.min_call_delay = 0.0
+
     # One limiter shared across every target language so the cap really is
     # per-process. Constructed here (not inside run_pilot) to ensure
     # `_last_call_t` carries across the lang boundary in multi-lang runs.
     shared_rate_limiter = _RateLimiter(args.min_call_delay)
+
+    # CORE-974 (#1, #2): wall-time and budget circuit breakers, both shared
+    # across all target langs in this run so a multi-lang run can't bypass
+    # the cap by switching languages.
+    deadline: float | None = None
+    if args.max_wall_seconds is not None:
+        deadline = time.perf_counter() + args.max_wall_seconds
+        print(
+            f"Wall-time circuit breaker armed: max {args.max_wall_seconds}s "
+            f"(exit code 4 if exceeded)."
+        )
+    budget: _BudgetTracker | None = None
+    if args.max_credits_usd is not None:
+        budget = _BudgetTracker(
+            max_credits_usd=args.max_credits_usd,
+            cost_per_success_usd=args.cost_per_success_usd,
+            cost_per_failure_usd=args.cost_per_failure_usd,
+        )
+        print(
+            f"Budget circuit breaker armed: max ${args.max_credits_usd} USD "
+            f"estimated (success=${args.cost_per_success_usd}/file, "
+            f"failure=${args.cost_per_failure_usd}/file). Exit code 5 if exceeded."
+        )
 
     for lang in target_langs:
         print(
@@ -865,18 +1096,37 @@ def main() -> int:
             retry=not args.no_retry,
             retry_delay=args.retry_delay,
             rate_limiter=shared_rate_limiter,
+            deadline=deadline,
+            budget=budget,
         )
         summary["by_language"][lang] = result
 
+        spend_str = (
+            f" | spent ~${result['estimated_spend_usd']}"
+            if result.get("estimated_spend_usd") is not None
+            else ""
+        )
         print(
-            f"  AST pass: {result['ast_pass']}/{len(files)} | "
+            f"  AST pass: {result['ast_pass']}/{result.get('n_processed', len(files))} | "
             f"AST fail: {result['ast_fail']} | "
             f"runtime fail: {result['runtime_fail']} | "
             f"resumed: {result.get('resumed', 0)} | "
             f"avg {result['avg_seconds_per_file']}s/file | "
             f"wall {result['wall_seconds']}s | "
             f"throughput {result['throughput_files_per_min']} files/min"
+            f"{spend_str}"
         )
+
+        # CORE-974: when a circuit breaker fires, surface it and stop
+        # processing remaining target langs (the cap is shared, so every
+        # subsequent lang would just trip immediately anyway).
+        if result.get("aborted_reason"):
+            print(
+                f"  ABORTED: {result['aborted_reason']} — "
+                "stopping multi-lang run before remaining languages.",
+                file=sys.stderr,
+            )
+            break
 
     summary["finished_at"] = datetime.now(timezone.utc).isoformat()
     summary_path = output_root / "summary.json"
@@ -893,12 +1143,25 @@ def main() -> int:
                     "avg_seconds_per_file": r.get("avg_seconds_per_file"),
                     "wall_seconds": r.get("wall_seconds"),
                     "throughput_files_per_min": r.get("throughput_files_per_min"),
+                    "aborted_reason": r.get("aborted_reason"),
+                    "estimated_spend_usd": r.get("estimated_spend_usd"),
                 }
                 for lang, r in summary["by_language"].items()
             },
             indent=2,
         )
     )
+
+    # CORE-974: distinct exit codes for circuit-breaker triggers so callers
+    # (CI, orchestrator scripts, manual operators) can branch on them.
+    for lang_result in summary["by_language"].values():
+        reason = (
+            lang_result.get("aborted_reason") if isinstance(lang_result, dict) else None
+        )
+        if reason and reason.startswith("wall_time_exceeded"):
+            return 4
+        if reason and reason.startswith("budget_exceeded"):
+            return 5
     return 0
 
 
