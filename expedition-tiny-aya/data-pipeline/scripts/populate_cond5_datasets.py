@@ -584,10 +584,26 @@ def _load_idx_allowlist(path: str) -> set[int]:
     quietly translating zero files.
     """
     p = Path(path)
-    if not p.exists():
-        raise FileNotFoundError(f"--idx-allowlist file not found: {path}")
+    # `is_file()` is False for both non-existent paths AND directories,
+    # which avoids the directory-passed-as-allowlist crash that
+    # `exists()` would let through (Copilot review on PR #45).
+    if not p.is_file():
+        raise FileNotFoundError(
+            f"--idx-allowlist not a readable file: {path} "
+            "(check it exists and isn't a directory)"
+        )
+    # Re-raise OSError / UnicodeDecodeError as ValueError so the main()
+    # exception handler catches it consistently (otherwise the CLI
+    # crashes with a traceback instead of exiting with code 2).
+    try:
+        contents = p.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(
+            f"--idx-allowlist {path}: failed to read file: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
     idxs: set[int] = set()
-    for line_no, raw in enumerate(p.read_text(encoding="utf-8").splitlines(), start=1):
+    for line_no, raw in enumerate(contents.splitlines(), start=1):
         # Strip comments and whitespace
         line = raw.split("#", 1)[0].strip()
         if not line:
@@ -1203,8 +1219,13 @@ def main() -> int:
             if result.get("estimated_spend_usd") is not None
             else ""
         )
+        # Denominator for "AST pass" is the number of rows that actually
+        # had AST validation run (ast_pass + ast_fail) — NOT total rows,
+        # which would include resumed / runtime_error / skipped_not_in_allowlist
+        # rows that never reached the parser. Copilot review on PR #45.
+        ast_checked = result["ast_pass"] + result["ast_fail"]
         print(
-            f"  AST pass: {result['ast_pass']}/{result.get('n_processed', len(files))} | "
+            f"  AST pass: {result['ast_pass']}/{ast_checked} | "
             f"AST fail: {result['ast_fail']} | "
             f"runtime fail: {result['runtime_fail']} | "
             f"resumed: {result.get('resumed', 0)} | "
