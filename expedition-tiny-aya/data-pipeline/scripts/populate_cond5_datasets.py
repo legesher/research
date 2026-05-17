@@ -547,11 +547,82 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--idx-allowlist",
+        type=str,
+        default=None,
+        help=(
+            "Path to a newline-separated file of idxs to translate. When "
+            "set, the script processes ONLY rows whose idx (0-based row "
+            "number in the source parquet) appears in the file. Other "
+            "rows are silently skipped — no LLM call, no .py written, no "
+            ".error.txt written. Accepts bare integers (`42`), filename "
+            "stems (`042`), or `.py` filenames (`042.py`). Whitespace and "
+            "lines starting with `#` are ignored. CORE-1049: enables "
+            "cross-lingual idx alignment so subsequent zh/es runs only "
+            "translate the same source idxs that succeeded for ur."
+        ),
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Verbose logging",
     )
     return parser.parse_args()
+
+
+def _load_idx_allowlist(path: str) -> set[int]:
+    """Parse --idx-allowlist file into a set of integer idxs.
+
+    Accepts (per line):
+    - bare integer:        ``42``
+    - zero-padded stem:    ``042``
+    - filename:            ``042.py``
+    - whitespace + ``#`` comments stripped
+
+    Empty lines are skipped silently. An empty allowlist (no parseable
+    entries) raises ``ValueError`` so the caller fails fast instead of
+    quietly translating zero files.
+    """
+    p = Path(path)
+    # `is_file()` is False for both non-existent paths AND directories,
+    # which avoids the directory-passed-as-allowlist crash that
+    # `exists()` would let through (Copilot review on PR #45).
+    if not p.is_file():
+        raise FileNotFoundError(
+            f"--idx-allowlist not a readable file: {path} "
+            "(check it exists and isn't a directory)"
+        )
+    # Re-raise OSError / UnicodeDecodeError as ValueError so the main()
+    # exception handler catches it consistently (otherwise the CLI
+    # crashes with a traceback instead of exiting with code 2).
+    try:
+        contents = p.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(
+            f"--idx-allowlist {path}: failed to read file: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
+    idxs: set[int] = set()
+    for line_no, raw in enumerate(contents.splitlines(), start=1):
+        # Strip comments and whitespace
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        # Strip trailing .py
+        if line.endswith(".py"):
+            line = line[:-3]
+        try:
+            idxs.add(int(line))
+        except ValueError as exc:
+            raise ValueError(
+                f"--idx-allowlist {path}:{line_no}: cannot parse {raw!r} as an idx"
+            ) from exc
+    if not idxs:
+        raise ValueError(
+            f"--idx-allowlist {path} contained no parseable idxs; aborting "
+            "(would have translated 0 files)"
+        )
+    return idxs
 
 
 def run_pilot(
@@ -570,6 +641,7 @@ def run_pilot(
     rate_limiter: _RateLimiter | None = None,
     deadline: float | None = None,
     budget: _BudgetTracker | None = None,
+    idx_allowlist: set[int] | None = None,
 ) -> dict[str, Any]:
     """Translate ``files`` to ``target_lang`` and capture per-file outcomes.
 
@@ -624,6 +696,22 @@ def run_pilot(
         license_str = row.get("license") or ""
         out_path = output_dir / f"{idx:03d}.py"
         original_path = originals_dir / f"{idx:03d}.py"
+
+        # CORE-1049: idx-allowlist short-circuit. Cheaper than resume check
+        # (set membership vs filesystem stat) and runs first so circuit
+        # breakers don't trigger on rows we'd never translate anyway.
+        # Returns a distinct status so summary.json can report skipped count.
+        if idx_allowlist is not None and idx not in idx_allowlist:
+            return {
+                "idx": idx,
+                "file_path": file_path,
+                "license": license_str,
+                "status": "skipped_not_in_allowlist",
+                "ast": "skipped",
+                "elapsed_seconds": 0.0,
+                "input_chars": len(code_en),
+                "output_chars": 0,
+            }
 
         # CORE-974: circuit breakers checked BEFORE any work for this file.
         # Resume short-circuit (below) is exempt — checking existing output
@@ -878,6 +966,7 @@ def run_pilot(
     parse_fail = 0
     runtime_fail = 0
     resumed_count = 0
+    skipped_not_in_allowlist_count = 0
     total_input_chars = 0
     total_output_chars = 0
     total_seconds = 0.0
@@ -892,6 +981,11 @@ def run_pilot(
             resumed_count += 1
             total_output_chars += r.get("output_chars", 0)
             continue
+        if r["status"] == "skipped_not_in_allowlist":
+            # CORE-1049: rows filtered out by --idx-allowlist. No work done,
+            # no cost incurred, no .py written. Tracked for traceability.
+            skipped_not_in_allowlist_count += 1
+            continue
         total_output_chars += r.get("output_chars", 0)
         total_seconds += r["elapsed_seconds"]
         if r["ast"] == "pass":
@@ -900,10 +994,13 @@ def run_pilot(
             parse_fail += 1
 
     # Only files actually translated this run count toward the per-file
-    # average; resumed files would skew it to ~0s. When aborted mid-run the
-    # processed count comes from per_file, not the original file list.
+    # average; resumed/skipped files would skew it to ~0s. When aborted
+    # mid-run the processed count comes from per_file, not the original
+    # file list.
     processed_count = len(per_file)
-    fresh_translated = processed_count - runtime_fail - resumed_count
+    fresh_translated = (
+        processed_count - runtime_fail - resumed_count - skipped_not_in_allowlist_count
+    )
     return {
         "target_lang": target_lang,
         "n_files": len(files),
@@ -913,6 +1010,7 @@ def run_pilot(
         "ast_fail": parse_fail,
         "runtime_fail": runtime_fail,
         "resumed": resumed_count,
+        "skipped_not_in_allowlist": skipped_not_in_allowlist_count,
         "aborted_reason": aborted_reason,
         "estimated_spend_usd": (
             round(budget.spent_usd(), 4) if budget is not None else None
@@ -1065,6 +1163,20 @@ def main() -> int:
             f"failure=${args.cost_per_failure_usd}/file). Exit code 5 if exceeded."
         )
 
+    # CORE-1049: load idx allowlist when provided. Fail fast on missing /
+    # empty file so we don't silently translate zero rows.
+    idx_allowlist: set[int] | None = None
+    if args.idx_allowlist is not None:
+        try:
+            idx_allowlist = _load_idx_allowlist(args.idx_allowlist)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print(
+            f"Idx allowlist loaded: {len(idx_allowlist):,} idxs from "
+            f"{args.idx_allowlist}. Rows outside the allowlist will be skipped."
+        )
+
     for lang in target_langs:
         print(
             f"\n=== Translating {len(files)} files: "
@@ -1098,6 +1210,7 @@ def main() -> int:
             rate_limiter=shared_rate_limiter,
             deadline=deadline,
             budget=budget,
+            idx_allowlist=idx_allowlist,
         )
         summary["by_language"][lang] = result
 
@@ -1106,11 +1219,17 @@ def main() -> int:
             if result.get("estimated_spend_usd") is not None
             else ""
         )
+        # Denominator for "AST pass" is the number of rows that actually
+        # had AST validation run (ast_pass + ast_fail) — NOT total rows,
+        # which would include resumed / runtime_error / skipped_not_in_allowlist
+        # rows that never reached the parser. Copilot review on PR #45.
+        ast_checked = result["ast_pass"] + result["ast_fail"]
         print(
-            f"  AST pass: {result['ast_pass']}/{result.get('n_processed', len(files))} | "
+            f"  AST pass: {result['ast_pass']}/{ast_checked} | "
             f"AST fail: {result['ast_fail']} | "
             f"runtime fail: {result['runtime_fail']} | "
             f"resumed: {result.get('resumed', 0)} | "
+            f"skipped (allowlist): {result.get('skipped_not_in_allowlist', 0)} | "
             f"avg {result['avg_seconds_per_file']}s/file | "
             f"wall {result['wall_seconds']}s | "
             f"throughput {result['throughput_files_per_min']} files/min"
