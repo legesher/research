@@ -24,16 +24,18 @@ Results are stored on HuggingFace, not in this directory.
 
 The preprocessing notebook caches all 4 dataset languages × 4 instruction-language prompts × 2 templates per row. The eval notebook then selects a subset per condition:
 
-| Condition                        | Dataset langs  | Instruction langs | Cells per model |
-| -------------------------------- | -------------- | ----------------- | --------------- |
-| baseline (no FT)                 | en, zh, es, ur | en, zh, es, ur    | **128**         |
-| condition-1-en-5k (English code) | en, zh, es, ur | en, zh, es, ur    | **128**         |
-| condition-2-zh-5k                | en, zh, es, ur | en, zh            | **64**          |
-| condition-2-es-5k                | en, zh, es, ur | en, es            | **64**          |
-| condition-2-ur-5k                | en, zh, es, ur | en, ur            | **64**          |
-| condition-3 / condition-5 (per-lang) | en, zh, es, ur | en, L_train   | **64**          |
+| Condition                             | Dataset langs  | Instruction langs | Cells per model |
+| ------------------------------------- | -------------- | ----------------- | --------------- |
+| baseline (no FT)                      | en, zh, es, ur | en, zh, es, ur    | **128**         |
+| condition-1-en-5k (English code)      | en, zh, es, ur | en, zh, es, ur    | **128**         |
+| condition-2-zh-5k                     | en, zh, es, ur | en, zh            | **64**          |
+| condition-2-es-5k                     | en, zh, es, ur | en, es            | **64**          |
+| condition-2-ur-5k                     | en, zh, es, ur | en, ur            | **64**          |
+| condition-3 / condition-5 (per-lang)¹ | en, zh, es, ur | en, L_train       | **64**          |
 
 Cells = 4 benchmarks × 2 templates × dataset-langs × instruction-langs.
+
+¹ Planned — not yet registered in `EVAL_MATRIX`. Adapters land per language; the registry entry is a one-line addition once each adapter is published.
 
 **Rule for condition-2/3/5:** instruction language is always English OR the model's trained-on language, regardless of which dataset language we're evaluating against. A condition-2-ur model evaluated on `xnli_zh` gets either English or Urdu instructions, never Chinese — the model wasn't trained to follow Chinese instructions in that condition.
 
