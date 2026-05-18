@@ -538,6 +538,79 @@ def _append_comparison_csv(f, result: TranspileResult) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Manifest → metadata.csv mirror (cross-condition consistency support)
+# ---------------------------------------------------------------------------
+
+
+def _emit_metadata_csv_from_manifest(
+    input_base: Path,
+    lang_output_dir: Path,
+    checkpoint_path: Path,
+) -> None:
+    """Mirror ``input_base/manifest.csv`` to ``lang_output_dir/metadata.csv``.
+
+    When the input directory carries a ``manifest.csv`` (produced by
+    ``materialize_cond1_source.py``), filter it to files that successfully
+    transpiled (per the checkpoint) and write the cond5-aligned schema
+    (``filename, file_path, license, idx``) into ``lang_output_dir`` so
+    ``package_dataset.py from-files`` can consume it the same way it
+    consumes ``populate_cond5_datasets.py`` output.
+
+    Cross-condition comparison (cond2 vs cond5 for the same source row)
+    relies on this — without it, batch_transpile output loses canonical
+    ``file_path`` + ``license`` provenance and the published HF dataset
+    can't be joined to a cond5 sibling on the same source row.
+
+    No-op when ``manifest.csv`` is absent (preserves legacy invocations
+    that fed batch_transpile a raw directory of unattributed .py files).
+    """
+    manifest_path = input_base / "manifest.csv"
+    if not manifest_path.exists():
+        return
+
+    completed = _load_checkpoint(checkpoint_path)
+    if not completed:
+        return
+
+    # Reduce checkpoint paths to the same shape the output writer used:
+    # the relative path from input_base, which becomes the on-disk filename
+    # under lang_output_dir (matching _safe_output_path's behavior).
+    input_resolved = input_base.resolve()
+    completed_filenames: set[str] = set()
+    for src_path in completed:
+        try:
+            rel = Path(src_path).resolve().relative_to(input_resolved)
+        except ValueError:
+            continue
+        completed_filenames.add(str(rel))
+
+    out_path = lang_output_dir / "metadata.csv"
+    n_written = 0
+    with manifest_path.open(encoding="utf-8", newline="") as src, out_path.open(
+        "w", encoding="utf-8", newline=""
+    ) as dst:
+        reader = csv.DictReader(src)
+        writer = csv.DictWriter(
+            dst, fieldnames=["filename", "file_path", "license", "idx"]
+        )
+        writer.writeheader()
+        for row in reader:
+            if row.get("filename") not in completed_filenames:
+                continue
+            writer.writerow(
+                {
+                    "filename": row["filename"],
+                    "file_path": row["file_path"],
+                    "license": row["license"],
+                    "idx": row["idx"],
+                }
+            )
+            n_written += 1
+
+    print(f"  Wrote metadata.csv ({n_written} entries) -> {out_path}")
+
+
+# ---------------------------------------------------------------------------
 # File discovery
 # ---------------------------------------------------------------------------
 
@@ -771,6 +844,12 @@ def run_batch(
             comparison_fh.close()
 
     stats.elapsed_sec = time.time() - start_time
+
+    # Mirror manifest.csv -> metadata.csv (no-op when manifest is absent).
+    # Outside the finally block: if transpilation crashed mid-run we don't
+    # want to claim "all of these succeeded" by writing metadata.
+    _emit_metadata_csv_from_manifest(input_base, lang_output_dir, checkpoint_path)
+
     return stats
 
 

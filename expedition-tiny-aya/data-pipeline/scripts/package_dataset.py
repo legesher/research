@@ -12,7 +12,7 @@ Requirements:
     pip install datasets transformers huggingface_hub tqdm
 
 Usage:
-    # Package transpiled files into a new HF dataset
+    # Package transpiled files into a new HF dataset (random 90/10 split)
     python package_dataset.py from-files \\
         --transpiled ./transpiled-ur/ \\
         --originals ./source-python/ \\
@@ -38,6 +38,19 @@ Usage:
         --config-name condition-1-en \\
         --tokenizer CohereLabs/tiny-aya-base \\
         --output ./retokenized/condition-1-en/
+
+    # Package with pre-split train + validation directories (preserves an
+    # upstream split, e.g. for cross-language consistency where every
+    # language must share the same train/val membership)
+    python package_dataset.py from-files \\
+        --train-transpiled ./packaged/cond5-ur/train/ur \\
+        --train-originals  ./packaged/cond5-ur/train/ur.originals \\
+        --validation-transpiled ./packaged/cond5-ur/validation/ur \\
+        --validation-originals  ./packaged/cond5-ur/validation/ur.originals \\
+        --language ur \\
+        --output ./packaged-ur/ \\
+        --config-name condition-5-ur-5k-c4ai-aya-expanse-32b \\
+        --push legesher/language-decoded-data
 """
 
 from __future__ import annotations
@@ -192,45 +205,93 @@ def retokenize(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def package_from_files(args: argparse.Namespace) -> None:
-    """Package transpiled + original files into a HF dataset."""
-    print(f"Loading tokenizer: {args.tokenizer}")
-    tokenizer = load_tokenizer(args.tokenizer)
+def _load_metadata_csv(transpiled_dir: Path) -> dict[str, dict[str, str]]:
+    """Load metadata.csv from a transpiled dir, keyed by filename or file_path.
 
-    transpiled_dir = Path(args.transpiled)
-    originals_dir = Path(args.originals)
+    Prefer ``filename`` as the lookup key when populated — the cond5 schema
+    uses ``filename: 000.py`` for lookup AND
+    ``file_path: <stack-v2-attribution>`` so source provenance survives onto
+    the published HF dataset's ``file_path`` column. Older CSVs without
+    ``filename`` fall back to ``file_path`` for the key (preserving
+    backward compatibility with batch_transpile.py output).
 
+    populate_cond5_datasets writes metadata.csv as UTF-8; the ``file_path``
+    column may include non-ASCII characters, so open with explicit encoding
+    + newline="" so csv.DictReader handles \\r\\n correctly across locales.
+    """
+    metadata_path = transpiled_dir / "metadata.csv"
+    if not metadata_path.exists():
+        return {}
+    out: dict[str, dict[str, str]] = {}
+    with open(metadata_path, encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            lookup_key = row.get("filename") or row.get("file_path") or ""
+            out[lookup_key] = row
+    return out
+
+
+def _load_keep_idx(path: Path) -> set[int]:
+    """Read a newline-separated set of ``idx`` integers from ``path``.
+
+    Blank lines and ``#`` comment lines are ignored. Non-integer lines
+    are silently skipped (mirrors the tolerant behavior used elsewhere
+    when reading metadata.csv idx values).
+    """
+    out: set[int] = set()
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            try:
+                out.add(int(line))
+            except ValueError:
+                continue
+    return out
+
+
+def _build_rows(
+    transpiled_dir: Path,
+    originals_dir: Path,
+    language: str,
+    tokenizer: AutoTokenizer,
+    default_license: str | None,
+    desc: str = "Packaging",
+    keep_idx: set[int] | None = None,
+) -> tuple[list[dict[str, object]], int, int]:
+    """Walk a transpiled dir and produce HF dataset rows + skipped + dropped.
+
+    Pairs each transpiled ``*.py`` with its English counterpart in
+    ``originals_dir`` (via path relative to ``transpiled_dir``), reads the
+    metadata.csv if present, and tokenizes the transpiled code.
+
+    When ``keep_idx`` is provided, drops any row whose ``idx`` (from
+    metadata.csv) isn't in the set. Use this to enforce cross-cell
+    consistency before publishing — see ``harmonize_splits.py``.
+    """
     if not transpiled_dir.exists():
         print(
             f"Error: transpiled directory not found: {transpiled_dir}", file=sys.stderr
         )
         sys.exit(1)
 
-    # Collect file pairs (transpiled + original)
     transpiled_files = sorted(transpiled_dir.glob("**/*.py"))
-    print(f"Found {len(transpiled_files)} transpiled files")
+    print(f"  {desc}: found {len(transpiled_files)} files in {transpiled_dir}")
 
-    # Load metadata CSV if available (from batch_transpile.py output)
-    metadata_path = transpiled_dir / "metadata.csv"
-    file_metadata = {}
-    if metadata_path.exists():
-        with open(metadata_path) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                file_metadata[row.get("file_path", row.get("filename", ""))] = row
+    file_metadata = _load_metadata_csv(transpiled_dir)
 
-    rows = []
+    rows: list[dict[str, object]] = []
     skipped = 0
+    dropped_via_keep_idx = 0
 
-    for tf in tqdm(transpiled_files, desc="Packaging"):
-        # Read transpiled code
+    for tf in tqdm(transpiled_files, desc=desc):
         try:
             code = tf.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             skipped += 1
             continue
 
-        # Find matching original
         relative = tf.relative_to(transpiled_dir)
         original_path = originals_dir / relative
         if original_path.exists():
@@ -241,92 +302,290 @@ def package_from_files(args: argparse.Namespace) -> None:
         else:
             code_en = ""
 
-        # Get metadata
-        meta = file_metadata.get(str(relative), {})
-        license_name = meta.get("license", args.default_license or "unknown")
+        # Fall back to basename when CSV keys are basenames (cond5
+        # populator's `filename` column) but `relative` is a nested path
+        # (e.g. batch_transpile.py output).
+        meta = (
+            file_metadata.get(str(relative)) or file_metadata.get(relative.name) or {}
+        )
+        license_name = meta.get("license", default_license or "unknown")
         file_path_str = meta.get("file_path", str(relative))
+        # Propagate `idx` (source parquet row index) from metadata.csv when
+        # available — the cond5 populator and the materialize_cond1_source
+        # manifest both populate it. Lets cross-condition joins use a
+        # deterministic integer key instead of string-matching file_path.
+        # Stored as int for clean parquet typing; -1 sentinel when absent.
+        idx_raw = meta.get("idx")
+        try:
+            idx_val = int(idx_raw) if idx_raw not in (None, "") else -1
+        except (TypeError, ValueError):
+            idx_val = -1
 
-        # Tokenize
+        # Cross-cell consistency filter (CORE-1172). Rows whose idx isn't
+        # in the keep set are silently dropped — see harmonize_splits.py.
+        # Sentinel idx (-1) never matches a real keep set; if a caller is
+        # filtering, files without metadata.csv idx values should drop too.
+        if keep_idx is not None and idx_val not in keep_idx:
+            dropped_via_keep_idx += 1
+            continue
+
         token_count = count_tokens(tokenizer, code)
 
         rows.append(
             {
                 "code": code,
                 "code_en": code_en,
-                "language": args.language,
+                "language": language,
                 "file_path": file_path_str,
                 "license": license_name,
+                "idx": idx_val,
                 "token_count": token_count,
             }
         )
 
-    print(f"Packaged {len(rows)} files, skipped {skipped}")
+    return rows, skipped, dropped_via_keep_idx
 
-    if not rows:
-        print("Error: no files packaged", file=sys.stderr)
-        sys.exit(1)
 
-    # Create dataset and split
-    dataset = Dataset.from_list(rows)
-    splits = dataset.train_test_split(
-        test_size=DEFAULT_SPLIT_RATIO,
-        seed=DEFAULT_SEED,
-    )
-    ds = DatasetDict(
-        {
-            "train": splits["train"],
-            "validation": splits["test"],
-        }
-    )
-
-    # Stats
+def _print_split_stats(ds: DatasetDict) -> None:
     for split_name in ds:
         counts = ds[split_name]["token_count"]
         total = sum(counts)
         avg = total / len(counts) if counts else 0
         print(
-            f"{split_name}: {len(counts)} rows, {total:,} total tokens, {avg:.0f} avg tokens/file"
+            f"{split_name}: {len(counts)} rows, {total:,} total tokens, "
+            f"{avg:.0f} avg tokens/file"
         )
 
-    # Save
-    output = Path(args.output)
-    output.mkdir(parents=True, exist_ok=True)
-    ds.save_to_disk(str(output))
-    print(f"\nSaved to {output}")
+
+def _save_and_push(
+    ds: DatasetDict,
+    output_dir: Path,
+    push_target: str | None,
+    config_name: str | None,
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    ds.save_to_disk(str(output_dir))
+    print(f"\nSaved to {output_dir}")
 
     for split_name in ds:
-        parquet_path = output / f"{split_name}.parquet"
+        parquet_path = output_dir / f"{split_name}.parquet"
         ds[split_name].to_parquet(str(parquet_path))
         print(f"  Parquet: {parquet_path}")
 
-    if args.push:
-        print(f"\nPushing to {args.push}...")
-        if args.config_name:
+    if push_target:
+        print(f"\nPushing to {push_target}...")
+        if config_name:
             ds.push_to_hub(
-                args.push,
-                config_name=args.config_name,
-                data_dir=f"data/{args.config_name}",
+                push_target,
+                config_name=config_name,
+                data_dir=f"data/{config_name}",
                 private=False,
             )
         else:
-            ds.push_to_hub(args.push, private=False)
-        print(f"Done! Dataset live at https://huggingface.co/datasets/{args.push}")
+            ds.push_to_hub(push_target, private=False)
+        print(f"Done! Dataset live at https://huggingface.co/datasets/{push_target}")
 
-    # Save run metadata
-    run_meta = {
+
+def package_from_files(args: argparse.Namespace) -> None:
+    """Package transpiled + original files into a HF dataset.
+
+    Two modes:
+
+    * **Random split** (legacy): pass ``--transpiled`` + ``--originals``
+      and the script does its own ``train_test_split(0.1)`` with
+      ``seed=DEFAULT_SEED``.
+    * **Pre-split** (new): pass ``--train-transpiled`` /
+      ``--train-originals`` / ``--validation-transpiled`` /
+      ``--validation-originals`` and the script builds the DatasetDict
+      directly. Use this whenever the upstream split must be preserved —
+      e.g. cross-language consistency where every language packs the same
+      source-file membership into ``train`` vs ``validation``.
+    """
+    print(f"Loading tokenizer: {args.tokenizer}")
+    tokenizer = load_tokenizer(args.tokenizer)
+
+    pre_split = args.train_transpiled is not None
+
+    # Optional cross-cell consistency filter (CORE-1172). Loaded once and
+    # reused across both train + validation calls in pre-split mode.
+    keep_train: set[int] | None = None
+    keep_validation: set[int] | None = None
+    if args.keep_idx_from is not None:
+        keep_dir = Path(args.keep_idx_from)
+        train_idx_path = keep_dir / "train.idx"
+        val_idx_path = keep_dir / "validation.idx"
+        if not train_idx_path.exists() or not val_idx_path.exists():
+            print(
+                f"Error: --keep-idx-from {keep_dir} must contain "
+                f"train.idx and validation.idx",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        keep_train = _load_keep_idx(train_idx_path)
+        keep_validation = _load_keep_idx(val_idx_path)
+        print(
+            f"Keep-idx filter: {len(keep_train)} train idx + "
+            f"{len(keep_validation)} validation idx loaded from {keep_dir}"
+        )
+        # Empty keep set means EVERY row of that split will be dropped — the
+        # downstream "non-empty train AND validation" check will fail with a
+        # generic message, so flag the cause loudly here instead.
+        if not keep_train or not keep_validation:
+            empty_splits = [
+                name
+                for name, idx_set in (
+                    ("train", keep_train),
+                    ("validation", keep_validation),
+                )
+                if not idx_set
+            ]
+            print(
+                f"warning: keep-idx is empty for split(s) {empty_splits} — "
+                f"all rows in those splits will be dropped. Check "
+                f"{keep_dir / 'report.json'} for which cells diverged.",
+                file=sys.stderr,
+            )
+
+        # Pre-flight: verify each cell has metadata.csv with idx column.
+        # Without it, every row gets idx=-1 which never matches a real
+        # keep set → silent drop of EVERY row → opaque "Packaged 0 files"
+        # error downstream. Fail fast with a pointer at the bad cell.
+        cells_to_check = (
+            [
+                ("train", Path(args.train_transpiled)),
+                ("validation", Path(args.validation_transpiled)),
+            ]
+            if pre_split
+            else []
+        )
+        for split_label, cell_dir in cells_to_check:
+            meta_path = cell_dir / "metadata.csv"
+            if not meta_path.exists():
+                print(
+                    f"Error: --keep-idx-from requires metadata.csv in each "
+                    f"cell, but {meta_path} ({split_label}) is missing. "
+                    f"Was the cell produced by populate_cond5_datasets or "
+                    f"batch_transpile (with a manifest)?",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            with meta_path.open(encoding="utf-8", newline="") as f:
+                cols = csv.DictReader(f).fieldnames or []
+                if "idx" not in cols:
+                    print(
+                        f"Error: --keep-idx-from requires an 'idx' column in "
+                        f"metadata.csv, but {meta_path} ({split_label}) has "
+                        f"columns {cols}. Re-package the cell with a pipeline "
+                        f"that emits the cond5-aligned schema "
+                        f"(filename, file_path, license, idx).",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+
+    if pre_split:
+        train_rows, train_skipped, train_dropped = _build_rows(
+            Path(args.train_transpiled),
+            Path(args.train_originals),
+            args.language,
+            tokenizer,
+            args.default_license,
+            desc="Packaging train",
+            keep_idx=keep_train,
+        )
+        val_rows, val_skipped, val_dropped = _build_rows(
+            Path(args.validation_transpiled),
+            Path(args.validation_originals),
+            args.language,
+            tokenizer,
+            args.default_license,
+            desc="Packaging validation",
+            keep_idx=keep_validation,
+        )
+        print(
+            f"Packaged {len(train_rows)} train + {len(val_rows)} validation files, "
+            f"skipped {train_skipped + val_skipped}, "
+            f"dropped via keep-idx {train_dropped + val_dropped}"
+        )
+        if not train_rows or not val_rows:
+            print(
+                "Error: pre-split mode requires non-empty train AND validation",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        ds = DatasetDict(
+            {
+                "train": Dataset.from_list(train_rows),
+                "validation": Dataset.from_list(val_rows),
+            }
+        )
+        split_meta: dict[str, object] = {
+            "split_source": "pre-split",
+            "train_transpiled": str(args.train_transpiled),
+            "train_originals": str(args.train_originals),
+            "validation_transpiled": str(args.validation_transpiled),
+            "validation_originals": str(args.validation_originals),
+        }
+        total_files = len(train_rows) + len(val_rows)
+        skipped = train_skipped + val_skipped
+        dropped_via_keep_idx = train_dropped + val_dropped
+    else:
+        # Random-split mode. --keep-idx-from is rejected for this mode at
+        # argparse time (see _validate_from_files_args), so keep_idx is
+        # always None here.
+        rows, skipped, dropped_via_keep_idx = _build_rows(
+            Path(args.transpiled),
+            Path(args.originals),
+            args.language,
+            tokenizer,
+            args.default_license,
+            keep_idx=None,
+        )
+        print(f"Packaged {len(rows)} files, skipped {skipped}")
+        if not rows:
+            print("Error: no files packaged", file=sys.stderr)
+            sys.exit(1)
+        dataset = Dataset.from_list(rows)
+        splits = dataset.train_test_split(
+            test_size=DEFAULT_SPLIT_RATIO,
+            seed=DEFAULT_SEED,
+        )
+        ds = DatasetDict(
+            {
+                "train": splits["train"],
+                "validation": splits["test"],
+            }
+        )
+        split_meta = {
+            "split_source": "random",
+            "split_ratio": DEFAULT_SPLIT_RATIO,
+            "seed": DEFAULT_SEED,
+            "transpiled": str(args.transpiled),
+            "originals": str(args.originals),
+        }
+        total_files = len(rows)
+
+    _print_split_stats(ds)
+
+    output = Path(args.output)
+    _save_and_push(ds, output, args.push, args.config_name)
+
+    run_meta: dict[str, object] = {
         "language": args.language,
         "tokenizer": args.tokenizer,
-        "total_files": len(rows),
+        "total_files": total_files,
         "skipped_files": skipped,
-        "split_ratio": DEFAULT_SPLIT_RATIO,
-        "seed": DEFAULT_SEED,
+        "dropped_via_keep_idx": dropped_via_keep_idx,
+        "keep_idx_source": (
+            str(args.keep_idx_from) if args.keep_idx_from is not None else None
+        ),
         "train_rows": len(ds["train"]),
         "validation_rows": len(ds["validation"]),
         "train_tokens": sum(ds["train"]["token_count"]),
         "validation_tokens": sum(ds["validation"]["token_count"]),
+        **split_meta,
     }
     meta_path = output / "run_metadata.json"
-    with open(meta_path, "w") as f:
+    with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(run_meta, f, indent=2)
     print(f"  Metadata: {meta_path}")
 
@@ -374,10 +633,44 @@ def parse_args() -> argparse.Namespace:
         help="Package transpiled files into a new HF dataset",
     )
     files.add_argument(
-        "--transpiled", required=True, help="Directory of transpiled Python files"
+        "--transpiled",
+        default=None,
+        help=(
+            "Directory of transpiled Python files (random-split mode). "
+            "Mutually exclusive with --train-transpiled / "
+            "--validation-transpiled."
+        ),
     )
     files.add_argument(
-        "--originals", required=True, help="Directory of original English Python files"
+        "--originals",
+        default=None,
+        help="Directory of original English Python files (random-split mode).",
+    )
+    files.add_argument(
+        "--train-transpiled",
+        default=None,
+        help=(
+            "Directory of transpiled train files (pre-split mode). When set, "
+            "--train-originals / --validation-transpiled / "
+            "--validation-originals are also required and the script skips "
+            "its internal train_test_split — use this to preserve an "
+            "upstream split (e.g. cross-language consistency)."
+        ),
+    )
+    files.add_argument(
+        "--train-originals",
+        default=None,
+        help="Directory of original English train files (pre-split mode).",
+    )
+    files.add_argument(
+        "--validation-transpiled",
+        default=None,
+        help="Directory of transpiled validation files (pre-split mode).",
+    )
+    files.add_argument(
+        "--validation-originals",
+        default=None,
+        help="Directory of original English validation files (pre-split mode).",
     )
     files.add_argument(
         "--language", required=True, help="Language code (e.g., ur, zh, es)"
@@ -393,12 +686,94 @@ def parse_args() -> argparse.Namespace:
         "--default-license", default=None, help="Default license if not in metadata"
     )
     files.add_argument(
+        "--keep-idx-from",
+        default=None,
+        help=(
+            "Directory containing train.idx + validation.idx (newline-"
+            "separated source idx values). When set, drop any row whose "
+            "metadata.csv idx isn't in the corresponding split's keep set. "
+            "Use to enforce cross-cell row alignment before publishing — "
+            "produced by harmonize_splits.py compute. In random-split "
+            "mode the train.idx (or validation.idx) keep set is applied "
+            "to the single input dir before the random split runs."
+        ),
+    )
+    files.add_argument(
         "--config-name",
         default=None,
         help="Config/subset name within umbrella dataset (e.g., condition-1-en)",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.command == "from-files":
+        _validate_from_files_args(parser, args)
+
+    return args
+
+
+def _validate_from_files_args(
+    parser: argparse.ArgumentParser, args: argparse.Namespace
+) -> None:
+    """Enforce mode invariants for ``from-files``.
+
+    Two modes:
+
+    * Random split: ``--transpiled`` + ``--originals`` (both required).
+    * Pre-split: all four of ``--train-transpiled``, ``--train-originals``,
+      ``--validation-transpiled``, ``--validation-originals``.
+
+    Modes are mutually exclusive — mixing flags from both is a user error.
+    """
+    pre_split_flags = {
+        "--train-transpiled": args.train_transpiled,
+        "--train-originals": args.train_originals,
+        "--validation-transpiled": args.validation_transpiled,
+        "--validation-originals": args.validation_originals,
+    }
+    pre_split_set = [name for name, val in pre_split_flags.items() if val is not None]
+    random_set = [
+        name
+        for name, val in {
+            "--transpiled": args.transpiled,
+            "--originals": args.originals,
+        }.items()
+        if val is not None
+    ]
+
+    if pre_split_set and random_set:
+        parser.error(
+            f"from-files: cannot mix random-split flags ({', '.join(random_set)}) "
+            f"with pre-split flags ({', '.join(pre_split_set)})."
+        )
+
+    if pre_split_set:
+        missing = [name for name, val in pre_split_flags.items() if val is None]
+        if missing:
+            parser.error(
+                f"from-files (pre-split mode): missing required flags: "
+                f"{', '.join(missing)}."
+            )
+        return
+
+    # Random-split mode below. --keep-idx-from is harmonize output (per-split
+    # train.idx + validation.idx); random-split shuffles AFTER filtering, so
+    # there's no meaningful way to apply per-split keep sets. Reject the
+    # combo at parse time rather than silently picking one half.
+    if args.keep_idx_from is not None:
+        parser.error(
+            "from-files: --keep-idx-from requires pre-split mode "
+            "(--train-transpiled etc.). It cannot be used with random-split "
+            "(--transpiled + --originals)."
+        )
+
+    if not (args.transpiled and args.originals):
+        parser.error(
+            "from-files: provide either --transpiled + --originals "
+            "(random-split mode) OR all four of --train-transpiled, "
+            "--train-originals, --validation-transpiled, "
+            "--validation-originals (pre-split mode)."
+        )
 
 
 def main() -> None:

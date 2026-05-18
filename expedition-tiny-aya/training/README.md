@@ -17,13 +17,21 @@ The notebook writes two Python scripts to disk via `%%writefile`, then runs them
 # Cell 3: pretokenize
 !python pretokenize.py
 
-# Cell 4: train with DDP on 2 GPUs
-!torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py
+# Cell 4: train N seeds with DDP on 2 GPUs
+%%bash
+NUM_TRAIN_SEEDS="${NUM_TRAIN_SEEDS:-5}"
+DEFAULT_SEEDS=(42 123 456 789 1024)
+SEEDS=("${DEFAULT_SEEDS[@]:0:$NUM_TRAIN_SEEDS}")
+for seed in "${SEEDS[@]}"; do
+  TRAIN_SEED="$seed" torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py
+done
 ```
 
 ## Configuration
 
 Set `MODEL_CONFIG_NAME` and `CONDITION_NAME` at the top of both notebook script cells before running.
+The training cell uses the canonical seed list `42`, `123`, `456`, `789`, `1024` and runs the first `NUM_TRAIN_SEEDS` seeds, defaulting to 5.
+You can also override the exact seed list with `TRAIN_SEEDS`, for example `TRAIN_SEEDS=42,123,456`.
 
 Available model configs:
 
@@ -70,8 +78,25 @@ Adding a new model now only requires adding another YAML file and setting `MODEL
 | Repo                                                                                                  | Purpose                                     |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | [language-decoded-data](https://huggingface.co/datasets/legesher/language-decoded-data)               | Training data (per-condition configs)       |
-| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained adapters (per-model/per-condition subfolders) |
+| [language-decoded-lora](https://huggingface.co/legesher/language-decoded-lora)                        | Trained adapters (per-model/per-condition-seed subfolders) |
 | [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Training config + eval results              |
+
+## Seeded Training Outputs
+
+- Each condition is trained with a configurable number of seeds from `42`, `123`, `456`, `789`, `1024`
+- Default: 5 seeds
+- Override count with `NUM_TRAIN_SEEDS`
+- Override the exact list with `TRAIN_SEEDS=42,123,456`
+- Adapters are saved as `{condition}-seed{seed}`
+- Example: `condition-2-zh-5k-seed42`
+- Each seed run writes its own `training_metrics.json` alongside the adapter weights
+
+## Evaluation Expectations
+
+- Aggregate results across all selected seeds
+- Report `mean ± std` across runs
+- Compute bootstrap 95% confidence intervals on individual test examples
+- Use a paired bootstrap test for pairwise condition comparisons
 
 ## Compute
 

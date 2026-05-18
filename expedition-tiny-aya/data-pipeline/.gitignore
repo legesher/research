@@ -1,1 +1,6 @@
 output/
+packaged/
+cond5-qwen-pilot/
+cond5-qwen-pilot-smoke/
+logs/*.log
+logs/*.pid
