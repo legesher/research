@@ -1,0 +1,4 @@
+# Extracted from evaluate.ipynb cell 3 at runtime — do not commit.
+# Source of truth lives in the notebook; this copy is a local working file
+# used by reparse_results.py for offline re-parsing.
+run_eval_single.py
