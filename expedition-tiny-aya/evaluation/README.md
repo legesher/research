@@ -102,14 +102,14 @@ From the saved preprocess notebook version, use **Output → New Dataset** (or *
 
 4. **Set `CONDITION` and `SEED`** in the picker cell. Use `SEED = "none"` for baseline, otherwise one of the registered seeds for that condition.
 
-5. **Run the launcher cell.** Two subprocesses spawn:
-   - GPU 0 → `--template template1`
-   - GPU 1 → `--template template2`
+5. **Run the launcher cell.** Two subprocesses spawn — GPU 0 runs `template1`, GPU 1 runs `template2` — and a backgrounded `tail -F` streams both log files back to the cell output so you can watch progress live. The cell blocks until both subprocesses finish, then prints `=== Both templates done ===`.
 
    Output JSONs land in `/kaggle/working/`:
    - `{condition}_seed{seed}_summary_{template}.json` — per-cell accuracies + parse-failure rates
    - `{condition}_seed{seed}_results_{template}.json` — full per-row outputs (includes `raw_output` so you can re-parse offline if extractors change)
    - `{condition}_seed{seed}_partial_{template}.json` — incremental checkpoint (updates after each `(dataset_lang, instruction_lang)` block; survives mid-run crashes within Kaggle's 12h cap)
+
+   > **Single-GPU fallback:** if you only have one T4 (or want simpler live output without the `tail` indirection), replace the launcher cell with `!python /kaggle/working/run_eval_single.py --condition {CONDITION} --seed {SEED} --batch_size 32`. The script loops over both templates serially in one foreground process. Roughly 2× wall-clock vs. the dual-GPU launcher.
 
 6. **Commit** to save outputs, or upload them to `legesher/language-decoded-experiments` on HF.
 
