@@ -1,12 +1,12 @@
 # Evaluation Pipeline
 
-Per-condition benchmark evaluation across 4 dataset languages (en, zh, es, ur) and 4 benchmarks, with prompt-template ablation and per-condition instruction-language matrices.
+Per-condition benchmark evaluation across 4 dataset languages (en, zh, es, ur) and 4 benchmarks, with prompt-template ablation and per-condition instruction-language matrices. Each fine-tuned condition has one or more registered training seeds; evals are run per `(condition, seed)`.
 
 ## Contents
 
-- `scripts/preprocess.ipynb` — Loads + caches benchmark datasets and tokenized prompts (Kaggle artifact)
-- `scripts/evaluate.ipynb` — Runs the eval suite against a configured condition (dual-GPU, template-split)
-- `scripts/rescore_xnli.py` — One-time XNLI re-scoring correction script
+- `scripts/preprocess.ipynb` — Loads + caches benchmark datasets and tokenized prompts (publish output as a Kaggle Dataset and attach it to evaluate.ipynb)
+- `scripts/evaluate.ipynb` — Runs the eval suite against a configured `(condition, seed)` (dual-GPU, template-split)
+- `scripts/rescore_xnli.py` — One-time XNLI re-scoring correction script (legacy)
 - `requirements.txt` — Python dependencies
 
 Results are stored on HuggingFace, not in this directory.
@@ -22,22 +22,40 @@ Results are stored on HuggingFace, not in this directory.
 
 ## Per-Condition Eval Matrix
 
-The preprocessing notebook caches all 4 dataset languages × 4 instruction-language prompts × 2 templates per row. The eval notebook then selects a subset per condition:
+The preprocessing notebook caches all 4 dataset languages × 4 instruction-language prompts × 2 templates per row. The eval notebook then selects a subset per condition. Each fine-tune is identified by `(condition, seed)`; you run one Kaggle session per pair.
 
-| Condition                             | Dataset langs  | Instruction langs | Cells per model |
-| ------------------------------------- | -------------- | ----------------- | --------------- |
-| baseline (no FT)                      | en, zh, es, ur | en, zh, es, ur    | **128**         |
-| condition-1-en-5k (English code)      | en, zh, es, ur | en, zh, es, ur    | **128**         |
-| condition-2-zh-5k                     | en, zh, es, ur | en, zh            | **64**          |
-| condition-2-es-5k                     | en, zh, es, ur | en, es            | **64**          |
-| condition-2-ur-5k                     | en, zh, es, ur | en, ur            | **64**          |
-| condition-3 / condition-5 (per-lang)¹ | en, zh, es, ur | en, L_train       | **64**          |
+| Condition          | Seeds        | Dataset langs  | Instruction langs | Cells per (condition, seed) |
+| ------------------ | ------------ | -------------- | ----------------- | --------------------------- |
+| baseline (no FT)   | —            | en, zh, es, ur | en, zh, es, ur    | **128**                     |
+| condition-1-en-5k  | 42, 123, 456 | en, zh, es, ur | en, zh, es, ur    | **128**                     |
+| condition-1-en-20k | 42           | en, zh, es, ur | en, zh, es, ur    | **128**                     |
+| condition-2-zh-5k  | 42, 123, 456 | en, zh, es, ur | en, zh            | **64**                      |
+| condition-2-es-5k  | 42, 123, 456 | en, zh, es, ur | en, es            | **64**                      |
+| condition-2-ur-5k  | 42, 123, 456 | en, zh, es, ur | en, ur            | **64**                      |
+| condition-3-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      |
+| condition-5-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      |
+| condition-5-es-5k  | 42           | en, zh, es, ur | en, es            | **64**                      |
+| condition-5-ur-5k  | 42           | en, zh, es, ur | en, ur            | **64**                      |
 
-Cells = 4 benchmarks × 2 templates × dataset-langs × instruction-langs.
-
-¹ Planned — not yet registered in `EVAL_MATRIX`. Adapters land per language; the registry entry is a one-line addition once each adapter is published.
+Cells per `(condition, seed)` = 4 benchmarks × 2 templates × dataset-langs × instruction-langs.
 
 **Rule for condition-2/3/5:** instruction language is always English OR the model's trained-on language, regardless of which dataset language we're evaluating against. A condition-2-ur model evaluated on `xnli_zh` gets either English or Urdu instructions, never Chinese — the model wasn't trained to follow Chinese instructions in that condition.
+
+**Adapter locations.** All non-baseline adapters live in one HF repo, `legesher/language-decoded-lora`, organized by base model and condition+seed:
+
+```text
+legesher/language-decoded-lora/
+└── tiny-aya-base/
+    ├── condition-1-en-5k-seed{42,123,456}/
+    ├── condition-1-en-20k-seed42/
+    ├── condition-2-{zh,es,ur}-5k-seed{42,123,456}/
+    ├── condition-3-zh-5k-native-code-seed42/
+    └── condition-5-{zh,es,ur}-5k-c4ai-aya-expanse-32b-seed42/
+```
+
+The eval script loads each adapter via `FastLanguageModel.from_pretrained(model_name=LORA_REPO, subfolder=<path>)`. For `baseline`, no subfolder; it loads `CohereLabs/tiny-aya-base` directly.
+
+**Seeds and statistical reporting.** Conditions with multiple registered seeds (cond-1-en-5k, cond-2-{zh,es,ur}-5k) should be evaluated at every seed and reported as mean ± std. Single-seed conditions are point estimates. Aggregation happens offline from the per-`(condition, seed)` summary JSONs.
 
 ## Prompt Templates
 
@@ -52,40 +70,52 @@ Each template has English, Spanish, Urdu, and Chinese wording for the same bench
 
 Prompts are cached per-instruction-language as columns: `prompt_{template_id}_{instruction_lang}` plus matching `input_ids_*` / `attention_mask_*`. The eval notebook reads only the instruction-language subset configured for each condition.
 
-## Notebooks
+## Kaggle Workflow
 
-### Preprocessing (`preprocess.ipynb`)
+The pipeline is two-stage. **You must publish preprocess output as a Kaggle Dataset and attach it to evaluate.ipynb** — preprocess writes to `/kaggle/working/...` but evaluate reads from `/kaggle/input/...`, so skipping the publish step will land you a `FileNotFoundError`.
 
-Loads each benchmark in all 4 dataset languages, computes prompts in all 4 instruction languages × 2 templates, tokenizes, and saves to `eval_unsloth_artifacts/datasets/{benchmark}_{lang}.jsonl`. Run this once per Kaggle dataset refresh; the eval notebook reads the cached JSONL.
+### Stage 1 — Preprocess (CPU)
 
-> **Schema:** if you have cached JSONLs from an earlier version of this pipeline (PR #37 schema with `english`/`language` suffixes), delete `eval_unsloth_artifacts/datasets/*.jsonl` and rerun preprocess before running evaluate.
+1. Create a Kaggle Notebook, upload `scripts/preprocess.ipynb`, set accelerator to CPU (GPU is wasted here).
+2. Add `HF_TOKEN` to Kaggle Secrets (the notebook reads it via `UserSecretsClient`).
+3. Run all cells. The notebook downloads XNLI, X-CSQA, SIB-200, Belebele for en/zh/es/ur and tokenizes prompts (4 instruction langs × 2 templates × 4 benchmarks) against `CohereLabs/tiny-aya-base`.
+4. Commit (Save Version). 16 JSONL files land in `/kaggle/working/eval_unsloth_artifacts/datasets/`.
 
-### Evaluation (`evaluate.ipynb`)
+### Stage 2 — Publish as a Kaggle Dataset
 
-Set `CONDITION` in the condition-picker cell before running:
+From the saved preprocess notebook version, use **Output → New Dataset** (or **File → Save As Dataset**). Pick a slug (e.g., `<your-username>/aya-eval-cache-phase3`). Note it down — you'll need it in Stage 3.
 
-```python
-CONDITION = "condition-2-ur-5k"  # Edit before running
-```
+### Stage 3 — Evaluate (2× T4 GPU)
 
-Available conditions (see `EVAL_MATRIX` in `run_eval_single.py` for the source of truth):
+1. Create a Kaggle Notebook, upload `scripts/evaluate.ipynb`, set accelerator to **GPU T4 ×2**.
+2. **Add Input** → attach the Kaggle Dataset you published in Stage 2. It mounts at `/kaggle/input/<your-slug>/...`.
+3. **Override `KAGGLE_DATASET_INPUT_DIR`** in a cell at the top of the notebook (before the `%%writefile` cell):
 
-- `baseline` — `CohereLabs/tiny-aya-base`
-- `condition-1-en-5k` — `legesher/language-decoded-lora-condition-1-en-5k`
-- `condition-2-zh-5k`, `condition-2-es-5k`, `condition-2-ur-5k`
+   ```python
+   import os
+   os.environ["KAGGLE_DATASET_INPUT_DIR"] = (
+       "/kaggle/input/<your-slug>/eval_unsloth_artifacts/datasets"
+   )
+   ```
 
-The dual-GPU launch splits by template:
+   No silent default — the script will raise `RuntimeError` if this is unset, with a message pointing you here.
 
-- GPU 0 → `--template template1`
-- GPU 1 → `--template template2`
+4. **Set `CONDITION` and `SEED`** in the picker cell. Use `SEED = "none"` for baseline, otherwise one of the registered seeds for that condition.
 
-Each subprocess writes:
+5. **Run the launcher cell.** Two subprocesses spawn — GPU 0 runs `template1`, GPU 1 runs `template2` — and a backgrounded `tail -F` streams both log files back to the cell output so you can watch progress live. The cell blocks until both subprocesses finish, then prints `=== Both templates done ===`.
 
-- `/kaggle/working/{condition}_summary_{template}.json` — accuracies + parse-failure rates
-- `/kaggle/working/{condition}_results_{template}.json` — full per-row outputs
-- `/kaggle/working/{condition}_partial_{template}.json` — incremental checkpoint (updates after each `(template, dataset_lang, instruction_lang)` block; survives mid-run crashes)
+   Output JSONs land in `/kaggle/working/`:
+   - `{condition}_seed{seed}_summary_{template}.json` — per-cell accuracies + parse-failure rates
+   - `{condition}_seed{seed}_results_{template}.json` — full per-row outputs (includes `raw_output` so you can re-parse offline if extractors change)
+   - `{condition}_seed{seed}_partial_{template}.json` — incremental checkpoint (updates after each `(dataset_lang, instruction_lang)` block; survives mid-run crashes within Kaggle's 12h cap)
 
-Base model: `CohereLabs/tiny-aya-base`
+   > **Single-GPU fallback:** if you only have one T4 (or want simpler live output without the `tail` indirection), replace the launcher cell with `!python /kaggle/working/run_eval_single.py --condition {CONDITION} --seed {SEED} --batch_size 32`. The script loops over both templates serially in one foreground process. Roughly 2× wall-clock vs. the dual-GPU launcher.
+
+6. **Commit** to save outputs, or upload them to `legesher/language-decoded-experiments` on HF.
+
+7. **Repeat for each `(condition, seed)`.** With the seeds registered above, the full sweep is ~16 Kaggle sessions (1 baseline + 3×3 cond-1/2 + 1 cond-1-20k + 1 cond-3 + 3 cond-5).
+
+> **Schema note:** if you have cached JSONLs from an earlier version of this pipeline (the PR #37-era `english`/`language` column suffixes), delete `eval_unsloth_artifacts/datasets/*.jsonl` and rerun preprocess before running evaluate. The current schema uses `prompt_{template_id}_{instruction_lang}` columns.
 
 ## Data Sources
 
@@ -100,8 +130,10 @@ Base model: `CohereLabs/tiny-aya-base`
 
 All results are stored on HuggingFace:
 
-| Repo                                                                                                  | Contents                                                        |
-| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Per-condition results (one summary + results JSON per template) |
+| Repo                                                                                                  | Contents                                                                  |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [language-decoded-experiments](https://huggingface.co/datasets/legesher/language-decoded-experiments) | Per-`(condition, seed)` results (one summary + results JSON per template) |
+
+Phase-2 results are archived under `phase2/` in that dataset. Note that phase-2 `english-forgetting/` filenames use abbreviated condition names (e.g., `cond-2-zh_english_results.json`); phase-3 outputs from this pipeline use full condition names (e.g., `condition-2-zh-5k_seed42_summary_template1.json`).
 
 See [analysis/evaluation-summary.md](../analysis/evaluation-summary.md) for the full analysis.
