@@ -24,18 +24,21 @@ Results are stored on HuggingFace, not in this directory.
 
 The preprocessing notebook caches all 4 dataset languages × 4 instruction-language prompts × 2 templates per row. The eval notebook then selects a subset per condition. Each fine-tune is identified by `(condition, seed)`; you run one Kaggle session per pair.
 
-| Condition          | Seeds        | Dataset langs  | Instruction langs | Cells per (condition, seed) |
-| ------------------ | ------------ | -------------- | ----------------- | --------------------------- |
-| baseline (no FT)   | —            | en, zh, es, ur | en, zh, es, ur    | **128**                     |
-| condition-1-en-5k  | 42, 123, 456 | en, zh, es, ur | en, zh, es, ur    | **128**                     |
-| condition-1-en-20k | 42           | en, zh, es, ur | en, zh, es, ur    | **128**                     |
-| condition-2-zh-5k  | 42, 123, 456 | en, zh, es, ur | en, zh            | **64**                      |
-| condition-2-es-5k  | 42, 123, 456 | en, zh, es, ur | en, es            | **64**                      |
-| condition-2-ur-5k  | 42, 123, 456 | en, zh, es, ur | en, ur            | **64**                      |
-| condition-3-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      |
-| condition-5-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      |
-| condition-5-es-5k  | 42           | en, zh, es, ur | en, es            | **64**                      |
-| condition-5-ur-5k  | 42           | en, zh, es, ur | en, ur            | **64**                      |
+| Condition          | Seeds        | Dataset langs  | Instruction langs | Cells per (condition, seed) | Adapter on HF    |
+| ------------------ | ------------ | -------------- | ----------------- | --------------------------- | ---------------- |
+| baseline (no FT)   | —            | en, zh, es, ur | en, zh, es, ur    | **128**                     | n/a (base model) |
+| condition-1-en-5k  | 42, 123, 456 | en, zh, es, ur | en, zh, es, ur    | **128**                     | ✅ all seeds     |
+| condition-1-en-20k | 42           | en, zh, es, ur | en, zh, es, ur    | **128**                     | ✅               |
+| condition-2-zh-5k  | 42, 123, 456 | en, zh, es, ur | en, zh            | **64**                      | ✅ all seeds     |
+| condition-2-zh-20k | 42           | en, zh, es, ur | en, zh            | **64**                      | ✅               |
+| condition-2-es-5k  | 42, 123, 456 | en, zh, es, ur | en, es            | **64**                      | ✅ all seeds     |
+| condition-2-es-20k | 42           | en, zh, es, ur | en, es            | **64**                      | ✅               |
+| condition-2-ur-5k  | 42, 123, 456 | en, zh, es, ur | en, ur            | **64**                      | ✅ all seeds     |
+| condition-2-ur-20k | 42           | en, zh, es, ur | en, ur            | **64**                      | ✅               |
+| condition-3-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      | ✅               |
+| condition-5-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      | ⏳ in progress   |
+| condition-5-es-5k  | 42           | en, zh, es, ur | en, es            | **64**                      | ⏳ pending       |
+| condition-5-ur-5k  | 42           | en, zh, es, ur | en, ur            | **64**                      | ✅               |
 
 Cells per `(condition, seed)` = 4 benchmarks × 2 templates × dataset-langs × instruction-langs.
 
@@ -49,8 +52,10 @@ legesher/language-decoded-lora/
     ├── condition-1-en-5k-seed{42,123,456}/
     ├── condition-1-en-20k-seed42/
     ├── condition-2-{zh,es,ur}-5k-seed{42,123,456}/
+    ├── condition-2-{zh,es,ur}-20k-seed42/
     ├── condition-3-zh-5k-native-code-seed42/
-    └── condition-5-{zh,es,ur}-5k-c4ai-aya-expanse-32b-seed42/
+    └── condition-5-ur-5k-c4ai-aya-expanse-32b-seed42/
+        # condition-5-{zh,es}-5k-c4ai-aya-expanse-32b-seed42/ — pending upload
 ```
 
 The eval script loads each adapter via `FastLanguageModel.from_pretrained(model_name=LORA_REPO, subfolder=<path>)`. For `baseline`, no subfolder; it loads `CohereLabs/tiny-aya-base` directly.
@@ -113,7 +118,14 @@ From the saved preprocess notebook version, use **Output → New Dataset** (or *
 
 6. **Commit** to save outputs, or upload them to `legesher/language-decoded-experiments` on HF.
 
-7. **Repeat for each `(condition, seed)`.** With the seeds registered above, the full sweep is ~16 Kaggle sessions (1 baseline + 3×3 cond-1/2 + 1 cond-1-20k + 1 cond-3 + 3 cond-5).
+7. **Repeat for each `(condition, seed)`.** With the seeds registered above, the full sweep is **21 Kaggle sessions** when every adapter is on HF:
+   - 1 baseline
+   - 3 cond-1-en-5k (seeds 42, 123, 456) + 1 cond-1-en-20k
+   - 9 cond-2-{zh,es,ur}-5k (3 langs × 3 seeds) + 3 cond-2-{zh,es,ur}-20k
+   - 1 cond-3-zh-5k
+   - 3 cond-5-{zh,es,ur}-5k (single-seed each)
+
+   Today, **19 of 21** can run — `condition-5-zh-5k` and `condition-5-es-5k` adapters are not yet on HF (see matrix above). Skip those and you can land 19 sessions immediately; add the last two when their adapters arrive.
 
 > **Schema note:** if you have cached JSONLs from an earlier version of this pipeline (the PR #37-era `english`/`language` column suffixes), delete `eval_unsloth_artifacts/datasets/*.jsonl` and rerun preprocess before running evaluate. The current schema uses `prompt_{template_id}_{instruction_lang}` columns.
 
