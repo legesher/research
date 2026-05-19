@@ -17,30 +17,55 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
-# Make `run_eval_single` importable. On Kaggle the launcher writes it to
-# /kaggle/working/; locally we expect it next to this file.
-HERE = Path(__file__).resolve().parent
-for candidate in (HERE, Path("/kaggle/working")):
-    if (candidate / "run_eval_single.py").exists():
-        sys.path.insert(0, str(candidate))
-        break
+# Load extractors from `run_eval_single.py` *without* triggering the heavy
+# imports at the top of that file (torch, unsloth, kaggle_secrets). We parse
+# the source, pull just the extractor function definitions + their helper
+# constants via AST, and exec that subset into an isolated namespace. This
+# means reparse_results.py runs anywhere stock Python + `re` is available.
+import ast
+import re as _re
 
-try:
-    from run_eval_single import (  # type: ignore
-        extract_sib200_category,
-        extract_xnli_label,
-        extract_choice,
-    )
-except ImportError as exc:
+HERE = Path(__file__).resolve().parent
+_candidates = [HERE / "run_eval_single.py", Path("/kaggle/working/run_eval_single.py")]
+_source_path = next((p for p in _candidates if p.exists()), None)
+if _source_path is None:
     raise SystemExit(
-        "Couldn't import extractors from run_eval_single.py. Either run this "
-        "script from /kaggle/working/ on Kaggle (where the launcher wrote it), "
-        "or copy run_eval_single.py next to this file. "
-        f"Original error: {exc}"
+        "Couldn't find run_eval_single.py. Expected next to this file or at "
+        "/kaggle/working/. On Kaggle the launcher writes it; locally extract "
+        "it from evaluate.ipynb cell 3."
     )
+
+_WANTED_NAMES = {
+    "SIB200_CATEGORIES",
+    "SIB200_ALIASES",
+    "SIB200_SCITECH_NATIVE",
+    "SIB200_SCITECH_BARE_SUBCATEGORIES",
+    "XNLI_LABEL_RES",
+    "extract_sib200_category",
+    "extract_xnli_label",
+    "extract_choice",
+}
+_tree = ast.parse(_source_path.read_text())
+_subset_nodes = []
+for node in _tree.body:
+    if (
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name in _WANTED_NAMES
+    ):
+        _subset_nodes.append(node)
+    elif isinstance(node, ast.Assign) and any(
+        isinstance(t, ast.Name) and t.id in _WANTED_NAMES for t in node.targets
+    ):
+        _subset_nodes.append(node)
+
+_module = ast.Module(body=_subset_nodes, type_ignores=[])
+_ns: dict = {"re": _re}
+exec(compile(_module, str(_source_path), "exec"), _ns)
+extract_sib200_category = _ns["extract_sib200_category"]
+extract_xnli_label = _ns["extract_xnli_label"]
+extract_choice = _ns["extract_choice"]
 
 
 EXTRACTORS = {
