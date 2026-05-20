@@ -5,8 +5,12 @@ before/after parse-failure rates and accuracies on already-collected results,
 without re-running inference on a GPU.
 
 Usage:
+    # Print before/after diff table only:
     python reparse_results.py path/to/condition-2-ur-5k_seed42_smoke20_results_template1.json
     python reparse_results.py path/*.json --extractors sib200
+
+    # Also write a sibling `_summary_reparsed_{template}.json` next to each input:
+    python reparse_results.py path/*_results_*.json --write-reparsed-summary
 
 The script imports the live extractors from `run_eval_single.py`. To use it
 locally (off-Kaggle), drop a copy of `run_eval_single.py` next to this script
@@ -16,7 +20,10 @@ or set PYTHONPATH to point at where evaluate.ipynb wrote it.
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
+import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 # Load extractors from `run_eval_single.py` *without* triggering the heavy
@@ -153,6 +160,88 @@ def print_diff_table(rows: list[dict]) -> None:
     print(f"\n{len(changed)} cells changed; mean Δacc = {avg_delta:+.3f}")
 
 
+def _extractor_provenance() -> dict:
+    """Identify which version of `run_eval_single.py` produced the new numbers.
+
+    Falls back to a SHA-256 of the source if we're not inside a git checkout
+    (e.g., on Kaggle where the file is written by `%%writefile`).
+    """
+    assert _source_path is not None  # narrowed; module would have exited otherwise
+    src = _source_path
+    provenance: dict = {
+        "source_path": str(src),
+        "content_sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+    }
+    # Repo HEAD SHA — the extractor source is gitignored locally (it's
+    # extracted from evaluate.ipynb at runtime), so per-file git log is empty.
+    # The repo HEAD identifies the notebook version that produced this source.
+    try:
+        head_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=src.parent,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        if head_sha:
+            provenance["repo_head_commit"] = head_sha
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    return provenance
+
+
+def _reparsed_summary_path(input_path: Path) -> Path:
+    """`X_results_template1.json` → `X_summary_reparsed_template1.json`."""
+    name = input_path.name
+    if "_results_" not in name:
+        raise ValueError(f"Input filename must contain '_results_': {input_path.name}")
+    new_name = name.replace("_results_", "_summary_reparsed_", 1)
+    return input_path.with_name(new_name)
+
+
+def build_reparsed_summary(
+    input_path: Path, rows: list[dict], only: set[str] | None
+) -> dict:
+    """Construct the JSON body for a `_summary_reparsed_{template}.json` sibling.
+
+    Mirrors the original `_summary_*.json` schema (`summary` + `parse_failure_rates`
+    top-level keys) so downstream analysis can read original and reparsed
+    interchangeably. Adds a `reparse_metadata` block recording when, against
+    which extractor version, and what changed.
+    """
+    new_summary: dict[str, float] = {}
+    new_failure_rates: dict[str, float] = {}
+    delta_per_cell: dict[str, dict] = {}
+
+    for r in rows:
+        cell = r["cell"]
+        new_summary[f"{cell}_acc"] = r["new_acc"]
+        new_failure_rates[cell] = r["new_fail"]
+        d_acc = r["new_acc"] - (r["old_acc"] or 0)
+        d_fail = r["new_fail"] - (r["old_fail"] or 0)
+        if abs(d_acc) > 1e-9 or abs(d_fail) > 1e-9:
+            delta_per_cell[cell] = {
+                "old_acc": r["old_acc"],
+                "new_acc": r["new_acc"],
+                "delta_acc": d_acc,
+                "old_fail": r["old_fail"],
+                "new_fail": r["new_fail"],
+                "delta_fail": d_fail,
+            }
+
+    return {
+        "summary": new_summary,
+        "parse_failure_rates": new_failure_rates,
+        "reparse_metadata": {
+            "reparsed_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+            "original_results_filename": input_path.name,
+            "extractors_applied": sorted(only) if only else sorted(EXTRACTORS),
+            "extractor_provenance": _extractor_provenance(),
+            "cells_changed": len(delta_per_cell),
+            "delta_per_cell": delta_per_cell,
+        },
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("files", type=Path, nargs="+")
@@ -162,12 +251,29 @@ def main() -> None:
         choices=sorted(EXTRACTORS),
         help="Only re-parse these benchmarks (default: all)",
     )
+    parser.add_argument(
+        "--write-reparsed-summary",
+        action="store_true",
+        help=(
+            "Write a sibling `_summary_reparsed_{template}.json` next to each "
+            "input. Preserves original `_summary_*.json` and `_results_*.json` "
+            "untouched."
+        ),
+    )
     args = parser.parse_args()
 
     only = set(args.extractors) if args.extractors else None
     for path in args.files:
         print(f"\n=== {path.name} ===")
-        print_diff_table(reparse_file(path, only=only))
+        rows = reparse_file(path, only=only)
+        print_diff_table(rows)
+        if args.write_reparsed_summary:
+            out_path = _reparsed_summary_path(path)
+            body = build_reparsed_summary(path, rows, only)
+            out_path.write_text(json.dumps(body, indent=2, ensure_ascii=False))
+            print(
+                f"  → wrote {out_path.name} ({body['reparse_metadata']['cells_changed']} cells changed)"
+            )
 
 
 if __name__ == "__main__":
