@@ -85,11 +85,15 @@ def _load_extractors() -> dict[str, Callable]:
 
     src = verify_extractor_source()
     wanted_names = {
+        # Constants referenced inside extract_sib200_category
         "SIB200_CATEGORIES",
         "SIB200_ALIASES",
         "SIB200_SCITECH_NATIVE",
         "SIB200_SCITECH_BARE_SUBCATEGORIES",
+        # Constants referenced inside extract_xnli_label
         "XNLI_LABEL_RES",
+        "NATIVE_LABEL_MAP",
+        # The three extractor functions themselves
         "extract_sib200_category",
         "extract_xnli_label",
         "extract_choice",

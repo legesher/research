@@ -253,5 +253,82 @@ class TestReparseFile(unittest.TestCase):
             self.assertEqual(rows, [])
 
 
+@unittest.skipUnless(HAS_EXTRACTOR_SOURCE, "run_eval_single.py not next to test file")
+class TestExtractorsLoadable(unittest.TestCase):
+    """Smoke-tests every extractor with a representative input from each
+    language. Catches the case where the AST loader's allowlist is missing
+    a constant — the function would load but raise NameError on first call."""
+
+    def setUp(self):
+        # Force-load extractors so any AST-loader allowlist gap shows up here.
+        self.extractors = reparse_results._load_extractors()
+
+    def test_extract_xnli_english(self):
+        self.assertEqual(self.extractors["xnli"]("entailment"), "entailment")
+        self.assertEqual(self.extractors["xnli"]("contradiction"), "contradiction")
+        self.assertEqual(self.extractors["xnli"]("neutral"), "neutral")
+
+    def test_extract_xnli_chinese(self):
+        # Native Chinese labels from NATIVE_LABEL_MAP — catches the bug end-to-end
+        self.assertEqual(self.extractors["xnli"]("蕴含"), "entailment")
+        self.assertEqual(self.extractors["xnli"]("矛盾"), "contradiction")
+        self.assertEqual(self.extractors["xnli"]("中立"), "neutral")
+
+    def test_extract_xnli_spanish(self):
+        self.assertEqual(self.extractors["xnli"]("contradicción"), "contradiction")
+        self.assertEqual(self.extractors["xnli"]("implicación"), "entailment")
+        self.assertEqual(self.extractors["xnli"]("neutro"), "neutral")
+
+    def test_extract_xnli_urdu(self):
+        self.assertEqual(self.extractors["xnli"]("لازمی"), "entailment")
+        self.assertEqual(self.extractors["xnli"]("تردید"), "contradiction")
+        self.assertEqual(self.extractors["xnli"]("غیرجانبدار"), "neutral")
+
+    def test_extract_xnli_returns_none_for_unparseable(self):
+        self.assertIsNone(self.extractors["xnli"]("???"))
+
+    def test_extract_sib200_english_canonical(self):
+        self.assertEqual(
+            self.extractors["sib200"]("science/technology"), "science/technology"
+        )
+        self.assertEqual(self.extractors["sib200"]("travel"), "travel")
+
+    def test_extract_sib200_native_urdu(self):
+        self.assertEqual(
+            self.extractors["sib200"]("سائنس/ٹکنالوجی"), "science/technology"
+        )
+
+    def test_extract_sib200_native_chinese(self):
+        self.assertEqual(self.extractors["sib200"]("科学/技术"), "science/technology")
+
+    def test_extract_sib200_native_spanish(self):
+        self.assertEqual(
+            self.extractors["sib200"]("ciencia/tecnología"), "science/technology"
+        )
+        self.assertEqual(
+            self.extractors["sib200"]("ciencia y tecnología"), "science/technology"
+        )
+
+    def test_extract_sib200_invented_subcategory(self):
+        # Rule A: science/<X> → science/technology
+        self.assertEqual(self.extractors["sib200"]("science/AI"), "science/technology")
+        self.assertEqual(
+            self.extractors["sib200"]("science/physics"), "science/technology"
+        )
+
+    def test_extract_sib200_bare_subcategory(self):
+        # Rule C: template2 sometimes strips the "science/" prefix
+        self.assertEqual(self.extractors["sib200"]("physics"), "science/technology")
+        self.assertEqual(self.extractors["sib200"]("ai"), "science/technology")
+
+    def test_extract_choice_abcde(self):
+        self.assertEqual(self.extractors["csqa"]("A"), "A")
+        self.assertEqual(self.extractors["csqa"]("Answer: C"), "C")
+
+    def test_extract_choice_abcd(self):
+        self.assertEqual(self.extractors["belebele"]("B"), "B")
+        self.assertEqual(self.extractors["belebele"]("Answer: D"), "D")
+
+
 if __name__ == "__main__":
     unittest.main()
