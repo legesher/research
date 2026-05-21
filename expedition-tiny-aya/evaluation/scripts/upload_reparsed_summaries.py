@@ -96,18 +96,53 @@ def _hf_tree(path_in_repo: str) -> list[dict]:
     )
 
 
+def _classify_session_files(session_path: str) -> dict:
+    """Probe one `phase3/conditions/<cond>/seed<N>` folder and classify the
+    files inside. Single HF tree call. Used by both `list_sessions()` (full
+    walk) and the `--only` fast path."""
+    files = [f for f in _hf_tree(session_path) if f["type"] == "file"]
+    cond, seed_folder = session_path.split("/")[-2:]
+    expected_seed_token = "seednone" if seed_folder == "seednone" else seed_folder
+    filename_prefix = f"{cond}_{expected_seed_token}_results_"
+
+    canonical_results = sorted(
+        f["path"]
+        for f in files
+        if "_results_" in f["path"] and _basename(f["path"]).startswith(filename_prefix)
+    )
+    stray = sorted(
+        f["path"]
+        for f in files
+        if "_results_" in f["path"]
+        and not _basename(f["path"]).startswith(filename_prefix)
+    )
+    existing_reparsed = sorted(
+        _basename(f["path"]) for f in files if "_summary_reparsed_" in f["path"]
+    )
+    return {
+        "session": session_path,
+        "canonical_results": canonical_results,
+        "stray_results": stray,
+        "existing_reparsed": existing_reparsed,
+    }
+
+
 def list_sessions() -> list[dict]:
-    """Walk `phase3/conditions/<cond>/seed<N>/` and classify each file.
+    """Walk every `phase3/conditions/<cond>/seed<N>/` folder and classify
+    each file. Makes O(1 + n_conditions + n_sessions) HF tree calls — for
+    the current 19-session state that's ~25 API calls. Prefer
+    `list_one_session()` when you only need one session, especially on
+    flaky networks.
 
     Returns a list of dicts with keys:
-      - `session` (str): the session folder path, e.g. 'phase3/conditions/cond-2-ur-5k/seed42'
-      - `canonical_results` (list[str]): full HF paths of result files that
-        belong to this session (basename matches `<cond>_<seed>_results_*`)
-      - `stray_results` (list[str]): full HF paths of result files in this
-        folder whose basename does NOT match the folder's seed — usually
-        accidental double-uploads
-      - `existing_reparsed` (list[str]): basenames of `_summary_reparsed_*.json`
-        files already present in the folder (used by `--skip-existing`)
+      - `session` (str): the session folder path
+      - `canonical_results` (list[str]): full HF paths of result files
+        whose basename matches `<cond>_<seed>_results_*`
+      - `stray_results` (list[str]): result files whose basename does NOT
+        match the folder's seed — usually accidental double-uploads
+      - `existing_reparsed` (list[str]): basenames of any
+        `_summary_reparsed_*.json` files already present in the folder
+        (used by `--skip-existing`)
     """
     conds = [x["path"] for x in _hf_tree(PHASE3_ROOT) if x["type"] == "directory"]
     sessions: list[dict] = []
@@ -115,37 +150,19 @@ def list_sessions() -> list[dict]:
         for s in _hf_tree(cp):
             if s["type"] != "directory":
                 continue
-            files = [f for f in _hf_tree(s["path"]) if f["type"] == "file"]
-            cond, seed_folder = s["path"].split("/")[-2:]
-            expected_seed_token = (
-                "seednone" if seed_folder == "seednone" else seed_folder
-            )
-            filename_prefix = f"{cond}_{expected_seed_token}_results_"
-
-            canonical_results = sorted(
-                f["path"]
-                for f in files
-                if "_results_" in f["path"]
-                and _basename(f["path"]).startswith(filename_prefix)
-            )
-            stray = sorted(
-                f["path"]
-                for f in files
-                if "_results_" in f["path"]
-                and not _basename(f["path"]).startswith(filename_prefix)
-            )
-            existing_reparsed = sorted(
-                _basename(f["path"]) for f in files if "_summary_reparsed_" in f["path"]
-            )
-            sessions.append(
-                {
-                    "session": s["path"],
-                    "canonical_results": canonical_results,
-                    "stray_results": stray,
-                    "existing_reparsed": existing_reparsed,
-                }
-            )
+            sessions.append(_classify_session_files(s["path"]))
     return sessions
+
+
+def list_one_session(only_suffix: str) -> list[dict]:
+    """Resolve `--only <cond>/<seed>` to a single session with one HF
+    tree call. Avoids walking the full tree when the user only wants one
+    session — saves both wall-clock and HF API pressure on flaky networks.
+
+    `only_suffix` is e.g. `baseline/seednone` or `condition-2-ur-5k/seed42`.
+    """
+    session_path = f"{PHASE3_ROOT}/{only_suffix}"
+    return [_classify_session_files(session_path)]
 
 
 def filter_skip_existing(sessions: list[dict]) -> tuple[list[dict], int]:
@@ -277,15 +294,17 @@ def main() -> None:
     from huggingface_hub import CommitOperationAdd, HfApi
 
     api = HfApi()
-    print(f"Listing sessions under {PHASE3_ROOT}/ on {REPO_ID}...")
-    sessions = list_sessions()
-    print(f"  Found {len(sessions)} session folders")
-    print()
 
     if args.only:
-        sessions = [s for s in sessions if s["session"].endswith(args.only)]
-        if not sessions:
-            raise SystemExit(f"No session matched --only={args.only!r}")
+        # Fast path: probe only the named session. Avoids ~25 HF tree calls
+        # on flaky networks when the user only wants one session.
+        print(f"Probing {PHASE3_ROOT}/{args.only} on {REPO_ID}...")
+        sessions = list_one_session(args.only)
+    else:
+        print(f"Listing sessions under {PHASE3_ROOT}/ on {REPO_ID}...")
+        sessions = list_sessions()
+        print(f"  Found {len(sessions)} session folders")
+    print()
 
     skipped_existing = 0
     if args.skip_existing:
