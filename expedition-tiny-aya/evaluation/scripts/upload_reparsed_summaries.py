@@ -54,7 +54,7 @@ REPO_ID = "legesher/language-decoded-experiments"
 REPO_TYPE = "dataset"
 PHASE3_ROOT = "phase3/conditions"
 HF_TIMEOUT = 30  # seconds — applies to the JSON tree API; downloads have their own
-HF_TREE_RETRIES = 3  # transient connection resets during multi-call session walks
+HF_TREE_RETRIES = 5  # transient connection resets during multi-call session walks
 MAX_DOWNLOAD_WORKERS = 4  # ThreadPoolExecutor concurrency for hf_hub_download
 
 
