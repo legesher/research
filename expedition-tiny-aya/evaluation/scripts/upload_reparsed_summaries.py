@@ -55,7 +55,12 @@ REPO_TYPE = "dataset"
 PHASE3_ROOT = "phase3/conditions"
 HF_TIMEOUT = 30  # seconds — applies to the JSON tree API; downloads have their own
 HF_TREE_RETRIES = 5  # transient connection resets during multi-call session walks
-MAX_DOWNLOAD_WORKERS = 4  # ThreadPoolExecutor concurrency for hf_hub_download
+# Serial by default because hf_hub_download's shared httpx session can deadlock
+# ("Cannot send a request, as the client has been closed") when one worker hits
+# a transient network error mid-download — the bad worker closes the session and
+# its concurrent siblings fail with the closed-client RuntimeError. Bump to >1
+# on a healthy network for ~2-4× speedup; 1 is safe everywhere.
+MAX_DOWNLOAD_WORKERS = 1
 
 
 def _basename(remote_path: str) -> str:
