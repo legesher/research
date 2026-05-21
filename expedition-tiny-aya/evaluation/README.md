@@ -36,8 +36,8 @@ The preprocessing notebook caches all 4 dataset languages × 4 instruction-langu
 | condition-2-ur-5k  | 42, 123, 456 | en, zh, es, ur | en, ur            | **64**                      | ✅ all seeds     |
 | condition-2-ur-20k | 42           | en, zh, es, ur | en, ur            | **64**                      | ✅               |
 | condition-3-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      | ✅               |
-| condition-5-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      | ⏳ in progress   |
-| condition-5-es-5k  | 42           | en, zh, es, ur | en, es            | **64**                      | ⏳ pending       |
+| condition-5-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      | ✅               |
+| condition-5-es-5k  | 42           | en, zh, es, ur | en, es            | **64**                      | ⏳ in progress   |
 | condition-5-ur-5k  | 42           | en, zh, es, ur | en, ur            | **64**                      | ✅               |
 
 Cells per `(condition, seed)` = 4 benchmarks × 2 templates × dataset-langs × instruction-langs.
@@ -54,8 +54,8 @@ legesher/language-decoded-lora/
     ├── condition-2-{zh,es,ur}-5k-seed{42,123,456}/
     ├── condition-2-{zh,es,ur}-20k-seed42/
     ├── condition-3-zh-5k-native-code-seed42/
-    └── condition-5-ur-5k-c4ai-aya-expanse-32b-seed42/
-        # condition-5-{zh,es}-5k-c4ai-aya-expanse-32b-seed42/ — pending upload
+    ├── condition-5-{ur,zh}-5k-c4ai-aya-expanse-32b-seed42/
+    └── # condition-5-es-5k-c4ai-aya-expanse-32b-seed42/ — pending upload
 ```
 
 The eval script loads each adapter via `FastLanguageModel.from_pretrained(model_name=LORA_REPO, subfolder=<path>)`. For `baseline`, no subfolder; it loads `CohereLabs/tiny-aya-base` directly.
@@ -125,7 +125,7 @@ From the saved preprocess notebook version, use **Output → New Dataset** (or *
    - 1 cond-3-zh-5k
    - 3 cond-5-{zh,es,ur}-5k (single-seed each)
 
-   Today, **19 of 21** can run — `condition-5-zh-5k` and `condition-5-es-5k` adapters are not yet on HF (see matrix above). Skip those and you can land 19 sessions immediately; add the last two when their adapters arrive.
+   Today, **20 of 21** can run — only `condition-5-es-5k` is still pending its adapter upload (see matrix above). Skip that one and you can land 20 sessions immediately; add the last when its adapter arrives.
 
 > **Schema note:** if you have cached JSONLs from an earlier version of this pipeline (the PR #37-era `english`/`language` column suffixes), delete `eval_unsloth_artifacts/datasets/*.jsonl` and rerun preprocess before running evaluate. The current schema uses `prompt_{template_id}_{instruction_lang}` columns.
 
