@@ -54,9 +54,10 @@ legesher/language-decoded-lora/
     ├── condition-2-{zh,es,ur}-5k-seed{42,123,456}/
     ├── condition-2-{zh,es,ur}-20k-seed42/
     ├── condition-3-zh-5k-native-code-seed42/
-    ├── condition-5-{ur,zh}-5k-c4ai-aya-expanse-32b-seed42/
-    └── # condition-5-es-5k-c4ai-aya-expanse-32b-seed42/ — pending upload
+    └── condition-5-{ur,zh}-5k-c4ai-aya-expanse-32b-seed42/
 ```
+
+> `condition-5-es-5k-c4ai-aya-expanse-32b-seed42/` is pending upload — see the matrix above.
 
 The eval script loads each adapter via `FastLanguageModel.from_pretrained(model_name=LORA_REPO, subfolder=<path>)`. For `baseline`, no subfolder; it loads `CohereLabs/tiny-aya-base` directly.
 
