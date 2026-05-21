@@ -49,6 +49,10 @@ Usage:
     python inspect_failures.py RESULTS.json --benchmark sib200 \\
         --outcome parse_fail --samples 3 --group-prefix 30
 
+    # Frequency table — pool many files, count every distinct answer:
+    python inspect_failures.py RESULTS_T1.json RESULTS_T2.json \\
+        --benchmark xnli --aggregate --min-count 5 --output xnli-forms.tsv
+
     # Pass an HF path instead of a local file — it downloads first:
     python inspect_failures.py \\
         phase3/conditions/baseline/seednone/baseline_seednone_results_template1.json
@@ -292,6 +296,152 @@ def classify_cell(cell_key: str, rows: list[dict], ns: dict) -> dict:
 
 
 # ----------------------------------------------------------------------------
+# Surface-form aggregation — pool every row across cells/files and tally
+# how often the model emits each distinct answer, with its outcome split.
+# This is the "how many times does the model say X" frequency artifact.
+# ----------------------------------------------------------------------------
+def _first_line(raw_output: str) -> str:
+    """The first line, stripped — exactly what every extractor reads."""
+    return raw_output.strip().split("\n")[0].strip()
+
+
+def aggregate_surface_forms(
+    datasets: list[dict],
+    ns: dict,
+    only_benchmarks: set[str] | None = None,
+) -> list[dict]:
+    """Pool every row across all cells of all given result files and group by
+    (benchmark, first_line). The first line is exactly what the extractors
+    read, so all rows in a group share one prediction + match_via; only the
+    outcome varies (it depends on each row's gold).
+
+    Returns a list of dicts sorted by total count descending, each with:
+      benchmark, first_line, total, correct, wrong_label, parse_fail,
+      multiline, n_cells, pred, match_via
+    """
+    agg: dict[tuple, dict] = {}
+    # Classification depends only on the first line — cache on it.
+    classify_cache: dict[tuple, tuple] = {}
+
+    for data in datasets:
+        for key, rows in data.items():
+            if key in {"summary", "parse_failure_rates"}:
+                continue
+            if not isinstance(rows, list) or not rows or "raw_output" not in rows[0]:
+                continue
+            bench = benchmark_from_key(key)
+            if only_benchmarks and bench not in only_benchmarks:
+                continue
+            classifier = _classifier_for(bench)
+            for row in rows:
+                raw = row["raw_output"]
+                fl = _first_line(raw)
+                cache_key = (bench, fl)
+                if cache_key not in classify_cache:
+                    classify_cache[cache_key] = classifier(raw, ns)
+                pred, match_via = classify_cache[cache_key]
+
+                gold = row["gold"]
+                if pred is None:
+                    outcome = "parse_fail"
+                elif pred == gold:
+                    outcome = "correct"
+                else:
+                    outcome = "wrong_label"
+
+                entry = agg.setdefault(
+                    cache_key,
+                    {
+                        "benchmark": bench,
+                        "first_line": fl,
+                        "total": 0,
+                        "correct": 0,
+                        "wrong_label": 0,
+                        "parse_fail": 0,
+                        "multiline": 0,
+                        "pred": pred,
+                        "match_via": match_via,
+                        "_cells": set(),
+                    },
+                )
+                entry["total"] += 1
+                entry[outcome] += 1
+                entry["_cells"].add(key)
+                if len(raw.strip().split("\n")) > 1:
+                    entry["multiline"] += 1
+
+    out = []
+    for entry in agg.values():
+        entry["n_cells"] = len(entry.pop("_cells"))
+        out.append(entry)
+    out.sort(key=lambda r: r["total"], reverse=True)
+    return out
+
+
+def print_surface_form_table(rows: list[dict], min_count: int) -> None:
+    """Print the aggregated surface-form frequency table to the terminal."""
+    shown = [r for r in rows if r["total"] >= min_count]
+    hidden = len(rows) - len(shown)
+    print(
+        f"\n{'total':>7} {'correct':>8} {'wrong':>7} {'fail':>7} "
+        f"{'bench':<9} {'pred':<20} {'match_via':<16} first_line"
+    )
+    print("-" * 110)
+    for r in shown:
+        pred = "—" if r["pred"] is None else str(r["pred"])
+        print(
+            f"{r['total']:>7} {r['correct']:>8} {r['wrong_label']:>7} "
+            f"{r['parse_fail']:>7} {r['benchmark']:<9} {pred[:20]:<20} "
+            f"{r['match_via']:<16} {r['first_line'][:60]!r}"
+        )
+    print(
+        f"\n{len(shown)} distinct forms shown (count ≥ {min_count}); "
+        f"{hidden} rarer forms hidden."
+    )
+
+
+def write_surface_form_tsv(rows: list[dict], out_path: Path) -> None:
+    """Write the full aggregated table as TSV — the durable frequency
+    artifact (every form, no min-count filter)."""
+    header = [
+        "benchmark",
+        "first_line",
+        "total",
+        "correct",
+        "wrong_label",
+        "parse_fail",
+        "multiline",
+        "n_cells",
+        "pred",
+        "match_via",
+    ]
+    lines = ["\t".join(header)]
+    for r in rows:
+        # Tabs/newlines can't occur in first_line (it's already one stripped
+        # line), but guard anyway.
+        fl = r["first_line"].replace("\t", " ").replace("\n", " ")
+        lines.append(
+            "\t".join(
+                str(x)
+                for x in [
+                    r["benchmark"],
+                    fl,
+                    r["total"],
+                    r["correct"],
+                    r["wrong_label"],
+                    r["parse_fail"],
+                    r["multiline"],
+                    r["n_cells"],
+                    "" if r["pred"] is None else r["pred"],
+                    r["match_via"],
+                ]
+            )
+        )
+    out_path.write_text("\n".join(lines) + "\n")
+    print(f"\nWrote {len(rows)} surface forms → {out_path}")
+
+
+# ----------------------------------------------------------------------------
 # Reporting
 # ----------------------------------------------------------------------------
 # Sort buckets so the table reads correct → wrong → fail, cleanest match first.
@@ -444,9 +594,11 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "results_file",
-        help="Local path to a _results_*.json, or an HF path under phase3/ "
-        "(downloaded automatically).",
+        "results_files",
+        nargs="+",
+        help="One or more local paths to _results_*.json, or HF paths under "
+        "phase3/ (downloaded automatically). Multiple files are pooled in "
+        "--aggregate mode.",
     )
     parser.add_argument(
         "--cell",
@@ -482,6 +634,28 @@ def main() -> None:
         "spotting recurring surface forms in a parse_fail bucket.",
     )
     parser.add_argument(
+        "--aggregate",
+        action="store_true",
+        help="Pool every row across all given files and print a frequency "
+        "table: each distinct answer the model emitted, how many times, and "
+        "its correct / wrong / parse-fail split. The 'how many times does the "
+        "model say X' artifact.",
+    )
+    parser.add_argument(
+        "--min-count",
+        type=int,
+        default=1,
+        help="In --aggregate mode, only print forms emitted at least this "
+        "many times (default: 1). The TSV from --output is never filtered.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="In --aggregate mode, also write the full (unfiltered) frequency "
+        "table as TSV to this path — the durable artifact for the paper.",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="Cross-check the instrumented classifiers against the live "
@@ -490,44 +664,62 @@ def main() -> None:
     args = parser.parse_args()
 
     ns = load_extractor_namespace()
-    results_path = resolve_results_file(args.results_file)
+    results_paths = [resolve_results_file(p) for p in args.results_files]
 
     if args.self_test:
-        raise SystemExit(0 if run_self_test(results_path, ns) == 0 else 1)
+        total_mismatches = sum(run_self_test(p, ns) for p in results_paths)
+        raise SystemExit(0 if total_mismatches == 0 else 1)
 
-    with results_path.open() as f:
-        data = json.load(f)
+    only = {args.benchmark} if args.benchmark else None
 
-    # Select cells.
-    cell_keys = [
-        k
-        for k, v in data.items()
-        if k not in {"summary", "parse_failure_rates"}
-        and isinstance(v, list)
-        and v
-        and "raw_output" in v[0]
-    ]
-    if args.cell:
-        cell_keys = [k for k in cell_keys if k == args.cell]
-        if not cell_keys:
-            raise SystemExit(f"No cell matched --cell={args.cell!r}")
-    if args.benchmark:
-        cell_keys = [k for k in cell_keys if benchmark_from_key(k) == args.benchmark]
-        if not cell_keys:
-            raise SystemExit(f"No cells for --benchmark={args.benchmark!r}")
+    # --- Aggregate mode: pool all files, emit a surface-form frequency table.
+    if args.aggregate:
+        datasets = []
+        for p in results_paths:
+            with p.open() as f:
+                datasets.append(json.load(f))
+        print(f"=== Aggregating {len(datasets)} file(s) ===")
+        rows = aggregate_surface_forms(datasets, ns, only_benchmarks=only)
+        print_surface_form_table(rows, min_count=args.min_count)
+        if args.output:
+            write_surface_form_tsv(rows, args.output)
+        return
 
-    print(f"=== {results_path.name} ===")
-    print(f"Inspecting {len(cell_keys)} cell(s)")
+    # --- Default mode: per-cell breakdown, one file at a time.
+    for results_path in results_paths:
+        with results_path.open() as f:
+            data = json.load(f)
 
-    for cell_key in sorted(cell_keys):
-        report = classify_cell(cell_key, data[cell_key], ns)
-        if args.outcome:
-            # Restrict the printed samples to one outcome by filtering the
-            # classified rows down before reporting.
-            report["classified_rows"] = [
-                c for c in report["classified_rows"] if c["outcome"] == args.outcome
+        cell_keys = [
+            k
+            for k, v in data.items()
+            if k not in {"summary", "parse_failure_rates"}
+            and isinstance(v, list)
+            and v
+            and "raw_output" in v[0]
+        ]
+        if args.cell:
+            cell_keys = [k for k in cell_keys if k == args.cell]
+        if args.benchmark:
+            cell_keys = [
+                k for k in cell_keys if benchmark_from_key(k) == args.benchmark
             ]
-        print_cell_report(report, samples=args.samples, group_prefix=args.group_prefix)
+
+        print(f"\n=== {results_path.name} ===")
+        if not cell_keys:
+            print("  (no matching cells in this file)")
+            continue
+        print(f"Inspecting {len(cell_keys)} cell(s)")
+
+        for cell_key in sorted(cell_keys):
+            report = classify_cell(cell_key, data[cell_key], ns)
+            if args.outcome:
+                report["classified_rows"] = [
+                    c for c in report["classified_rows"] if c["outcome"] == args.outcome
+                ]
+            print_cell_report(
+                report, samples=args.samples, group_prefix=args.group_prefix
+            )
 
 
 if __name__ == "__main__":

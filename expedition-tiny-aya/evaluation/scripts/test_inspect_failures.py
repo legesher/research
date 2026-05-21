@@ -329,5 +329,63 @@ class TestInstrumentedMatchesLive(unittest.TestCase):
                 self.assertEqual(instrumented, live(raw, choices="ABCDE"))
 
 
+@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
+class TestAggregateSurfaceForms(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ns = inspect_failures.load_extractor_namespace()
+
+    def _fake_dataset(self):
+        # One SIB-200 cell: the same Urdu form appears 3× with different gold,
+        # plus one clean English answer.
+        return {
+            "summary": {},
+            "parse_failure_rates": {},
+            "template1_sib200_data=ur_instr=ur": [
+                {"raw_output": "سیاست", "gold": "politics"},
+                {"raw_output": "سیاست", "gold": "travel"},
+                {"raw_output": "سیاست", "gold": "sports"},
+                {"raw_output": "travel", "gold": "travel"},
+            ],
+        }
+
+    def test_groups_identical_first_lines(self):
+        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
+        by_form = {r["first_line"]: r for r in rows}
+        # سیاست grouped into one row with total 3
+        self.assertIn("سیاست", by_form)
+        self.assertEqual(by_form["سیاست"]["total"], 3)
+        self.assertEqual(by_form["travel"]["total"], 1)
+
+    def test_outcome_split_within_a_form(self):
+        # The whole point: one constant output, three different golds.
+        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
+        siyasat = next(r for r in rows if r["first_line"] == "سیاست")
+        # سیاست is not in the extractor yet → parse_fail for all 3
+        self.assertEqual(siyasat["parse_fail"], 3)
+        self.assertEqual(siyasat["pred"], None)
+        # travel is a clean exact match
+        travel = next(r for r in rows if r["first_line"] == "travel")
+        self.assertEqual(travel["correct"], 1)
+
+    def test_sorted_by_total_descending(self):
+        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
+        totals = [r["total"] for r in rows]
+        self.assertEqual(totals, sorted(totals, reverse=True))
+
+    def test_pools_across_multiple_datasets(self):
+        rows = inspect_failures.aggregate_surface_forms(
+            [self._fake_dataset(), self._fake_dataset()], self.ns
+        )
+        siyasat = next(r for r in rows if r["first_line"] == "سیاست")
+        self.assertEqual(siyasat["total"], 6)  # 3 + 3 across the two datasets
+
+    def test_benchmark_filter(self):
+        rows = inspect_failures.aggregate_surface_forms(
+            [self._fake_dataset()], self.ns, only_benchmarks={"xnli"}
+        )
+        self.assertEqual(rows, [])  # dataset has only a sib200 cell
+
+
 if __name__ == "__main__":
     unittest.main()
