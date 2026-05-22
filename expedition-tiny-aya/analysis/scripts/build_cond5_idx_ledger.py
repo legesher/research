@@ -23,7 +23,10 @@ with an older populator that does not carry prior successes forward as
 on-disk artifacts ARE cumulative and resume-safe:
 
 * ``{idx}.py``                       -> a translation succeeded (VALID)
-* ``{idx}.error.txt`` and no ``.py`` -> attempted, failed (InvalidCodeError)
+* ``{idx}.error.txt`` and no ``.py`` -> attempted, failed (any translation
+                                        error; the populator wraps every
+                                        failure, so see .error.txt for the
+                                        actual cause)
 * neither                            -> never attempted (outside the
                                         ``--idx-allowlist`` for zh / es)
 
@@ -90,6 +93,12 @@ def _idx_set(cell: Path, suffix: str) -> set[int]:
 def _source_idx_universe(split: str) -> list[int]:
     """All source idx values for a split, from source-python/<split>/manifest.csv."""
     manifest = SOURCE_PYTHON / split / "manifest.csv"
+    if not manifest.exists():
+        raise SystemExit(
+            f"error: required input not found: {manifest}\n"
+            f"Materialize the Cond-1 source first — it writes "
+            f"source-python/{{train,validation}}/manifest.csv."
+        )
     idxs: list[int] = []
     with manifest.open(encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):
@@ -204,7 +213,8 @@ def main() -> int:
         "",
         "- **Attempted** = an LLM translation was run (`.py` or `.error.txt` on disk).",
         "- **Valid** = produced a translated `.py`.",
-        "- **Failed** = attempted but raised `InvalidCodeError` (`.error.txt`, no `.py`).",
+        "- **Failed** = attempted but the translation pipeline raised an "
+        "exception (`.error.txt` present, no `.py`).",
         "- **Not attempted** = neither artifact; the idx was outside the",
         "  `--idx-allowlist` (zh/es were constrained to ur-succeeded idxs).",
         "",

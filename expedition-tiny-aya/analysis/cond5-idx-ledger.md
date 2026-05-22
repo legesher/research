@@ -9,23 +9,23 @@ Status is derived from the on-disk artifacts (resume-safe), NOT from
 
 ## Per-(language, split) coverage
 
-| Language | Split | Source rows | Attempted | Valid | Failed | Not attempted |
-| -------- | ----- | ----------- | --------- | ----- | ------ | ------------- |
-| ur | train | 4500 | 4500 | 4088 | 412 | 0 |
-| ur | validation | 500 | 500 | 381 | 119 | 0 |
-| zh | train | 4500 | 4091 | 4052 | 39 | 409 |
-| zh | validation | 500 | 381 | 381 | 0 | 119 |
-| es | train | 4500 | 4090 | 4032 | 58 | 410 |
-| es | validation | 500 | 381 | 329 | 52 | 119 |
+| Language | Split      | Source rows | Attempted | Valid | Failed | Not attempted |
+| -------- | ---------- | ----------- | --------- | ----- | ------ | ------------- |
+| ur       | train      | 4500        | 4500      | 4088  | 412    | 0             |
+| ur       | validation | 500         | 500       | 381   | 119    | 0             |
+| zh       | train      | 4500        | 4091      | 4052  | 39     | 409           |
+| zh       | validation | 500         | 381       | 381   | 0      | 119           |
+| es       | train      | 4500        | 4090      | 4032  | 58     | 410           |
+| es       | validation | 500         | 381       | 329   | 52     | 119           |
 
 - **Attempted** = an LLM translation was run (`.py` or `.error.txt` on disk).
 - **Valid** = produced a translated `.py`.
-- **Failed** = attempted but raised `InvalidCodeError` (`.error.txt`, no `.py`).
+- **Failed** = attempted but the translation pipeline raised an exception (`.error.txt` present, no `.py`).
 - **Not attempted** = neither artifact; the idx was outside the
   `--idx-allowlist` (zh/es were constrained to ur-succeeded idxs).
 
 `ur` ran the full 5,000 source rows with no allowlist (zero not-attempted).
-`zh` and `es` were constrained to ur's succeeded idxs — their *not-attempted*
+`zh` and `es` were constrained to ur's succeeded idxs — their _not-attempted_
 counts are the un-run remainder, recoverable by running those idxs later.
 
 ## Columns (`cond5-idx-ledger.csv`)
