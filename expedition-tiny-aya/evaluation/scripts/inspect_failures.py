@@ -101,27 +101,61 @@ _WANTED = {
 
 
 def _find_extractor_source() -> Path | None:
+    """Locate the extractor source. Order:
+
+    1. `run_eval_single.py` next to this script. A deliberate manual extract
+       wins — useful when you want to test against a specific extractor
+       version (e.g., a different branch's). Staleness is the user's
+       responsibility when they go this route.
+    2. `/kaggle/working/run_eval_single.py` — the Kaggle launcher writes the
+       .py here and there is no notebook at HERE.
+    3. `evaluate.ipynb` next to this script — fallback when no .py exists.
+       This is the staleness fix: a fresh checkout (no gitignored .py) now
+       reads the extractor straight from the version-controlled notebook,
+       so you can't accidentally use a stale extract from another branch.
+    """
     for candidate in (
         HERE / "run_eval_single.py",
         Path("/kaggle/working/run_eval_single.py"),
+        HERE / "evaluate.ipynb",
     ):
         if candidate.exists():
             return candidate
     return None
 
 
+def _read_extractor_source(path: Path) -> str:
+    """Return the Python source for the extractors.
+
+    For a `.py` file, that's just the file contents. For an `.ipynb`, we
+    JSON-parse the notebook, find the `%%writefile run_eval_single.py`
+    cell, and return its body (minus the magic line). Reading the source
+    from the notebook directly makes it impossible to go stale relative
+    to the branch you're on — the notebook is version-controlled, the
+    extracted file is gitignored."""
+    if path.suffix == ".ipynb":
+        nb = json.loads(path.read_text())
+        for cell in nb.get("cells", []):
+            src = "".join(cell.get("source", []))
+            first = src.split("\n", 1)[0]
+            if first.startswith("%%writefile") and "run_eval_single.py" in first:
+                return src.split("\n", 1)[1]
+        raise SystemExit(f"No `%%writefile run_eval_single.py` cell found in {path}")
+    return path.read_text()
+
+
 def load_extractor_namespace() -> dict:
     """Exec just the extractor functions + their helper constants into an
     isolated namespace and return it. Raises SystemExit with a clear message
-    if `run_eval_single.py` can't be found."""
+    if neither `evaluate.ipynb` nor `run_eval_single.py` can be found."""
     src = _find_extractor_source()
     if src is None:
         raise SystemExit(
-            "Couldn't find run_eval_single.py. Expected next to this file or at "
-            "/kaggle/working/. On Kaggle the launcher writes it; locally extract "
-            "it from evaluate.ipynb cell 3."
+            "Couldn't find the extractor source. Expected `evaluate.ipynb` or "
+            "`run_eval_single.py` next to this file, or `run_eval_single.py` "
+            "at /kaggle/working/."
         )
-    tree = ast.parse(src.read_text())
+    tree = ast.parse(_read_extractor_source(src))
     subset: list[ast.stmt] = []
     for node in tree.body:
         if (
