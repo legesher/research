@@ -68,16 +68,31 @@ def _find_extractor_source() -> Path | None:
 def _read_extractor_source(path: Path) -> str:
     """Return Python source for the extractors. For `.py`, the file
     contents; for `.ipynb`, the body of the `%%writefile run_eval_single.py`
-    cell (minus the magic line)."""
+    code cell (minus the magic line). Always reads as UTF-8 — `.ipynb` JSON
+    is UTF-8 by spec, and the extractor source contains non-ASCII (native
+    surface forms)."""
     if path.suffix == ".ipynb":
-        nb = json.loads(path.read_text())
+        nb = json.loads(path.read_text(encoding="utf-8"))
         for cell in nb.get("cells", []):
-            src = "".join(cell.get("source", []))
-            first = src.split("\n", 1)[0]
+            if cell.get("cell_type") != "code":
+                continue
+            # Jupyter stores `source` as a list-of-lines OR a single string.
+            # Use the list form when available so we don't depend on
+            # newlines being embedded (a one-line `%%writefile` cell would
+            # have no newline to split on, and `split("\n", 1)[1]` would
+            # raise IndexError).
+            raw_source = cell.get("source", [])
+            if isinstance(raw_source, list):
+                lines = raw_source
+            else:
+                lines = raw_source.splitlines(keepends=True)
+            if not lines:
+                continue
+            first = lines[0].rstrip("\n")
             if first.startswith("%%writefile") and "run_eval_single.py" in first:
-                return src.split("\n", 1)[1]
+                return "".join(lines[1:])
         raise SystemExit(f"No `%%writefile run_eval_single.py` cell found in {path}")
-    return path.read_text()
+    return path.read_text(encoding="utf-8")
 
 
 _source_path: Path | None = _find_extractor_source()
@@ -266,13 +281,18 @@ def print_diff_table(rows: list[dict]) -> None:
 def _extractor_provenance() -> dict:
     """Identify which version of `run_eval_single.py` produced the new numbers.
 
-    Always includes the source path + content sha256. Adds `repo_head_commit`
-    when this script is running inside a git checkout (otherwise, e.g., on
-    Kaggle where the file is written by `%%writefile`, the field is omitted)."""
+    Always includes the source path + content sha256. The hash is taken over
+    the *extracted* extractor source — not over the raw file — so the hash is
+    stable across unrelated notebook edits (other cells, outputs, metadata)
+    and reflects only the extractor logic that actually ran. Adds
+    `repo_head_commit` when this script is running inside a git checkout
+    (otherwise, e.g., on Kaggle where the file is written by `%%writefile`,
+    the field is omitted)."""
     src = verify_extractor_source()
+    extracted = _read_extractor_source(src)
     provenance: dict = {
         "source_path": str(src),
-        "content_sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+        "content_sha256": hashlib.sha256(extracted.encode("utf-8")).hexdigest(),
     }
     try:
         head_sha = subprocess.check_output(
