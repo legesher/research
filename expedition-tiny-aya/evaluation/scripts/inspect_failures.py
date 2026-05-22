@@ -80,12 +80,20 @@ HF_REPO_TYPE = "dataset"
 HERE = Path(__file__).resolve().parent
 
 _WANTED = {
+    # SIB-200 — constants + helper used by extract_sib200_category
     "SIB200_CATEGORIES",
-    "SIB200_ALIASES",
-    "SIB200_SCITECH_NATIVE",
-    "SIB200_SCITECH_BARE_SUBCATEGORIES",
+    "SIB200_TERM_TO_CATEGORY",
+    "SIB200_CONJUNCTIONS",
+    "SIB200_STRIP",
+    "SIB200_CANONICAL_RES",
+    "_sib200_split",
+    # XNLI — constants used by extract_xnli_label
+    "XNLI_LABELS",
     "XNLI_LABEL_RES",
     "NATIVE_LABEL_MAP",
+    "XNLI_TIER2_NEGATION",
+    "XNLI_PARAPHRASE_RES",
+    # the extractor functions themselves
     "extract_sib200_category",
     "extract_xnli_label",
     "extract_choice",
@@ -131,98 +139,73 @@ def load_extractor_namespace() -> dict:
 
 
 # ----------------------------------------------------------------------------
-# Instrumented classifiers — replay each extractor's staged matching and
-# report which stage produced the prediction. Each returns (pred, match_via).
-# The `multiline` flag is computed once by the caller.
+# Classifiers — each calls the LIVE extractor for `pred` (so prediction is
+# faithful by construction, no mirror to drift), then derives a coarse
+# `match_via` by re-using the extractor's own helpers/constants.
 #
-# These MUST agree with the live extractors on `pred`. `--self-test` checks it.
+# match_via vocabulary:
+#   SIB-200:  single | multi_category | fallback | none
+#   XNLI:     tier1_english | tier1_native | tier2_cjk_glued | tier3_paraphrase
+#             | none
+#   choice:   bare_letter | letter_in_text | answer_prefix | none
 # ----------------------------------------------------------------------------
-_SIB200_PUNCT = " .,:;!?()[]{}\"'"
-
-
 def classify_sib200(raw_output: str, ns: dict) -> tuple[str | None, str]:
-    """Mirror of extract_sib200_category with stage instrumentation."""
-    first_line_ws = raw_output.strip().split("\n")[0].strip()
-    first_line_punct = first_line_ws.strip(_SIB200_PUNCT)
-    fl_lower = first_line_punct.lower()
-
-    # Rule A — science/<anything>. The extractor checks this BEFORE the
-    # canonical-category loop, so a verbatim "science/technology" technically
-    # matches here. Distinguish that from a genuine lenient rescue
-    # (science/AI, science/physics, science /technology) so the taxonomy
-    # doesn't mislabel a perfect canonical answer as rule-rescued.
-    if fl_lower.startswith("science/") or fl_lower.startswith("science /"):
-        if first_line_ws == "science/technology":
-            return "science/technology", "exact"
-        if fl_lower == "science/technology":
-            return "science/technology", "normalized"
-        return "science/technology", "rule_a"
-    # Rule B — native-script equivalents
-    for phrase in ns["SIB200_SCITECH_NATIVE"]:
-        if phrase.lower() in fl_lower:
-            return "science/technology", "rule_b"
-    # Rule C — bare subcategory tokens
-    if fl_lower in ns["SIB200_SCITECH_BARE_SUBCATEGORIES"]:
-        return "science/technology", "rule_c"
-    # Canonical category match (substring containment, as the extractor does)
-    for category in ns["SIB200_CATEGORIES"]:
-        if category in fl_lower:
-            if first_line_ws == category:
-                via = "exact"
-            elif fl_lower == category:
-                via = "normalized"
-            else:
-                via = "substring"
-            return category, via
-    # Alias lookup
-    alias = ns["SIB200_ALIASES"].get(fl_lower)
-    if alias is not None:
-        return alias, "alias"
-    return None, "none"
+    """`pred` from the live extractor; `match_via` derived from how many
+    distinct categories the answer's pieces resolve to."""
+    pred = ns["extract_sib200_category"](raw_output)
+    first_line = raw_output.strip().split("\n")[0].strip().strip(ns["SIB200_STRIP"])
+    pieces = ns["_sib200_split"](first_line) if first_line else []
+    cats = {ns["SIB200_TERM_TO_CATEGORY"].get(p.lower()) for p in pieces}
+    cats.discard(None)
+    if len(cats) >= 2:
+        return pred, "multi_category"  # hedge — pred is None
+    if len(cats) == 1:
+        return pred, "single"
+    if pred is not None:
+        return pred, "fallback"  # 0 pieces resolved but canonical scan hit
+    return pred, "none"
 
 
 def classify_xnli(raw_output: str, ns: dict) -> tuple[str | None, str]:
-    """Mirror of extract_xnli_label with stage instrumentation."""
+    """`pred` from the live extractor; `match_via` is which tier produced it."""
+    pred = ns["extract_xnli_label"](raw_output)
+    if pred is None:
+        return None, "none"
     first_line = raw_output.strip().split("\n")[0].strip()
-    fl_lower = first_line.lower()
-    for label, label_re in ns["XNLI_LABEL_RES"].items():
-        if label_re.search(fl_lower):
-            via = "exact" if fl_lower == label else "english_substring"
-            return label, via
-    for native, english in ns["NATIVE_LABEL_MAP"].items():
-        if native.lower() in fl_lower:
-            via = "native_exact" if fl_lower == native.lower() else "native_substring"
-            return english, via
-    return None, "none"
+    fll = first_line.lower()
+    if any(r.search(fll) for r in ns["XNLI_LABEL_RES"].values()):
+        return pred, "tier1_english"
+    if any(native.lower() in fll for native in ns["NATIVE_LABEL_MAP"]):
+        return pred, "tier1_native"
+    negated = any(neg in first_line for neg in ns["XNLI_TIER2_NEGATION"])
+    if not negated and any(label in fll for label in ns["XNLI_LABELS"]):
+        return pred, "tier2_cjk_glued"
+    return pred, "tier3_paraphrase"
 
 
-def classify_choice(raw_output: str, choices: str) -> tuple[str | None, str]:
-    """Mirror of extract_choice with stage instrumentation."""
-    text = raw_output.strip().upper()
-    first_line = text.split("\n")[0].strip()
-    choice_class = _re.escape(choices)
-    m = _re.search(rf"\b([{choice_class}])\b", first_line)
-    if m:
-        via = "bare_letter" if first_line == m.group(1) else "letter_in_text"
-        return m.group(1), via
-    m = _re.search(rf"ANSWER\s*[:\-]?\s*([{choice_class}])", first_line)
-    if m:
-        return m.group(1), "answer_prefix"
-    return None, "none"
+def classify_choice(raw_output: str, ns: dict, choices: str) -> tuple[str | None, str]:
+    """`pred` from the live extractor; `match_via` is the letter-match stage."""
+    pred = ns["extract_choice"](raw_output, choices=choices)
+    if pred is None:
+        return None, "none"
+    first_line = raw_output.strip().upper().split("\n")[0].strip()
+    if first_line == pred:
+        return pred, "bare_letter"
+    if _re.search(rf"\b{_re.escape(pred)}\b", first_line):
+        return pred, "letter_in_text"
+    return pred, "answer_prefix"
 
 
 # Benchmark → classifier callable with a uniform (raw_output, ns) signature.
-# The choice classifiers ignore `ns` (they need no extractor constants) but
-# accept it so callers can dispatch without special-casing.
 def _classifier_for(benchmark: str):
     if benchmark == "sib200":
-        return lambda raw, ns: classify_sib200(raw, ns)
+        return classify_sib200
     if benchmark == "xnli":
-        return lambda raw, ns: classify_xnli(raw, ns)
+        return classify_xnli
     if benchmark == "csqa":
-        return lambda raw, _ns: classify_choice(raw, "ABCDE")
+        return lambda raw, ns: classify_choice(raw, ns, "ABCDE")
     if benchmark == "belebele":
-        return lambda raw, _ns: classify_choice(raw, "ABCD")
+        return lambda raw, ns: classify_choice(raw, ns, "ABCD")
     raise ValueError(f"Unknown benchmark {benchmark!r}")
 
 
@@ -447,19 +430,17 @@ def write_surface_form_tsv(rows: list[dict], out_path: Path) -> None:
 # Sort buckets so the table reads correct → wrong → fail, cleanest match first.
 _OUTCOME_ORDER = {"correct": 0, "wrong_label": 1, "parse_fail": 2}
 _VIA_ORDER = {
-    "exact": 0,
-    "native_exact": 0,
+    # cleanest / most direct match first
+    "single": 0,
+    "tier1_english": 0,
+    "tier1_native": 1,
     "bare_letter": 0,
-    "normalized": 1,
-    "english_substring": 2,
-    "native_substring": 2,
-    "substring": 2,
     "letter_in_text": 2,
     "answer_prefix": 3,
-    "alias": 4,
-    "rule_a": 5,
-    "rule_b": 6,
-    "rule_c": 7,
+    "tier2_cjk_glued": 4,
+    "tier3_paraphrase": 5,
+    "fallback": 6,
+    "multi_category": 7,
     "none": 9,
 }
 

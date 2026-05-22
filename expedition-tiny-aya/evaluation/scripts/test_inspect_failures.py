@@ -4,9 +4,9 @@ Stdlib-only (unittest). Run from this directory:
 
     python -m unittest test_inspect_failures.py -v
 
-Classifier tests need the extractor constants, so they're skipped when
-`run_eval_single.py` isn't present next to this file. The `benchmark_from_key`
-and reporting-helper tests always run.
+The classifiers call the live extractors (from run_eval_single.py) for the
+prediction, so classifier-dependent tests are skipped when that file is not
+present next to this one. Pure-helper tests always run.
 """
 
 from __future__ import annotations
@@ -25,22 +25,15 @@ class TestBenchmarkFromKey(unittest.TestCase):
     """Pure string parsing — no extractor source needed."""
 
     def test_known(self):
-        self.assertEqual(
-            inspect_failures.benchmark_from_key("template1_sib200_data=ur_instr=ur"),
-            "sib200",
-        )
-        self.assertEqual(
-            inspect_failures.benchmark_from_key("template2_xnli_data=en_instr=zh"),
-            "xnli",
-        )
-        self.assertEqual(
-            inspect_failures.benchmark_from_key("template1_csqa_data=es_instr=en"),
-            "csqa",
-        )
-        self.assertEqual(
-            inspect_failures.benchmark_from_key("template2_belebele_data=zh_instr=ur"),
-            "belebele",
-        )
+        cases = {
+            "template1_sib200_data=ur_instr=ur": "sib200",
+            "template2_xnli_data=en_instr=zh": "xnli",
+            "template1_csqa_data=es_instr=en": "csqa",
+            "template2_belebele_data=zh_instr=ur": "belebele",
+        }
+        for key, expected in cases.items():
+            with self.subTest(key=key):
+                self.assertEqual(inspect_failures.benchmark_from_key(key), expected)
 
     def test_unknown_raises(self):
         with self.assertRaises(ValueError):
@@ -60,147 +53,126 @@ class TestOnelineHelper(unittest.TestCase):
 
 @unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifySib200(unittest.TestCase):
+    """match_via vocabulary: single | multi_category | fallback | none."""
+
     @classmethod
     def setUpClass(cls):
         cls.ns = inspect_failures.load_extractor_namespace()
 
-    def _via(self, raw):
+    def c(self, raw):
         return inspect_failures.classify_sib200(raw, self.ns)
 
-    def test_exact(self):
-        self.assertEqual(
-            self._via("science/technology"), ("science/technology", "exact")
-        )
-        self.assertEqual(self._via("travel"), ("travel", "exact"))
+    def test_single_english(self):
+        self.assertEqual(self.c("politics"), ("politics", "single"))
+        self.assertEqual(self.c("travel"), ("travel", "single"))
 
-    def test_normalized_case(self):
-        # Capitalised — needs lowercasing
-        self.assertEqual(
-            self._via("Science/Technology"), ("science/technology", "normalized")
-        )
+    def test_single_canonical_compound_one_category(self):
+        # "science/technology" splits to two pieces, both → science/technology
+        self.assertEqual(self.c("science/technology"), ("science/technology", "single"))
+        self.assertEqual(self.c("science/AI"), ("science/technology", "single"))
 
-    def test_normalized_punctuation(self):
-        # Quote-wrapped — needs punctuation stripping
-        self.assertEqual(self._via('"travel"'), ("travel", "normalized"))
-        self.assertEqual(self._via("travel."), ("travel", "normalized"))
+    def test_single_native(self):
+        self.assertEqual(self.c("سیاست"), ("politics", "single"))
+        self.assertEqual(self.c("旅行"), ("travel", "single"))
+        self.assertEqual(self.c("viajes"), ("travel", "single"))
 
-    def test_substring(self):
-        # Canonical token embedded in a longer first line
-        pred, via = self._via("The answer is travel")
-        self.assertEqual(pred, "travel")
-        self.assertEqual(via, "substring")
+    def test_multi_category_hedge(self):
+        # Cross-category compounds → parse-failure (pred None), via multi_category
+        self.assertEqual(self.c("سیاست/تکنالوجی"), (None, "multi_category"))
+        self.assertEqual(self.c("science/health"), (None, "multi_category"))
+        self.assertEqual(self.c("کھیل/تکنالوجی"), (None, "multi_category"))
 
-    def test_rule_a_invented_subcategory(self):
-        self.assertEqual(self._via("science/AI"), ("science/technology", "rule_a"))
-        self.assertEqual(self._via("science/physics"), ("science/technology", "rule_a"))
+    def test_same_category_compound_resolves(self):
+        # کھیل/سپورٹس — both halves mean sports → single
+        self.assertEqual(self.c("کھیل/سپورٹس"), ("sports", "single"))
 
-    def test_rule_b_native_scripts(self):
-        self.assertEqual(self._via("سائنس/ٹکنالوجی"), ("science/technology", "rule_b"))
-        self.assertEqual(self._via("科学/技术"), ("science/technology", "rule_b"))
-        self.assertEqual(
-            self._via("ciencia/tecnología"), ("science/technology", "rule_b")
-        )
-
-    def test_rule_c_bare_subcategory(self):
-        self.assertEqual(self._via("physics"), ("science/technology", "rule_c"))
-        self.assertEqual(self._via("ai"), ("science/technology", "rule_c"))
-
-    def test_alias(self):
-        # "sport" → "sports" via SIB200_ALIASES
-        self.assertEqual(self._via("sport"), ("sports", "alias"))
+    def test_fallback(self):
+        # Canonical English name embedded in a sentence — no resolvable pieces
+        self.assertEqual(self.c("the answer is travel"), ("travel", "fallback"))
 
     def test_none(self):
-        self.assertEqual(self._via("absolutely unparseable"), (None, "none"))
-
-    def test_rule_a_does_not_mask_canonical(self):
-        # "science/technology" technically enters the Rule A branch (it starts
-        # with "science/"), but the classifier sub-classifies it back to
-        # `exact` / `normalized` so a perfect canonical answer is never
-        # mislabelled as a lenient rescue. Only genuine invented sub-categories
-        # get `rule_a`.
-        self.assertEqual(
-            self._via("science/technology"), ("science/technology", "exact")
-        )
-        self.assertEqual(
-            self._via("Science/Technology"), ("science/technology", "normalized")
-        )
-        self.assertEqual(self._via("science/AI"), ("science/technology", "rule_a"))
-
-    def test_multiline_first_line_only(self):
-        # The classifier reads only the first line, like the extractor.
-        pred, _ = self._via("travel\nThis passage is about going places.")
-        self.assertEqual(pred, "travel")
+        self.assertEqual(self.c("absolutely unparseable"), (None, "none"))
 
 
 @unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifyXnli(unittest.TestCase):
+    """match_via: tier1_english | tier1_native | tier2_cjk_glued |
+    tier3_paraphrase | none."""
+
     @classmethod
     def setUpClass(cls):
         cls.ns = inspect_failures.load_extractor_namespace()
 
-    def _via(self, raw):
+    def c(self, raw):
         return inspect_failures.classify_xnli(raw, self.ns)
 
-    def test_exact_english(self):
-        self.assertEqual(self._via("entailment"), ("entailment", "exact"))
-        self.assertEqual(self._via("contradiction"), ("contradiction", "exact"))
+    def test_tier1_english(self):
+        self.assertEqual(self.c("entailment"), ("entailment", "tier1_english"))
+        self.assertEqual(self.c("Contradiction."), ("contradiction", "tier1_english"))
 
-    def test_english_substring(self):
-        pred, via = self._via("The relationship is entailment")
-        self.assertEqual(pred, "entailment")
-        self.assertEqual(via, "english_substring")
+    def test_tier1_native(self):
+        self.assertEqual(self.c("矛盾"), ("contradiction", "tier1_native"))
+        self.assertEqual(self.c("لازمی"), ("entailment", "tier1_native"))
 
-    def test_native_exact_chinese(self):
-        self.assertEqual(self._via("矛盾"), ("contradiction", "native_exact"))
+    def test_tier2_cjk_glued(self):
+        self.assertEqual(
+            self.c("假设是entailment。"), ("entailment", "tier2_cjk_glued")
+        )
 
-    def test_native_substring(self):
-        pred, via = self._via("答案是 矛盾 因为…")
-        self.assertEqual(pred, "contradiction")
-        self.assertEqual(via, "native_substring")
+    def test_tier2_negated_is_rejected(self):
+        # "没有entailment" — the model negates the label → parse-failure
+        self.assertEqual(self.c("假设和前提之间没有entailment或"), (None, "none"))
+
+    def test_tier3_paraphrase(self):
+        self.assertEqual(
+            self.c("假设是前提的直接结果。"), ("entailment", "tier3_paraphrase")
+        )
+        self.assertEqual(
+            self.c("假设是前提的否定。"), ("contradiction", "tier3_paraphrase")
+        )
+        self.assertEqual(
+            self.c("假设和前提之间没有关系。"), ("neutral", "tier3_paraphrase")
+        )
 
     def test_none(self):
-        self.assertEqual(self._via("???"), (None, "none"))
+        self.assertEqual(self.c("假设。"), (None, "none"))
+        self.assertEqual(self.c("1. 2. 3."), (None, "none"))
 
 
 @unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifyChoice(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ns = inspect_failures.load_extractor_namespace()
+
     def test_bare_letter(self):
         self.assertEqual(
-            inspect_failures.classify_choice("A", "ABCDE"), ("A", "bare_letter")
+            inspect_failures.classify_choice("A", self.ns, "ABCDE"),
+            ("A", "bare_letter"),
         )
 
     def test_letter_in_text(self):
-        pred, via = inspect_failures.classify_choice("The answer is C.", "ABCDE")
-        self.assertEqual(pred, "C")
-        self.assertEqual(via, "letter_in_text")
+        self.assertEqual(
+            inspect_failures.classify_choice("The answer is C.", self.ns, "ABCDE"),
+            ("C", "letter_in_text"),
+        )
 
-    def test_answer_with_standalone_letter_is_letter_in_text(self):
-        # "ANSWER: D" — the bare-letter regex `\bD\b` matches the standalone D
-        # FIRST, before the `ANSWER:` branch is ever reached. This is faithful
-        # to the live extractor's ordering. The `answer_prefix` stage is
-        # near-vestigial as a result (see next test).
-        pred, via = inspect_failures.classify_choice("ANSWER: D", "ABCD")
-        self.assertEqual(pred, "D")
-        self.assertEqual(via, "letter_in_text")
-
-    def test_answer_prefix_only_when_letter_not_standalone(self):
-        # The `ANSWER:` branch is reachable only when the choice letter is
-        # glued to other word chars so `\b[ABCD]\b` fails first — e.g. the
-        # contrived "ANSWERD". Real model outputs almost never hit this; the
-        # bare-letter regex catches them. Worth knowing the branch is
-        # effectively dead code in the live extractor.
-        pred, via = inspect_failures.classify_choice("ANSWERD", "ABCD")
-        self.assertEqual(pred, "D")
-        self.assertEqual(via, "answer_prefix")
+    def test_answer_prefix(self):
+        # "ANSWERD" — no standalone letter, the ANSWER: branch fires
+        self.assertEqual(
+            inspect_failures.classify_choice("ANSWERD", self.ns, "ABCD"),
+            ("D", "answer_prefix"),
+        )
 
     def test_none(self):
         self.assertEqual(
-            inspect_failures.classify_choice("hello", "ABCDE"), (None, "none")
+            inspect_failures.classify_choice("hello", self.ns, "ABCDE"), (None, "none")
         )
 
     def test_belebele_excludes_e(self):
-        # Belebele is 4-way (ABCD) — a bare "E" should not match.
-        self.assertEqual(inspect_failures.classify_choice("E", "ABCD"), (None, "none"))
+        self.assertEqual(
+            inspect_failures.classify_choice("E", self.ns, "ABCD"), (None, "none")
+        )
 
 
 @unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
@@ -230,6 +202,14 @@ class TestClassifyRow(unittest.TestCase):
         self.assertEqual(row["outcome"], "parse_fail")
         self.assertEqual(row["match_via"], "none")
 
+    def test_parse_fail_multi_category(self):
+        # A cross-category hedge is a parse-failure, tagged multi_category
+        row = inspect_failures.classify_row(
+            "sib200", "سیاست/تکنالوجی", "politics", self.ns
+        )
+        self.assertEqual(row["outcome"], "parse_fail")
+        self.assertEqual(row["match_via"], "multi_category")
+
     def test_multiline_flag(self):
         row = inspect_failures.classify_row(
             "sib200", "travel\nextra explanation line", "travel", self.ns
@@ -237,13 +217,10 @@ class TestClassifyRow(unittest.TestCase):
         self.assertTrue(row["multiline"])
         self.assertEqual(row["outcome"], "correct")
 
-    def test_correct_via_native_rule(self):
-        # The headline case: a correct answer that only matched via Rule B.
-        row = inspect_failures.classify_row(
-            "sib200", "سائنس/ٹکنالوجی", "science/technology", self.ns
-        )
+    def test_correct_via_native_term(self):
+        row = inspect_failures.classify_row("sib200", "سیاست", "politics", self.ns)
         self.assertEqual(row["outcome"], "correct")
-        self.assertEqual(row["match_via"], "rule_b")
+        self.assertEqual(row["match_via"], "single")
 
 
 @unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
@@ -255,78 +232,21 @@ class TestClassifyCell(unittest.TestCase):
     def test_aggregation(self):
         rows = [
             {"raw_output": "science/technology", "gold": "science/technology"},
-            {"raw_output": "سائنس/ٹکنالوجی", "gold": "science/technology"},
+            {"raw_output": "سیاست", "gold": "politics"},
             {"raw_output": "travel", "gold": "science/technology"},
-            {"raw_output": "garbage", "gold": "science/technology"},
+            {"raw_output": "سیاست/تکنالوجی", "gold": "politics"},
         ]
         report = inspect_failures.classify_cell(
             "template1_sib200_data=ur_instr=ur", rows, self.ns
         )
         self.assertEqual(report["n"], 4)
         self.assertEqual(report["benchmark"], "sib200")
-        # 2 correct (exact + rule_b), 1 wrong_label, 1 parse_fail
+        # 2 correct (science/technology, سیاست), 1 wrong (travel), 1 parse_fail
         self.assertAlmostEqual(report["accuracy"], 0.5)
         self.assertAlmostEqual(report["parse_fail_rate"], 0.25)
-        self.assertEqual(report["bucket_counts"][("correct", "exact")], 1)
-        self.assertEqual(report["bucket_counts"][("correct", "rule_b")], 1)
-        self.assertEqual(report["bucket_counts"][("wrong_label", "exact")], 1)
-        self.assertEqual(report["bucket_counts"][("parse_fail", "none")], 1)
-
-
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
-class TestInstrumentedMatchesLive(unittest.TestCase):
-    """The strongest guarantee: the instrumented classifier's prediction must
-    equal the live extractor's prediction on a battery of inputs spanning
-    every match stage and every language."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
-    def test_sib200_agreement(self):
-        live = self.ns["extract_sib200_category"]
-        cases = [
-            "science/technology",
-            "Science/Technology.",
-            '"travel"',
-            "The answer is travel",
-            "science/AI",
-            "سائنس/ٹکنالوجی",
-            "科学/技术",
-            "ciencia/tecnología",
-            "physics",
-            "sport",
-            "garbage text",
-            "travel\nexplanation",
-        ]
-        for raw in cases:
-            with self.subTest(raw=raw):
-                instrumented, _ = inspect_failures.classify_sib200(raw, self.ns)
-                self.assertEqual(instrumented, live(raw))
-
-    def test_xnli_agreement(self):
-        live = self.ns["extract_xnli_label"]
-        cases = [
-            "entailment",
-            "The relationship is contradiction",
-            "矛盾",
-            "答案是 矛盾",
-            "لازمی",
-            "neutro",
-            "???",
-        ]
-        for raw in cases:
-            with self.subTest(raw=raw):
-                instrumented, _ = inspect_failures.classify_xnli(raw, self.ns)
-                self.assertEqual(instrumented, live(raw))
-
-    def test_choice_agreement(self):
-        live = self.ns["extract_choice"]
-        cases = ["A", "ANSWER: C", "The answer is B.", "hello"]
-        for raw in cases:
-            with self.subTest(raw=raw):
-                instrumented, _ = inspect_failures.classify_choice(raw, "ABCDE")
-                self.assertEqual(instrumented, live(raw, choices="ABCDE"))
+        self.assertEqual(report["bucket_counts"][("correct", "single")], 2)
+        self.assertEqual(report["bucket_counts"][("wrong_label", "single")], 1)
+        self.assertEqual(report["bucket_counts"][("parse_fail", "multi_category")], 1)
 
 
 @unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
@@ -336,8 +256,6 @@ class TestAggregateSurfaceForms(unittest.TestCase):
         cls.ns = inspect_failures.load_extractor_namespace()
 
     def _fake_dataset(self):
-        # One SIB-200 cell: the same Urdu form appears 3× with different gold,
-        # plus one clean English answer.
         return {
             "summary": {},
             "parse_failure_rates": {},
@@ -352,21 +270,17 @@ class TestAggregateSurfaceForms(unittest.TestCase):
     def test_groups_identical_first_lines(self):
         rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
         by_form = {r["first_line"]: r for r in rows}
-        # سیاست grouped into one row with total 3
-        self.assertIn("سیاست", by_form)
         self.assertEqual(by_form["سیاست"]["total"], 3)
         self.assertEqual(by_form["travel"]["total"], 1)
 
     def test_outcome_split_within_a_form(self):
-        # The whole point: one constant output, three different golds.
         rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
         siyasat = next(r for r in rows if r["first_line"] == "سیاست")
-        # سیاست is not in the extractor yet → parse_fail for all 3
-        self.assertEqual(siyasat["parse_fail"], 3)
-        self.assertEqual(siyasat["pred"], None)
-        # travel is a clean exact match
-        travel = next(r for r in rows if r["first_line"] == "travel")
-        self.assertEqual(travel["correct"], 1)
+        # سیاست now resolves to politics → correct once, wrong twice
+        self.assertEqual(siyasat["pred"], "politics")
+        self.assertEqual(siyasat["correct"], 1)
+        self.assertEqual(siyasat["wrong_label"], 2)
+        self.assertEqual(siyasat["parse_fail"], 0)
 
     def test_sorted_by_total_descending(self):
         rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
@@ -378,13 +292,13 @@ class TestAggregateSurfaceForms(unittest.TestCase):
             [self._fake_dataset(), self._fake_dataset()], self.ns
         )
         siyasat = next(r for r in rows if r["first_line"] == "سیاست")
-        self.assertEqual(siyasat["total"], 6)  # 3 + 3 across the two datasets
+        self.assertEqual(siyasat["total"], 6)
 
     def test_benchmark_filter(self):
         rows = inspect_failures.aggregate_surface_forms(
             [self._fake_dataset()], self.ns, only_benchmarks={"xnli"}
         )
-        self.assertEqual(rows, [])  # dataset has only a sib200 cell
+        self.assertEqual(rows, [])
 
 
 if __name__ == "__main__":
