@@ -42,17 +42,42 @@ HERE = Path(__file__).resolve().parent
 
 
 def _find_extractor_source() -> Path | None:
-    """Locate `run_eval_single.py`. Returns None if not found.
+    """Locate the extractor source. Order:
 
-    Search order: next to this script, then Kaggle's working dir.
+    1. `run_eval_single.py` next to this script. A deliberate manual extract
+       wins — useful when you want to test against a specific extractor
+       version (e.g., a different branch's). Staleness is the user's
+       responsibility when they go this route.
+    2. `/kaggle/working/run_eval_single.py` — the Kaggle launcher writes the
+       .py here and there is no notebook at HERE.
+    3. `evaluate.ipynb` next to this script — fallback when no .py exists.
+       A fresh checkout (no gitignored .py) reads the extractor straight
+       from the version-controlled notebook, so a stale extract from a
+       different branch can't be accidentally used.
     """
     for candidate in (
         HERE / "run_eval_single.py",
         Path("/kaggle/working/run_eval_single.py"),
+        HERE / "evaluate.ipynb",
     ):
         if candidate.exists():
             return candidate
     return None
+
+
+def _read_extractor_source(path: Path) -> str:
+    """Return Python source for the extractors. For `.py`, the file
+    contents; for `.ipynb`, the body of the `%%writefile run_eval_single.py`
+    cell (minus the magic line)."""
+    if path.suffix == ".ipynb":
+        nb = json.loads(path.read_text())
+        for cell in nb.get("cells", []):
+            src = "".join(cell.get("source", []))
+            first = src.split("\n", 1)[0]
+            if first.startswith("%%writefile") and "run_eval_single.py" in first:
+                return src.split("\n", 1)[1]
+        raise SystemExit(f"No `%%writefile run_eval_single.py` cell found in {path}")
+    return path.read_text()
 
 
 _source_path: Path | None = _find_extractor_source()
@@ -65,9 +90,9 @@ def verify_extractor_source() -> Path:
     error before any expensive work (HF API calls, downloads)."""
     if _source_path is None:
         raise SystemExit(
-            "Couldn't find run_eval_single.py. Expected next to this file or at "
-            "/kaggle/working/. On Kaggle the launcher writes it; locally extract "
-            "it from evaluate.ipynb cell 3."
+            "Couldn't find the extractor source. Expected `run_eval_single.py` "
+            "or `evaluate.ipynb` next to this file, or `run_eval_single.py` "
+            "at /kaggle/working/."
         )
     return _source_path
 
@@ -98,7 +123,7 @@ def _load_extractors() -> dict[str, Callable]:
         "extract_xnli_label",
         "extract_choice",
     }
-    tree = ast.parse(src.read_text())
+    tree = ast.parse(_read_extractor_source(src))
     subset_nodes: list[ast.stmt] = []
     for node in tree.body:
         if (
