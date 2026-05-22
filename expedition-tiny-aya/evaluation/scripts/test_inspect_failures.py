@@ -301,5 +301,173 @@ class TestAggregateSurfaceForms(unittest.TestCase):
         self.assertEqual(rows, [])
 
 
+@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
+class TestInstrumentedMatchesLive(unittest.TestCase):
+    """The strongest guarantee: the instrumented classifier's prediction must
+    equal the live extractor's prediction on a battery of inputs covering
+    every tier/branch and every supported language.
+
+    inspect_failures.py only earns trust if `classify_*(raw, ...)[0]` agrees
+    with `extract_*(raw, ...)` on every input. Disagreement means the
+    instrumented classifier has drifted from the extractor it's meant to
+    mirror, and any per-row analysis it produces is suspect.
+
+    Asserts AGREEMENT, not correctness — whatever the live extractor returns,
+    the classifier must return the same. Correctness lives in the extractor.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ns = inspect_failures.load_extractor_namespace()
+
+    def test_sib200_agreement(self):
+        live = self.ns["extract_sib200_category"]
+        cases = [
+            # English canonical / normalized / embedded (fallback)
+            "science/technology",
+            "Science/Technology.",
+            '"travel"',
+            "The answer is travel",
+            "POLITICS",
+            # Sci/tech sub-topics (single piece → 1 distinct → science/technology)
+            "science/AI",
+            "physics",
+            "interactive design",
+            # Multi-term hedge across DIFFERENT categories → None
+            "science/politics",
+            "سیاست/تکنالوجی",
+            "science/health",
+            "کھیل/سائنس/تکنالوجی",
+            # Same-category compound (both halves → sports) → sports
+            "کھیل/سپورٹس",
+            # Native single-word answers
+            "سیاست",
+            "سفر",
+            "سیاحت",
+            "صحت",
+            "تفریح",
+            "کھیل",
+            "旅行",
+            "政治",
+            "娱乐",
+            "地理",
+            "体育",
+            "viajes",
+            "política",
+            "Política",  # capitalised
+            "deportes",
+            "salud",
+            "entretenimiento",
+            # Native science/tech variants
+            "سائنس/ٹکنالوجی",
+            "سائنس/ٹیکنالوجی",
+            "سائنس/تکنولوجی",
+            "علم و ٹیکنالوجی",
+            "科学/技术",
+            "科学和技术",
+            "科学与技术",
+            "ciencia/tecnología",
+            "ciencia y tecnología",
+            "tecnología",
+            # Arabic code-switches (Urdu-prompted model)
+            "الرياضة",
+            "السياسة",
+            "التكنولوجيا",
+            # Multiline outputs — first line wins
+            "سفر\nاس متن میں سفر کا ذکر ہے۔",
+            "travel\nThis passage is about going places.",
+            # Off-scheme / no category at all
+            "naturaleza",
+            "教育",
+            "garbage text with no category",
+            "",
+            "狮群",  # passage echo
+        ]
+        for raw in cases:
+            with self.subTest(raw=raw):
+                instrumented, _ = inspect_failures.classify_sib200(raw, self.ns)
+                self.assertEqual(instrumented, live(raw))
+
+    def test_xnli_agreement(self):
+        live = self.ns["extract_xnli_label"]
+        cases = [
+            # Tier 1a — verbatim English labels
+            "entailment",
+            "contradiction",
+            "neutral",
+            "Entailment.",
+            "Neutral.",
+            "Contradiction.",
+            # Tier 1b — native label words
+            "矛盾",
+            "蕴含",
+            "中立",
+            "Contradicción",
+            "Contradicción.",
+            "implicación",
+            "neutro",
+            "لازمی",
+            "لازم آتی ہے",
+            "تردید",
+            # Tier 2 — English label glued to a CJK frame
+            "假设是entailment。",
+            "假设entailment",
+            "假设是entailment，因为它直接从",
+            # Tier 2 — negated CJK frame, guard skips Tier 2
+            "假设和前提之间没有entailment",
+            "前提和假设之间没有entailment、",
+            # Tier 3 — semantic paraphrase
+            "假设是前提的直接结果。",
+            "假设是前提的否定。",
+            "假设是前提的推论",
+            "假设是前提的等同",
+            "假设是前提的自然结果",
+            "premise اور hypothesis کے درمیان کوئی تعلق نہیں",
+            # Tier 3 — documented negation-gap inputs
+            # (instrumented MUST match live: both will currently return entailment
+            # on the negated paraphrase — that's the documented zero-impact gap)
+            "假设不是前提的直接结果",
+            "没有否定前提",
+            # None — role-tokens, empty, off-task
+            "假设",
+            "假设。",
+            "Hypothesis",
+            "???",
+            "",
+            "1. 2. 3.",
+            "平衡",
+            "无",
+        ]
+        for raw in cases:
+            with self.subTest(raw=raw):
+                instrumented, _ = inspect_failures.classify_xnli(raw, self.ns)
+                self.assertEqual(instrumented, live(raw))
+
+    def test_choice_agreement(self):
+        live = self.ns["extract_choice"]
+        cases = [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "ANSWER: C",
+            "ANSWER:D",
+            "ANSWERA",  # vestigial answer-prefix path
+            "B. office",
+            "A.",
+            "The answer is B.",
+            "hello",
+            "",
+        ]
+        for raw in cases:
+            for choices in ("ABCDE", "ABCD"):
+                with self.subTest(raw=raw, choices=choices):
+                    instrumented, _ = inspect_failures.classify_choice(
+                        raw, self.ns, choices
+                    )
+                    self.assertEqual(instrumented, live(raw, choices=choices))
+
+
 if __name__ == "__main__":
     unittest.main()
