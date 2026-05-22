@@ -357,7 +357,9 @@ def main() -> None:
             )
             out_path = reparsed_summary_path_local(path)
             body = build_reparsed_summary(path, rows_full)
-            out_path.write_text(json.dumps(body, indent=2, ensure_ascii=False))
+            out_path.write_text(
+                json.dumps(body, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
             print(
                 f"  → wrote {out_path.name} "
                 f"({body['reparse_metadata']['cells_changed']} cells changed)"

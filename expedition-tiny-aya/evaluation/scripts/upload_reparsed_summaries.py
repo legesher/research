@@ -94,7 +94,9 @@ def _hf_tree(path_in_repo: str) -> list[dict]:
             # Transient connection errors (ECONNRESET, timeout, DNS hiccup).
             last_err = e
         if attempt + 1 < HF_TREE_RETRIES:
-            time.sleep(2**attempt)  # 1s, 2s, 4s
+            # With HF_TREE_RETRIES=5 the sleeps before attempts 2..5 are
+            # 2**0..2**3 = 1s, 2s, 4s, 8s (≈15s total worst case).
+            time.sleep(2**attempt)
     raise SystemExit(
         f"HF tree API failed for {path_in_repo!r} after {HF_TREE_RETRIES} attempts: "
         f"{last_err} ({url})"
@@ -220,7 +222,7 @@ def _download_and_reparse(
     body = build_reparsed_summary(Path(remote_results_path), rows)
     out_remote = reparsed_summary_path_remote(remote_results_path)
     tmp_out = cache_dir / _basename(out_remote)
-    tmp_out.write_text(json.dumps(body, indent=2, ensure_ascii=False))
+    tmp_out.write_text(json.dumps(body, indent=2, ensure_ascii=False), encoding="utf-8")
     return out_remote, tmp_out, body
 
 
