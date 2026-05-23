@@ -42,17 +42,57 @@ HERE = Path(__file__).resolve().parent
 
 
 def _find_extractor_source() -> Path | None:
-    """Locate `run_eval_single.py`. Returns None if not found.
+    """Locate the extractor source. Order:
 
-    Search order: next to this script, then Kaggle's working dir.
+    1. `run_eval_single.py` next to this script. A deliberate manual extract
+       wins — useful when you want to test against a specific extractor
+       version (e.g., a different branch's). Staleness is the user's
+       responsibility when they go this route.
+    2. `/kaggle/working/run_eval_single.py` — the Kaggle launcher writes the
+       .py here and there is no notebook at HERE.
+    3. `evaluate.ipynb` next to this script — fallback when no .py exists.
+       A fresh checkout (no gitignored .py) reads the extractor straight
+       from the version-controlled notebook, so a stale extract from a
+       different branch can't be accidentally used.
     """
     for candidate in (
         HERE / "run_eval_single.py",
         Path("/kaggle/working/run_eval_single.py"),
+        HERE / "evaluate.ipynb",
     ):
         if candidate.exists():
             return candidate
     return None
+
+
+def _read_extractor_source(path: Path) -> str:
+    """Return Python source for the extractors. For `.py`, the file
+    contents; for `.ipynb`, the body of the `%%writefile run_eval_single.py`
+    code cell (minus the magic line). Always reads as UTF-8 — `.ipynb` JSON
+    is UTF-8 by spec, and the extractor source contains non-ASCII (native
+    surface forms)."""
+    if path.suffix == ".ipynb":
+        nb = json.loads(path.read_text(encoding="utf-8"))
+        for cell in nb.get("cells", []):
+            if cell.get("cell_type") != "code":
+                continue
+            # Jupyter stores `source` as a list-of-lines OR a single string.
+            # Use the list form when available so we don't depend on
+            # newlines being embedded (a one-line `%%writefile` cell would
+            # have no newline to split on, and `split("\n", 1)[1]` would
+            # raise IndexError).
+            raw_source = cell.get("source", [])
+            if isinstance(raw_source, list):
+                lines = raw_source
+            else:
+                lines = raw_source.splitlines(keepends=True)
+            if not lines:
+                continue
+            first = lines[0].rstrip("\n")
+            if first.startswith("%%writefile") and "run_eval_single.py" in first:
+                return "".join(lines[1:])
+        raise SystemExit(f"No `%%writefile run_eval_single.py` cell found in {path}")
+    return path.read_text(encoding="utf-8")
 
 
 _source_path: Path | None = _find_extractor_source()
@@ -65,9 +105,9 @@ def verify_extractor_source() -> Path:
     error before any expensive work (HF API calls, downloads)."""
     if _source_path is None:
         raise SystemExit(
-            "Couldn't find run_eval_single.py. Expected next to this file or at "
-            "/kaggle/working/. On Kaggle the launcher writes it; locally extract "
-            "it from evaluate.ipynb cell 3."
+            "Couldn't find the extractor source. Expected `run_eval_single.py` "
+            "or `evaluate.ipynb` next to this file, or `run_eval_single.py` "
+            "at /kaggle/working/."
         )
     return _source_path
 
@@ -98,7 +138,7 @@ def _load_extractors() -> dict[str, Callable]:
         "extract_xnli_label",
         "extract_choice",
     }
-    tree = ast.parse(src.read_text())
+    tree = ast.parse(_read_extractor_source(src))
     subset_nodes: list[ast.stmt] = []
     for node in tree.body:
         if (
@@ -241,13 +281,18 @@ def print_diff_table(rows: list[dict]) -> None:
 def _extractor_provenance() -> dict:
     """Identify which version of `run_eval_single.py` produced the new numbers.
 
-    Always includes the source path + content sha256. Adds `repo_head_commit`
-    when this script is running inside a git checkout (otherwise, e.g., on
-    Kaggle where the file is written by `%%writefile`, the field is omitted)."""
+    Always includes the source path + content sha256. The hash is taken over
+    the *extracted* extractor source — not over the raw file — so the hash is
+    stable across unrelated notebook edits (other cells, outputs, metadata)
+    and reflects only the extractor logic that actually ran. Adds
+    `repo_head_commit` when this script is running inside a git checkout
+    (otherwise, e.g., on Kaggle where the file is written by `%%writefile`,
+    the field is omitted)."""
     src = verify_extractor_source()
+    extracted = _read_extractor_source(src)
     provenance: dict = {
         "source_path": str(src),
-        "content_sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+        "content_sha256": hashlib.sha256(extracted.encode("utf-8")).hexdigest(),
     }
     try:
         head_sha = subprocess.check_output(
