@@ -1,0 +1,23 @@
+{
+  "n_cells": 1664,
+  "n_improved_acc": 215,
+  "n_regressed_acc": 106,
+  "n_flat_acc": 1343,
+  "n_pf_improved": 228,
+  "n_pf_worsened": 131,
+  "n_flat_acc_pf_drop": 14,
+  "n_flat_acc_pf_drop_>5pct": 0,
+  "mean_delta_acc": 0.01480089524006286,
+  "median_delta_acc": 0.0,
+  "mean_delta_pf": -0.021125928996080238,
+  "median_delta_pf": 0.0,
+  "mean_orig_acc": 0.5396175357618097,
+  "mean_repar_acc": 0.5544184310018726,
+  "mean_orig_pf": 0.03755267229963151,
+  "mean_repar_pf": 0.016426743303551268,
+  "max_delta_acc": 0.5147058823529411,
+  "min_delta_acc": -0.14215686274509803,
+  "max_delta_pf_drop": -0.7598039215686274,
+  "max_delta_pf_rise": 0.42647058823529416,
+  "gaps": []
+}

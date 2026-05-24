@@ -1,0 +1,2621 @@
+benchmark	first_line	total	correct	wrong_label	parse_fail	multiline	n_cells	pred	match_via
+xnli	entailment	98649	35152	63497	0	31510	32	entailment	exact
+xnli	contradiction	17426	8310	9116	0	368	18	contradiction	exact
+xnli	Contradiction	8670	3705	4965	0	4846	15	contradiction	exact
+xnli	Neutral	5045	1487	3558	0	8	16	neutral	exact
+xnli	Contradicción	4690	2036	2654	0	0	6	contradiction	native_exact
+xnli	neutral	3685	1014	2671	0	271	28	neutral	exact
+xnli		3170	0	0	3170	0	14		none
+xnli	Contradicción.	1979	985	994	0	0	7	contradiction	native_substring
+xnli	假设	1564	0	0	1564	2	5		none
+xnli	假设。	1537	0	0	1537	0	4		none
+xnli	假设是前提的直接结果。	1476	0	0	1476	0	4		none
+xnli	矛盾	1040	472	568	0	91	8	contradiction	native_exact
+xnli	假设是前提的。	1016	0	0	1016	0	4		none
+xnli	假设是前提的否定。	624	0	0	624	0	4		none
+xnli	假设是前提的推论。	549	0	0	549	0	3		none
+xnli	entailment.	494	157	337	0	0	16	entailment	english_substring
+xnli	Entailment.	461	261	200	0	0	6	entailment	english_substring
+xnli	premise اور hypothesis کے درمیان کوئی تعلق نہیں ہے۔	384	0	0	384	0	4		none
+xnli	Hypothesis	362	0	0	362	298	6		none
+xnli	Premise اور Hypothesis کے درمیان کوئی تعلق نہیں	356	0	0	356	0	4		none
+xnli	Neutral.	342	84	258	0	0	9	neutral	english_substring
+xnli	Contradiction.	323	155	168	0	0	12	contradiction	english_substring
+xnli	假设entails前提。	297	0	0	297	0	3		none
+xnli	Premise اور Hypothesis کے درمیان کوئی واضح تعلق	229	0	0	229	0	4		none
+xnli	假设是entailment。	212	0	0	212	0	4		none
+xnli	假设是entailment，因为它直接从	193	0	0	193	0	3		none
+xnli	premise اور hypothesis کے درمیان کوئی واضح تعلق نہیں ہے	178	0	0	178	0	4		none
+xnli	1. 2. 3.	159	0	0	159	0	1		none
+xnli	Entailment	153	81	72	0	38	15	entailment	exact
+xnli	假设是前提的等同。	133	0	0	133	0	3		none
+xnli	假设是前提的等同关系。	132	0	0	132	0	3		none
+xnli	假设是前提的自然结果。	128	0	0	128	0	4		none
+xnli	假设entails前提，因为假设是前提的	103	0	0	103	0	3		none
+xnli	假设是前提的等同物。	83	0	0	83	0	2		none
+xnli	假设entailment。	81	0	0	81	0	2		none
+xnli	假设是前提的。假设是前提的	76	0	0	76	0	2		none
+xnli	假设是前提的假设。	69	0	0	69	0	3		none
+xnli	假设是前提的等价形式。	62	0	0	62	0	3		none
+xnli	假设和前提之间没有关系。假设是	58	0	0	58	0	4		none
+xnli	前提和假设之间没有明显的关系。	55	0	0	55	0	3		none
+xnli	假设是entailment。假设是前提	54	0	0	54	0	4		none
+xnli	假设是entailment。entailment	46	11	35	0	0	3	entailment	english_substring
+xnli	假设是前提的延伸或结果。	42	0	0	42	0	3		none
+xnli	假设和前提之间没有关系。	34	0	0	34	0	4		none
+xnli	假设是entailment，因为它基于前提	31	0	0	31	0	2		none
+xnli	假设和前提之间没有entailment或	29	0	0	29	0	2		none
+xnli	entailment. La hipótesis se sigue de	27	6	21	0	0	3	entailment	english_substring
+xnli	假设和前提之间存在entailment。	27	0	0	27	0	3		none
+xnli	contradiction.	23	18	5	0	0	4	contradiction	english_substring
+xnli	1. 1. 1.	23	0	0	23	0	2		none
+xnli	假设是前提的逻辑结果。	22	0	0	22	0	3		none
+xnli	假设是前提的直接结果，因为假设是	22	0	0	22	0	3		none
+xnli	前提和假设之间没有关系。	22	0	0	22	0	3		none
+xnli	假设和前提之间没有明显的关系。假设	22	0	0	22	0	3		none
+xnli	假设是entailment，因为它从前提	20	0	0	20	0	3		none
+xnli	假设entails前提，因为它扩展了前提	20	0	0	20	0	3		none
+xnli	假设和前提之间没有明显的关系。	20	0	0	20	0	2		none
+xnli	前提和假设之间没有entailment、	19	0	0	19	0	3		none
+xnli	假设是前提的假设。假设是前提	19	0	0	19	0	2		none
+xnli	假设是正确的。	19	0	0	19	0	3		none
+xnli	假设 entailment	18	7	11	0	0	2	entailment	english_substring
+xnli	假设是前提的entailment。	18	0	0	18	0	1		none
+xnli	假设entailment	16	0	0	16	0	3		none
+xnli	假设是entailment，因为它直接导致	16	0	0	16	0	3		none
+xnli	假设是前提的自然延伸，强调了	16	0	0	16	0	3		none
+xnli	假设和前提之间没有entailment、	16	0	0	16	0	2		none
+xnli	Contradictory	16	0	0	16	8	2		none
+xnli	假设是entailment，因为它可以从	15	0	0	15	0	3		none
+xnli	اس کے لیے کوئی جواب نہیں ہے۔	15	0	0	15	0	3		none
+xnli	假设是前提的直接结果。假设是	14	0	0	14	0	3		none
+xnli	premise اور hypothesis کے درمیان کوئی واضح فرق نہیں ہے	13	0	0	13	0	2		none
+xnli	假设 entailment.	13	3	10	0	0	1	entailment	english_substring
+xnli	假设是entailment，因为它意味着前提	12	0	0	12	0	2		none
+xnli	假设是正确的，因为它与前提相矛盾	12	6	6	0	0	4	contradiction	native_substring
+xnli	premise اور hypothesis کا موازنہ کریں۔	12	0	0	12	7	2		none
+xnli	假设是前提的自然延伸。	12	0	0	12	0	1		none
+xnli	假设entails 前提，因为假设是前提	12	0	0	12	0	2		none
+xnli	Con	12	0	0	12	0	1		none
+xnli	假设是前提的等同关系，因为它	11	0	0	11	0	2		none
+xnli	假设是前提的矛盾。	11	8	3	0	0	3	contradiction	native_substring
+xnli	假设是前提的必要条件。	11	0	0	11	0	3		none
+xnli	假设entails 前提。	11	0	0	11	0	2		none
+xnli	假设entails前提，因为它提供了一个关于	10	0	0	10	0	2		none
+xnli	假设是前提的否定。假设否定了	10	0	0	10	0	3		none
+xnli	یہ ایک پیش گوئی ہے.	10	0	0	10	0	1		none
+xnli	Entailment. The hypothesis is entailed by	9	3	6	0	0	2	entailment	english_substring
+xnli	假设是前提的等价物。	9	0	0	9	0	3		none
+xnli	假设和前提之间存在entailment关系	9	0	0	9	0	2		none
+xnli	前提和假设之间没有entailment或	9	0	0	9	0	2		none
+xnli	假设与前提之间存在entailment。	9	0	0	9	0	2		none
+xnli	لازم	8	0	0	8	8	3		none
+xnli	假设和前提是等同的，因为它们	8	0	0	8	0	3		none
+xnli	假设是前提的推论。假设是	8	0	0	8	0	3		none
+xnli	假设是前提的矛盾，因为假设否定了	8	7	1	0	0	1	contradiction	native_substring
+xnli	منسلک	7	0	0	7	3	3		none
+xnli	前提和假设是两个不同的概念。前提	7	0	0	7	0	2		none
+xnli	neutral.	7	2	5	0	0	3	neutral	english_substring
+xnli	یہ دونوں الفاظ ایک دوسرے سے منسلک	7	0	0	7	0	3		none
+xnli	پیش فرض اور ہپوٹھیسیس	7	0	0	7	0	3		none
+xnli	غلط	7	0	0	7	7	2		none
+xnli	لازمی	6	2	4	0	3	2	entailment	native_exact
+xnli	假设是前提的扩展或补充。假设	6	0	0	6	0	3		none
+xnli	。。。	6	0	0	6	0	3		none
+xnli	相反	6	0	0	6	0	2		none
+xnli	假设是前提的自然延伸，假设是	6	0	0	6	0	3		none
+xnli	假设entailment。假设是前提的	6	0	0	6	0	2		none
+xnli	假设entails前提，因为假设是基于前提	6	0	0	6	0	1		none
+xnli	假设entails前提，因为它包含了前提	6	0	0	6	0	2		none
+xnli	假设entails前提，因为它提供了一个可能	6	0	0	6	0	1		none
+xnli	假设是前提的延伸或结果。假设	6	0	0	6	0	2		none
+xnli	تو، وہ پسند ہے، ٹھیک ہے،	6	0	0	6	0	2		none
+xnli	یہ پیش گوئی ہے۔	6	0	0	6	0	1		none
+xnli	ہم تمام گریجویٹز سے 1	6	0	0	6	0	2		none
+xnli	لازمی سی بات ہے کہ اس بلند مقصد	6	2	4	0	0	2	entailment	native_substring
+xnli	ہم جنس پرستی کی ایک تصویر کے طور	6	0	0	6	0	2		none
+xnli	پریمیز اور ہپوٹھیس	6	0	0	6	0	1		none
+xnli	1	5	0	0	5	1	3		none
+xnli	假设entails前提，因为它提供了一个与	5	0	0	5	0	2		none
+xnli	假设与前提之间存在矛盾。	5	5	0	0	0	2	contradiction	native_substring
+xnli	假设是前提的解释或扩展。	5	0	0	5	0	3		none
+xnli	premise اور hypothesis کے درمیان کوئی واضح موازنہ	5	0	0	5	0	2		none
+xnli	فرضی	5	0	0	5	5	2		none
+xnli	喜欢	5	0	0	5	0	2		none
+xnli	假设是前提的延伸或扩展。假设	5	0	0	5	0	1		none
+xnli	假设entails前提，因为它从前提中	5	0	0	5	0	1		none
+xnli	假设entails前提，因为它可以从前提	5	0	0	5	0	1		none
+xnli	假设和前提之间的关系是entailment	5	0	0	5	0	3		none
+xnli	假设 entailment。	5	0	5	0	0	2	entailment	english_substring
+xnli	假设是正确的，因为它与前提相一致	5	0	0	5	0	1		none
+xnli	تو، تو، تو، تو، تو،	5	0	0	5	0	2		none
+xnli	2	5	0	0	5	0	1		none
+xnli	تو پھر میں دیکھتا ہوں، میں جانتا ہوں	5	0	0	5	0	2		none
+xnli	假设是前提的，因为假设是前提的	5	0	0	5	0	1		none
+xnli	ہم سیکی فی فیتا اور ہر ممکن	5	0	0	5	0	2		none
+xnli	ہم سب کچھ نہیں چاہتے جو ہم چاہتے	5	0	0	5	0	2		none
+xnli	无	4	0	0	4	0	4		none
+xnli	Entailment. La hipótesis se sigue de	4	0	4	0	0	1	entailment	english_substring
+xnli	contradicción	4	3	1	0	0	3	contradiction	native_exact
+xnli	یہ ایک نتیجہ ہے، کیونکہ یہ ایک پیش	4	0	0	4	0	2		none
+xnli	对抗谎言	4	0	0	4	0	2		none
+xnli	假设entails前提，因为它提供了关于前提	4	0	0	4	0	2		none
+xnli	匹配	4	0	0	4	0	2		none
+xnli	布瑞恩在德克萨斯布	4	0	0	4	0	2		none
+xnli	包含	4	0	0	4	0	2		none
+xnli	假设entails前提，因为它基于前提的	4	0	0	4	0	2		none
+xnli	假设entails前提，因为它提供了一个解释	4	0	0	4	0	1		none
+xnli	假设和前提是相同的。	4	0	0	4	0	3		none
+xnli	假设是前提的延伸或扩展，假设	4	0	0	4	0	1		none
+xnli	Implicación	4	2	2	0	0	2	entailment	native_exact
+xnli	假设是中立的，因为它没有提供	4	1	3	0	0	1	neutral	native_substring
+xnli	یہ ایک پیش گوئی ہے، ایک پیش گو	4	0	0	4	0	1		none
+xnli	مکمل طور پر مرکزی یا مہذبی سی	4	0	0	4	0	2		none
+xnli	ہم زیادہ سے زیادہ مقصد کا مقصد اور	4	0	0	4	0	2		none
+xnli	ہم نے GAO میں بہتری کی ضرورت	4	0	0	4	0	2		none
+xnli	ہم صرف یہ جاننے کی کوشش کر	4	0	0	4	0	2		none
+xnli	ہم اچھے وکلاء کی تعلیم کو	4	0	0	4	0	2		none
+xnli	انضمامیت	4	1	3	0	4	2	entailment	native_exact
+xnli	premise اور hypothesis کے درمیان ایک واضح فرق ہے۔	4	0	0	4	0	1		none
+xnli	平衡	3	0	0	3	0	3		none
+xnli	Enlace	3	0	0	3	0	3		none
+xnli	(الف) ہر d یا t کو ٹار	3	0	0	3	0	2		none
+xnli	假设是前提的等同关系，因为假设	3	0	0	3	0	2		none
+xnli	假设是中立的，因为它没有明确	3	1	2	0	0	3	neutral	native_substring
+xnli	假设是前提的直接结果，因为假设中	3	0	0	3	0	2		none
+xnli	前提和假设是回答的一部分，社会学	3	0	0	3	0	1		none
+xnli	前提	3	0	0	3	1	2		none
+xnli	前提和假设是两种不同的关系。ent	3	0	0	3	0	2		none
+xnli	ہم وہاں جائیں گے۔	3	0	0	3	0	2		none
+xnli	یہ ایک پیش کش ہے۔	3	0	0	3	0	2		none
+xnli	Hypothesis: 100 barrels of gun	3	0	0	3	0	1		none
+xnli	Hypothesis: Hage was interrogated by FBI	3	0	0	3	0	2		none
+xnli	Hypothesis: Members of the Citywide Friends of	3	0	0	3	0	1		none
+xnli	Premise اور Hypothesis کے درمیان کوئی واضح فرق	3	0	0	3	0	2		none
+xnli	呃，	3	0	0	3	0	2		none
+xnli	因此, 联邦机构需要重新评估其	3	0	0	3	0	2		none
+xnli	或访问总审计局在世界各地的	3	0	0	3	0	2		none
+xnli	假设是前提的延伸，假设是前提	3	0	0	3	0	1		none
+xnli	1. entailment	3	2	1	0	3	2	entailment	english_substring
+xnli	假设是前提的延伸或扩展，提供	3	0	0	3	0	1		none
+xnli	假设entails前提，因为它表明前提是	3	0	0	3	0	1		none
+xnli	肯定。	3	0	0	3	0	2		none
+xnli	随附的是一张回复卡和信封	3	0	0	3	0	1		none
+xnli	Con refuerzos, los españoles consiguieron establecer	3	0	0	3	0	1		none
+xnli	Encarcelado	3	0	0	3	0	1		none
+xnli	Dichos barcos fueron desarrollados para permitir el acceso	3	0	0	3	0	1		none
+xnli	假设是前提的自然延伸，表明假设	3	0	0	3	0	1		none
+xnli	假设是前提。	3	0	0	3	0	1		none
+xnli	假设是肯定的。	3	0	0	3	0	1		none
+xnli	假设entails 前提，因为它扩展了	3	0	0	3	0	1		none
+xnli	اس کے پاس کوئی جواب نہیں ہے کیونکہ یہ سوال	3	0	0	3	0	1		none
+xnli	hypothesis	3	0	0	3	1	1		none
+xnli	Hypothesis: 100 barriles de	3	0	0	3	0	1		none
+xnli	صرف وہی ایک لفظ جواب دیں۔	3	0	0	3	3	1		none
+xnli	ہم اس ہی کو بچانا چاھتے	3	0	0	3	0	2		none
+xnli	نوبت یہاں تک پہنچ گئی ہے کہ ایک	3	0	0	3	0	1		none
+xnli	تو مجھے کل رقم لے کر حساب کرنا پرا	3	0	0	3	0	2		none
+xnli	Aur ye tha, Use kabhi apne l	3	0	0	3	0	1		none
+xnli	تو میں پسند کرتا ہوں، اوہ میرے خ	3	0	0	3	0	2		none
+xnli	یہ ایک پیش گوئی ہے، کیونکہ اگر آپ	3	0	0	3	0	1		none
+xnli	2.	3	0	0	3	0	1		none
+xnli	یہ ایک پیش گوئی ہے، جو کہ ایک	3	0	0	3	0	1		none
+xnli	تناسب میں سانس لینے کا دباؤ	3	0	0	3	0	2		none
+xnli	یہ دونوں ایک دوسرے کو شامل کرتے ہیں، اس	3	0	0	3	0	1		none
+xnli	اس کا مطلب ہے کہ نظام کے تمام آلو	3	0	0	3	0	1		none
+xnli	اگر ہم سوچتے ہیں کہ ہم 1	3	0	0	3	0	1		none
+xnli	مساوات کے بارے میں امریکی نقطہ	3	0	0	3	0	1		none
+xnli	اس کے بعد میں نے کہا کہ، میں نے	3	0	0	3	0	1		none
+xnli	یہ پیش گوئی ہے.	3	0	0	3	0	1		none
+xnli	اس کے نتیجے میں، ہم یہ نتی	3	0	0	3	0	1		none
+xnli	تخمینہ	3	0	0	3	3	2		none
+xnli	اس انتخاب کا سامنا کرنا پڑا،مم	3	0	0	3	0	1		none
+xnli	Tajziya kar ki email, hamain bat	3	0	0	3	0	2		none
+xnli	اسامہ بن لادن اور القاعدہ	3	0	0	3	0	1		none
+xnli	ہم آپ کو کمیونٹی کی تعلیم کے	3	0	0	3	0	2		none
+xnli	اس کے علاوہ، انڈیانا کے	3	0	0	3	0	1		none
+xnli	اس کا نام امالی ہے جس کے معنی امید	3	0	0	3	0	1		none
+xnli	NEA survey ka aik hi sawal hah	3	0	0	3	0	2		none
+xnli	جواب کا ایک حصہ، مجھے شک ہے، عمر	3	0	0	3	0	2		none
+xnli	تو سلیٹ کے پاس کتنے قار	3	0	0	3	0	2		none
+xnli	اس کے علاوہ، یہ صرف اس بات پر	3	0	0	3	0	1		none
+xnli	اس کے سب سے اوپر، ہمارے پاس ناخ	3	0	0	3	0	1		none
+xnli	[مکمل انصاف کے ساتھ، یہ کہا	3	0	0	3	0	1		none
+xnli	مسٹر نیلڈز نے جواب دیا،	3	0	0	3	0	2		none
+xnli	ہم آہنگی	3	0	0	3	3	1		none
+xnli	غیر مبادلہ لین دین- ‎‎	3	0	0	3	0	1		none
+xnli	غیر جانبداری اور رازداری کے تح	3	0	0	3	0	1		none
+xnli	ہم نے ہر علمی شخص سے انٹرویو	3	0	0	3	0	1		none
+xnli	داخل کرنے کے لئے تازہ ترین الفاظ	3	0	0	3	0	1		none
+xnli	ہم اپنے گاؤں کے رابطے بہتر بنا	3	0	0	3	0	1		none
+xnli	Neither.	2	0	0	2	0	1		none
+xnli	Hypothesis، premise سے لازم آتی ہے۔	2	1	1	0	1	2	entailment	native_substring
+xnli	Coniera is in the Atlantic Ocean.	2	0	0	2	0	2		none
+xnli	Contradicción. La hipótesis contradice la	2	1	1	0	0	1	contradiction	native_substring
+xnli	La implicación	2	1	1	0	2	1	entailment	native_substring
+xnli	(جاری رکھنے سے پہلے، قار	2	0	0	2	0	2		none
+xnli	假设是前提的自然延伸，提供了一个	2	0	0	2	0	2		none
+xnli	假设是前提的矛盾，因为假设中提到	2	2	0	0	0	2	contradiction	native_substring
+xnli	假设是前提的矛盾，因为它否定了	2	1	1	0	0	2	contradiction	native_substring
+xnli	假设是前提的否定形式。	2	0	0	2	0	2		none
+xnli	假设是前提的自然延伸，表明在	2	0	0	2	0	2		none
+xnli	假设是前提的推论，因为它推	2	0	0	2	0	1		none
+xnli	假设是前提的矛盾，因为它与前提	2	1	1	0	0	1	contradiction	native_substring
+xnli	假设是前提的延伸或补充。假设	2	0	0	2	0	1		none
+xnli	假设是前提的否定。假设表明，如果	2	0	0	2	0	2		none
+xnli	1. 前提和假设之间存在ent	2	0	0	2	0	2		none
+xnli	前提和假设是两种不同的关系。前提	2	0	0	2	0	2		none
+xnli	Yes, that is correct.	2	0	0	2	0	2		none
+xnli	比较前提和假设。	2	0	0	2	0	2		none
+xnli	假设和前提是不同的。假设是关于	2	0	0	2	0	2		none
+xnli	None of the houses, on the market currently,	2	0	0	2	0	2		none
+xnli	Hypothesis: The military unit was named TX Amb	2	0	0	2	0	1		none
+xnli	Hypothesis: My brother in law was in the	2	0	0	2	0	1		none
+xnli	Hypothesis: Pachucas were young Chican	2	0	0	2	0	2		none
+xnli	Hypothesis: La Delgadina is still present	2	0	0	2	0	1		none
+xnli	Hypothesis: We can draw a conclusion from our	2	0	0	2	0	2		none
+xnli	Hypothesis: We can draw a conclusion from the	2	0	0	2	0	2		none
+xnli	The legal philosophy of the Confederacy triumphed	2	0	0	2	0	1		none
+xnli	Hypothesis: Gehry is a happy person.	2	0	0	2	0	2		none
+xnli	96 And parents and coaches who criticize rather	2	0	0	2	0	1		none
+xnli	Hypothesis: Mies Van der Rohe designed	2	0	0	2	0	2		none
+xnli	H. H. Richardson and his protege Charles F	2	0	0	2	0	1		none
+xnli	Hypothesis: Both Colonel Bishop and Calver	2	0	0	2	0	2		none
+xnli	Hypothesis: Miss Bishop walked through a group of	2	0	0	2	0	1		none
+xnli	Your station is on the gun- deck.	2	0	0	2	0	1		none
+xnli	Hypothesis: I will go ashore in the	2	0	0	2	0	1		none
+xnli	New Brunswick was not a province in 1784	2	0	0	2	0	2		none
+xnli	Hypothesis: Andrea Doria was a great admiral	2	0	0	2	0	2		none
+xnli	Hypothesis: The summer season has the best ports	2	0	0	2	0	2		none
+xnli	Nevada Fall is a crowded area.	2	0	0	2	0	2		none
+xnli	Hypothesis: The 1896 Neo-Goth	2	0	0	2	0	1		none
+xnli	یہ ایک غلطی ہے۔ premise اور hypothesis کے	2	0	0	2	0	2		none
+xnli	See the list of beach highlights on pages 8	2	0	0	2	0	1		none
+xnli	Hypothesis: The terrain is flat.	2	0	0	2	0	2		none
+xnli	یہ ایک پیش کش ہے، جو ایک اصول	2	0	0	2	0	1		none
+xnli	Hypothesis: Principle IV deals with capital development	2	0	0	2	0	1		none
+xnli	Hypothesis: Allenbrand and Drews are getting	2	0	0	2	0	1		none
+xnli	Hypothesis: Demographic data could be averaged.	2	0	0	2	0	1		none
+xnli	Hypothesis: Hazmi and Mihdhar rented	2	0	0	2	0	2		none
+xnli	Hypothesis: Binalshibh was interrogated	2	0	0	2	0	1		none
+xnli	Hypothesis: The fire alarm was disabled due to	2	0	0	2	0	2		none
+xnli	Hypothesis: Bandar al Hazmi came to the	2	0	0	2	0	2		none
+xnli	1,0,0,0	2	0	0	2	0	2		none
+xnli	Hypothesis: Dave sent John exactly one email on	2	0	0	2	0	2		none
+xnli	Hypothesis: Ahmed al Ghamdi, Abdul	2	0	0	2	0	2		none
+xnli	Hypothesis: Hazmi and Mihdhar are	2	0	0	2	0	2		none
+xnli	Hypothesis: KSM was interrogated in	2	0	0	2	0	2		none
+xnli	یہ پیش کش ہے۔	2	0	0	2	0	1		none
+xnli	Hypothesis: The Humane Society helps animals live	2	0	0	2	0	2		none
+xnli	یہ پیش کش ہے کہ ہم امریکیوں کو	2	0	0	2	0	1		none
+xnli	Hypothesis: Eugene Debs was from Indiana.	2	0	0	2	0	2		none
+xnli	ہم اچھے وکلا کی تعلیم کو	2	0	0	2	0	1		none
+xnli	Your membership will provide you with admittance to	2	0	0	2	0	1		none
+xnli	Hypothesis: The AMRA Annual Meeting was in	2	0	0	2	0	1		none
+xnli	ہم سب گریجویٹس سے 1	2	0	0	2	0	1		none
+xnli	Hypothesis: Brit Hume works for CNN.	2	0	0	2	0	2		none
+xnli	Hypothesis: Talmudic has no problems	2	0	0	2	0	1		none
+xnli	Hypothesis: Weisberg wrote about dogs.	2	0	0	2	0	2		none
+xnli	Hypothesis: James Surowiecki's Money	2	0	0	2	0	1		none
+xnli	یہ ایک انتہائی غیر معمولی اور غیر	2	0	0	2	0	2		none
+xnli	Hypothesis: Michael Lewis wrote a book called Trail	2	0	0	2	0	2		none
+xnli	Hypothesis: Glenn Loury is not your typical	2	0	0	2	0	2		none
+xnli	De Kooning is old.	2	0	0	2	0	2		none
+xnli	Third, even if we accept the conclusions, they	2	0	0	2	0	1		none
+xnli	premise اور hypothesis کے درمیان فرق یہ ہے کہ premise	2	0	0	2	0	2		none
+xnli	Hypothesis: Some ethnic groups have a lot of	2	0	0	2	0	2		none
+xnli	Premise اور hypothesis کے درمیان کوئی واضح تعلق نہیں	2	0	0	2	0	1		none
+xnli	cross- talk may at times resemble all three iron	2	0	0	2	0	1		none
+xnli	Hypothesis: Honey can speak several accents.	2	0	0	2	0	2		none
+xnli	See that curious little beast over there?	2	0	0	2	0	1		none
+xnli	Hypothesis.	2	0	0	2	0	1		none
+xnli	کچھ ناموں کی ایک منفرد آواز ہے	2	0	0	2	0	2		none
+xnli	阻碍	2	0	0	2	0	2		none
+xnli	有关详细信息, 请参阅//	2	0	0	2	0	1		none
+xnli	非交换交易-损益	2	0	0	2	0	2		none
+xnli	相匹配	2	0	0	2	0	2		none
+xnli	呃，我不觉得这是一个我喜欢的	2	0	0	2	0	1		none
+xnli	假设是entailment，因为假设是前提	2	0	0	2	0	1		none
+xnli	前提和假设之间存在entailment关系	2	0	0	2	0	1		none
+xnli	隐含	2	0	0	2	0	1		none
+xnli	假设entails前提，因为它直接导致了	2	0	0	2	0	1		none
+xnli	假设entails前提，因为假设提供了关于前提	2	0	0	2	0	2		none
+xnli	假设entails前提，因为它暗示着前提	2	0	0	2	0	1		none
+xnli	柯达伊·可人（柯达	2	0	0	2	0	2		none
+xnli	前提和假设之间存在entailment。	2	0	0	2	0	1		none
+xnli	假设和前提之间存在矛盾。	2	2	0	0	0	2	contradiction	native_substring
+xnli	假设entails前提，因为它提供了一个合理的	2	0	0	2	0	1		none
+xnli	因此我很高兴今天能邀请你成为	2	0	0	2	0	1		none
+xnli	交叉谈话有时与所有三讽刺	2	0	0	2	0	1		none
+xnli	关系: 矛盾	2	0	2	0	0	1	contradiction	native_substring
+xnli	正如Black所言，公民的特	2	0	0	2	0	1		none
+xnli	否则	2	0	0	2	0	1		none
+xnli	此外，鉴于GAO的令人印象深刻	2	0	0	2	0	1		none
+xnli	展望未来，约有三分之一	2	0	0	2	0	1		none
+xnli	1. Entailment: Premise اور	2	2	0	0	0	1	entailment	english_substring
+xnli	Conceder	2	0	0	2	0	1		none
+xnli	En lo mío no he hecho nada de lo	2	0	0	2	0	1		none
+xnli	En consecuencia, los responsables de la toma de decisiones	2	0	0	2	0	1		none
+xnli	En consecuencia, las agencias federales deben volver a	2	0	0	2	0	1		none
+xnli	Conclusión:	2	0	0	2	0	1		none
+xnli	假设entails 前提，因为它提供了关于	2	0	0	2	0	1		none
+xnli	假设是entailment，因为它意味着“	2	0	0	2	0	1		none
+xnli	假设 entailment。假设是前提的	2	0	2	0	0	1	entailment	english_substring
+xnli	Brian en Plano, Texas, ¿cómo estás	2	0	0	2	0	1		none
+xnli	EE. UU. ya que Francia tiene una gama	2	0	0	2	0	1		none
+xnli	假设是entailment，因为它暗示了	2	0	0	2	0	1		none
+xnli	Premise: Mmm, ¿ninguno?	2	0	0	2	0	1		none
+xnli	Hypothesis: Kennedy habló con los pilotos	2	0	0	2	0	1		none
+xnli	Hypothesis: Las nubes moleculares son	2	0	0	2	0	1		none
+xnli	فرضیہ	2	0	0	2	2	1		none
+xnli	Hypothesis: La casa de Balzac y el	2	0	0	2	0	1		none
+xnli	صحیح۔	2	0	0	2	0	1		none
+xnli	فرضی: EE. UU. ya que Francia	2	0	0	2	0	1		none
+xnli	اس کے لیے کوئی جواب نہیں ہے، کیونکہ یہ	2	0	0	2	0	1		none
+xnli	فرضیہ: تقریبا 2.1	2	0	0	2	0	1		none
+xnli	یہ بیان پیش کیا گیا ہے کہ کونڈلی	2	0	0	2	0	1		none
+xnli	فرضی اور فرضی کے درمیان فرق یہ ہے	2	0	0	2	0	1		none
+xnli	اس کے بعد، YMCA کا مقصد	2	0	0	2	0	1		none
+xnli	اس کے پاس کوئی جواب نہیں ہے۔	2	0	0	2	0	2		none
+xnli	Split Ends, tienda de cosmética, es	2	0	0	2	0	1		none
+xnli	假设和前提是密切相关的概念。假设	2	0	0	2	0	1		none
+xnli	ھمم، نہیں، سچ پوچھو تو	2	0	0	2	0	1		none
+xnli	تو اس کی بہن کے شوہر بھی ہ	2	0	0	2	0	1		none
+xnli	ہم نے انیس سو ساٹھ میں اپنی	2	0	0	2	0	2		none
+xnli	یہ ایک پیش گوئی ہے۔	2	0	0	2	0	1		none
+xnli	آپ کے پیش نظر اور فرض کے درمیان کوئی تعلق	2	0	0	2	0	1		none
+xnli	آپ کے کتنے بچے ہیں؟	2	0	0	2	0	2		none
+xnli	假设是entailment.	2	0	0	2	0	1		none
+xnli	ہم ٹیکنالوجی بھرے مستقبل میں	2	0	0	2	0	2		none
+xnli	ہم ٹیکنالوجی کو کامیاب ہونے	2	0	0	2	0	2		none
+xnli	یہ ایک انتہائی واضح پیش گوئی ہے	2	0	0	2	0	1		none
+xnli	ہم اپنی سیمولیشن سے ایک نتیجہ	2	0	0	2	0	2		none
+xnli	ہم اپنی کمپیوٹر پر کی گئی س	2	0	0	2	0	2		none
+xnli	ہم کوئی نتیجہ ماخوذ نہیں کر سکتے	2	0	0	2	0	2		none
+xnli	گیلے بیک کے تجربے کی تف	2	0	0	2	0	1		none
+xnli	اس کے اپنے آلات پر بائیں طرف، یہ	2	0	0	2	0	1		none
+xnli	ایلوس یا لیپریکانز جن کا	2	0	0	2	0	1		none
+xnli	假设是前提的，因为它依赖于前提	2	0	0	2	0	1		none
+xnli	یہ اوقات کا مزہ تھا.	2	0	0	2	0	2		none
+xnli	hamari biography ki trha aik khas badal	2	0	0	2	0	1		none
+xnli	پیش گوئی	2	0	0	2	2	1		none
+xnli	اس کے باوجود وہ باہر نہیں آ رہی	2	0	0	2	0	1		none
+xnli	1. 1896 نوگو گوت	2	0	0	2	0	1		none
+xnli	اگر آپ چائے کی تقریب سے منسل	2	0	0	2	0	1		none
+xnli	مضبوطی کے ساتھ، ہسپان	2	0	0	2	0	1		none
+xnli	اس کے نتیجے میں، حکومتی نم	2	0	0	2	0	1		none
+xnli	اس کے مطابق، وفاقی ایجنسی	2	0	0	2	0	1		none
+xnli	اس کے نتیجے میں، یہ نتیجہ	2	0	0	2	0	1		none
+xnli	1. Section 3.2.9	2	0	0	2	0	1		none
+xnli	اگرچہ سی آر تعلقات عام طور پر	2	0	0	2	0	1		none
+xnli	ہم GAO میں بہتری کی ضرورت کے	2	0	0	2	0	2		none
+xnli	اس ہائبریڈ /مخلوط	2	0	0	2	0	1		none
+xnli	اس کی پیش گوئی ہے کہ جرمن حکومت	2	0	0	2	0	1		none
+xnli	یہ ایک پیشنگوئی ہے.	2	0	0	2	0	1		none
+xnli	1. 1998 mai Clarke nai aik	2	0	0	2	0	1		none
+xnli	جبکہ وہ شہر بھر میں ساؤل	2	0	0	2	0	1		none
+xnli	ہم نے ہر سوموار اور جمعہ کو ایک	2	0	0	2	0	2		none
+xnli	ہم $2 ملین کی منزل مقصود تک	2	0	0	2	0	2		none
+xnli	ہم باقی 38 فیصد کی فراہ	2	0	0	2	0	2		none
+xnli	ہم امید کرتے ہیں کہ آپ ان سے بات کرنے	2	0	0	2	0	2		none
+xnli	بیجوں کی رقم کے طور پر استعمال کے	2	0	0	2	0	1		none
+xnli	قابل ستائش نمبروں کے باوجود،	2	0	0	2	0	1		none
+xnli	6 کے لئے مائکروویو کو	2	0	0	2	0	1		none
+xnli	[entailment]	2	1	1	0	0	1	entailment	english_substring
+xnli	تو ایک ہائبرڈ پلان کے بارے	2	0	0	2	0	1		none
+xnli	مسز ڈالووے کے لئے تعریفی پی	2	0	0	2	0	1		none
+xnli	اس نے اس لفظ سے ایک نظم لکھی	2	0	0	2	0	2		none
+xnli	اس معاملے میں اسکیٹ اس نوٹ	2	0	0	2	0	1		none
+xnli	مسٹر نیلڈز نے کہا کہ وہ	2	0	0	2	0	2		none
+xnli	اس کے علاوہ، شائع کرنے والے آج کل	2	0	0	2	0	1		none
+xnli	اس کے باوجود، ہنی کا علاج عملی	2	0	0	2	0	1		none
+xnli	تو میں بالکل پر یقین نہیں ہوں کہ کیوں۔	2	0	0	2	0	1		none
+xnli	ہم سب نے کیا ہے، انہوں نے ہمیں کسی	2	0	0	2	0	1		none
+xnli	ہم نہیں جانتے تھے کہ وہ کہاں جا رہے تھے	2	0	0	2	0	1		none
+xnli	برہنہ شہر میں کئی د	2	0	0	2	0	1		none
+xnli	یہ دونوں ایک دوسرے سے منسلک ہیں۔	2	0	0	2	0	1		none
+xnli	تو ویسے بھی، ام، وہ وہاں آ	2	0	0	2	0	1		none
+xnli	Contradiction۔	2	1	1	0	0	1	contradiction	english_substring
+xnli	تو آپ نے کہا کہ آپ کے بچے	2	0	0	2	0	1		none
+xnli	ہم اصل میں تاریخی طبیعی ماہر نہیں	2	0	0	2	0	1		none
+xnli	تو میں یہ جاری رکھنا چاہتا ہوں کیونکہ	2	0	0	2	0	1		none
+xnli	نہیں، میں اس فیصلہ سے مطمئن نہیں ہوں	2	0	0	2	0	1		none
+xnli	ایچ ایچ رچرڈسن اور	2	0	0	2	0	1		none
+xnli	مساوی طور پر غیر یقینی طور پر	2	0	0	2	0	1		none
+xnli	آپ صحیح ہو سکتے ہیں، اور آپ غلط ہ	2	0	0	2	0	1		none
+xnli	ایف بی آئی کے قانونی انتباہ	2	0	0	2	0	1		none
+xnli	تو، یہ ایک ہائبرڈ پلان	2	0	0	2	0	1		none
+xnli	2.0.0.0 alfaz	2	0	0	2	0	1		none
+xnli	Conidera is in the Sant Antoni Bay.	1	0	0	1	0	1		none
+xnli	The hypothesis is entailed by the premise. The	1	0	0	1	0	1		none
+xnli	Alarming	1	0	0	1	0	1		none
+xnli	None of the neighborhoods had rezadores or rezadoras	1	0	0	1	0	1		none
+xnli	یہ premise اور hypothesis کے درمیان کوئی تعلق نہیں ہے	1	0	0	1	0	1		none
+xnli	entailment. The hypothesis is entailed by	1	0	1	0	0	1	entailment	english_substring
+xnli	Coniera is in the Bay of San Antonio.	1	0	0	1	0	1		none
+xnli	Contraindicado.	1	0	0	1	0	1		none
+xnli	Contradicción. La premisa establece que si se	1	0	1	0	0	1	contradiction	native_substring
+xnli	interaction.	1	0	0	1	0	1		none
+xnli	La implicación (entailment)	1	0	1	0	0	1	entailment	english_substring
+xnli	Hypothesis is entailed by the premise.	1	0	0	1	0	1		none
+xnli	ایڈوب ہومز خطرناک تھی	1	0	0	1	1	1		none
+xnli	نیچے دی گئی premise اور hypothesis کے درمیان کوئی	1	0	0	1	0	1		none
+xnli	Hypothesis: بچوں کو چھوٹے کشتیوں	1	0	0	1	0	1		none
+xnli	‎‎فوائد اور نقصانات۔	1	0	0	1	0	1		none
+xnli	‎‎contradictory	1	0	0	1	1	1		none
+xnli	لازم آتی ہے	1	0	1	0	1	1	entailment	native_exact
+xnli	لازمی سی بات ہے کہ اس کتاب کے شائع	1	0	1	0	0	1	entailment	native_substring
+xnli	لازمی سی بات ہے کہ ہم آج سے روز	1	0	1	0	0	1	entailment	native_substring
+xnli	جواب: جواب: جواب: جواب: جواب:	1	0	0	1	0	1		none
+xnli	یہ premise سے لازم آتی ہے۔	1	0	1	0	0	1	entailment	native_substring
+xnli	Confrontation	1	0	0	1	0	1		none
+xnli	假设是前提的同义词。	1	0	0	1	0	1		none
+xnli	假设: We cant draw any conclusions.	1	0	0	1	0	1		none
+xnli	假设和前提之间存在矛盾。假设中	1	1	0	0	0	1	contradiction	native_substring
+xnli	前提和假设是相同的，因为它们都涉及	1	0	0	1	0	1		none
+xnli	假设是前提的延伸，提供额外的	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾，因为前提描述的是	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的延伸，表明假设是	1	0	0	1	0	1		none
+xnli	假设。假设是前提的否定或反	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾，因为前提中提到	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是错误的，因为 Title 7 涉及	1	0	0	1	0	1		none
+xnli	假设entails a contradiction with the premise.	1	1	0	0	0	1	contradiction	english_substring
+xnli	我们使用公式来计算每站大约可以	1	0	0	1	0	1		none
+xnli	假设是前提的延伸或扩展，表明	1	0	0	1	0	1		none
+xnli	假设是entailment，因为它表明前提	1	0	0	1	0	1		none
+xnli	假设是前提的直接结果，因为它基于	1	0	0	1	0	1		none
+xnli	假设是前提的直接结果，因为如果您	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾，因为假设声称心脏	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的替代形式，用于提供	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾，因为前提是周一	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的直接结果，因为如果 Clinton	1	0	0	1	0	1		none
+xnli	Yes, I am serious.	1	0	0	1	0	1		none
+xnli	是的，我是认真的。	1	0	0	1	0	1		none
+xnli	假设是前提的解释或补充。	1	0	0	1	0	1		none
+xnli	是的，Red，您说的正确。	1	0	0	1	0	1		none
+xnli	是的，红是正确的。	1	0	0	1	0	1		none
+xnli	Imagination	1	0	0	1	0	1		none
+xnli	Gambler	1	0	0	1	0	1		none
+xnli	Hybrid.	1	0	0	1	0	1		none
+xnli	Appreciation	1	0	0	1	0	1		none
+xnli	HIC	1	0	0	1	0	1		none
+xnli	Sociology	1	0	0	1	0	1		none
+xnli	Polysemy	1	0	0	1	0	1		none
+xnli	Hypothesis: I dealt with the U2's	1	0	0	1	0	1		none
+xnli	Hypothesis: Tests were done in the miniature altitude	1	0	0	1	0	1		none
+xnli	Hypothesis: I retired in 2020.	1	0	0	1	0	1		none
+xnli	Hypothesis: The client named Cutty makes $	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a client named Cutty	1	0	0	1	0	1		none
+xnli	Hypothesis: We don't have any clients called Cut	1	0	0	1	0	1		none
+xnli	Hypothesis: One child died out of the five	1	0	0	1	0	1		none
+xnli	Hypothesis: The U2 took a lot of	1	0	0	1	0	1		none
+xnli	Hypothesis: The U2 took a ton of	1	0	0	1	0	1		none
+xnli	Hypothesis: We had no footage, so we	1	0	0	1	0	1		none
+xnli	Hypothesis: The radiation can be contained during a	1	0	0	1	0	1		none
+xnli	Hypothesis: The radiation would leak out from a	1	0	0	1	0	1		none
+xnli	Hypothesis: The radiation would not leak out during	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ چیف نے امر	1	0	0	1	0	1		none
+xnli	Hypothesis: The Chief just recently retired a few	1	0	0	1	0	1		none
+xnli	Hypothesis: More than one aircraft arrive every week	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے، کیونکہ یہ ایک	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے جو ایک فرضی	1	0	0	1	0	1		none
+xnli	Hypothesis: The bomb had been deactivated by	1	0	0	1	0	1		none
+xnli	Hypothesis: I will calculate it based off of	1	0	0	1	0	1		none
+xnli	Hypothesis: He continued to live in Augusta.	1	0	0	1	0	1		none
+xnli	Hypothesis: They never told us where they were	1	0	0	1	0	1		none
+xnli	They are paying for housing.	1	0	0	1	0	1		none
+xnli	Hypothesis: Kennedy told our troops to look for	1	0	0	1	0	1		none
+xnli	Hypothesis: They didn't stop any ships because they	1	0	0	1	0	1		none
+xnli	Hypothesis: They found 20 missiles	1	0	0	1	0	1		none
+xnli	Hypothesis: The man entered the room.	1	0	0	1	0	1		none
+xnli	Hypothesis: My grandparents were a very loving couple	1	0	0	1	0	1		none
+xnli	Hypothesis: I entered it in all on time	1	0	0	1	0	1		none
+xnli	Hypothesis: The atomic bomb has no trigger.	1	0	0	1	0	1		none
+xnli	Hypothesis: You can get the suits in any	1	0	0	1	0	1		none
+xnli	Hypothesis: We had no training with anyone.	1	0	0	1	0	1		none
+xnli	Hypothesis: We trained for 5 weeks with	1	0	0	1	0	1		none
+xnli	Hypothesis: We trained with a lot of other	1	0	0	1	0	1		none
+xnli	Hypothesis: She didn't speak to me.	1	0	0	1	0	1		none
+xnli	Hypothesis: I haven't read any books longer than	1	0	0	1	0	1		none
+xnli	Hypothesis: I read books every day.	1	0	0	1	0	1		none
+xnli	Hypothesis: I was not chosen to attend the	1	0	0	1	0	1		none
+xnli	Hypothesis: I was picked to go to that	1	0	0	1	0	1		none
+xnli	Hypothesis: I cover completely new material.	1	0	0	1	0	1		none
+xnli	Hypothesis: I cover the same stuff as the	1	0	0	1	0	1		none
+xnli	Hypothesis: I could do something.	1	0	0	1	0	1		none
+xnli	Hypothesis: I knew there was nothing I could	1	0	0	1	0	1		none
+xnli	Hypothesis: I think I could have done something	1	0	0	1	0	1		none
+xnli	Hypothesis: I borrowed her phone to make the	1	0	0	1	0	1		none
+xnli	Hypothesis: I called the number when I arrived	1	0	0	1	0	1		none
+xnli	Hypothesis: I was supposed to call, but	1	0	0	1	0	1		none
+xnli	Hypothesis: I didn't go today so I didn't	1	0	0	1	0	1		none
+xnli	ہم نہیں جانتے تھے کہ وہ کہاں جا رہے ہیں	1	0	0	1	0	1		none
+xnli	Hypothesis: I had no appetite at all.	1	0	0	1	0	1		none
+xnli	Hypothesis: It never entered my mind to quit	1	0	0	1	0	1		none
+xnli	Hypothesis: He was born before 1900	1	0	0	1	0	1		none
+xnli	Hypothesis: He was born in december of	1	0	0	1	0	1		none
+xnli	Hypothesis: He wasn't born until 1984	1	0	0	1	0	1		none
+xnli	Hypothesis: I have never been to Texas.	1	0	0	1	0	1		none
+xnli	Hypothesis: The kids drank 3 bottles of	1	0	0	1	0	1		none
+xnli	Hypothesis: The kids drank some of the champagne	1	0	0	1	0	1		none
+xnli	آپ کا جواب صحیح ہے۔	1	0	0	1	0	1		none
+xnli	Hypothesis: I understood the point.	1	0	0	1	0	1		none
+xnli	ہم ٹی وی دیکھ رہے تھے۔	1	0	0	1	0	1		none
+xnli	ہم کسی ٹی وی پروگرام پر کچھ	1	0	0	1	0	1		none
+xnli	Hypothesis: I talked to Ramona another time	1	0	0	1	0	1		none
+xnli	Hypothesis: It was an enjoyable conversation.	1	0	0	1	0	1		none
+xnli	1000 people died in the Cuban Crisis	1	0	0	1	0	1		none
+xnli	Hypothesis: I don't know how I was supposed	1	0	0	1	0	1		none
+xnli	Hypothesis: I don't know what I was supposed	1	0	0	1	0	1		none
+xnli	Hypothesis: I knew just what to use it	1	0	0	1	0	1		none
+xnli	Hypothesis: I am ready to go right now	1	0	0	1	0	1		none
+xnli	Hypothesis: I have never been to Washington DC	1	0	0	1	0	1		none
+xnli	Hypothesis: I went to DC to see my	1	0	0	1	0	1		none
+xnli	Hypothesis: I went to the nation's capital.	1	0	0	1	0	1		none
+xnli	Yes, I did like and hate certain books.	1	0	0	1	0	1		none
+xnli	Hypothesis: The screw affects the pressure.	1	0	0	1	0	1		none
+xnli	Hypothesis: The screw is tiny and silver.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are no screws, just buttons	1	0	0	1	0	1		none
+xnli	Hypothesis: Kennedy didn't acknowledge them.	1	0	0	1	0	1		none
+xnli	Kennedy spoke to the Air Force pilots.	1	0	0	1	0	1		none
+xnli	Kennedy talked to the pilots.	1	0	0	1	0	1		none
+xnli	Hypothesis: She was born January 1,	1	0	0	1	0	1		none
+xnli	Hypothesis: She wasn't born until 1934	1	0	0	1	0	1		none
+xnli	Hypothesis: I wasn’t interested at all.	1	0	0	1	0	1		none
+xnli	Hypothesis: It was interesting to me.	1	0	0	1	0	1		none
+xnli	Hypothesis: No one gave any sort of support	1	0	0	1	0	1		none
+xnli	Hypothesis: One man gave physiological support to the	1	0	0	1	0	1		none
+xnli	Hypothesis: One man gave physiological support.	1	0	0	1	0	1		none
+xnli	Hypothesis: We were not allowed to make a	1	0	0	1	0	1		none
+xnli	Hypothesis: I lived in Texas.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Laughlin Air Force Base closed	1	0	0	1	0	1		none
+xnli	Hypothesis: The Laughlin Air Force Base has	1	0	0	1	0	1		none
+xnli	Hypothesis: The Laughlin Air Force Base is	1	0	0	1	0	1		none
+xnli	Hypothesis: I called Ramona over to my	1	0	0	1	0	1		none
+xnli	Hypothesis: I called Ramona over to where	1	0	0	1	0	1		none
+xnli	Hypothesis: The Air Force bought 18 planes	1	0	0	1	0	1		none
+xnli	Hypothesis: The Air Force bought planes.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Air Force didn't have any planes	1	0	0	1	0	1		none
+xnli	Hypothesis: Her sister is married to a black	1	0	0	1	0	1		none
+xnli	Hypothesis: Her sister is married.	1	0	0	1	0	1		none
+xnli	Hypothesis: Her sister is single.	1	0	0	1	0	1		none
+xnli	Hypothesis: She never admitted that she was wrong	1	0	0	1	0	1		none
+xnli	Hypothesis: My brother never enlisted.	1	0	0	1	0	1		none
+xnli	Hypothesis: I thought I was going to led	1	0	0	1	0	1		none
+xnli	Hypothesis: I thought I was going to let	1	0	0	1	0	1		none
+xnli	Hypothesis: I wasn't going to let anyone else	1	0	0	1	0	1		none
+xnli	Hypothesis: He asked how things were going.	1	0	0	1	0	1		none
+xnli	Hypothesis: He asked if we were finishing the	1	0	0	1	0	1		none
+xnli	تو، میں نے اس دن تقریبا ایک	1	0	0	1	0	1		none
+xnli	تو میں نے ایک دن کے لیے تقریبا	1	0	0	1	0	1		none
+xnli	Hypothesis: Two guys trained me.	1	0	0	1	0	1		none
+xnli	Hypothesis: You'd have to tinker with	1	0	0	1	0	1		none
+xnli	Hypothesis: I had set the injector on	1	0	0	1	0	1		none
+xnli	Hypothesis: I was a 9.2	1	0	0	1	0	1		none
+xnli	Hypothesis: I was never a 9-	1	0	0	1	0	1		none
+xnli	Hypothesis: I was in Special Activities every other	1	0	0	1	0	1		none
+xnli	Hypothesis: I was in Special Activities.	1	0	0	1	0	1		none
+xnli	Hypothesis: I was never in Special Activities.	1	0	0	1	0	1		none
+xnli	Hypothesis: I knew the work needed to be	1	0	0	1	0	1		none
+xnli	Hypothesis: They had twenty family members living in	1	0	0	1	0	1		none
+xnli	Hypothesis: They lived in Atlanta.	1	0	0	1	0	1		none
+xnli	Hypothesis: I said I like the new version	1	0	0	1	0	1		none
+xnli	Hypothesis: I said that I approved of it	1	0	0	1	0	1		none
+xnli	Hypothesis: I ate the pizza in less than	1	0	0	1	0	1		none
+xnli	Hypothesis: I scarfed the food down.	1	0	0	1	0	1		none
+xnli	Hypothesis: I have never been to Los Vegas	1	0	0	1	0	1		none
+xnli	Hypothesis: I have worked in both Las Vegas	1	0	0	1	0	1		none
+xnli	Hypothesis: I worked as a cab driver in	1	0	0	1	0	1		none
+xnli	Hypothesis: The tabs have a lot of data	1	0	0	1	0	1		none
+xnli	Hypothesis: They never moved to Charlotte.	1	0	0	1	0	1		none
+xnli	Hypothesis: They don't have any of the files	1	0	0	1	0	1		none
+xnli	Hypothesis: They keep all the files.	1	0	0	1	0	1		none
+xnli	Hypothesis: They keep the medical and legal files	1	0	0	1	0	1		none
+xnli	Hypothesis: She gave me two different versions.	1	0	0	1	0	1		none
+xnli	Hypothesis: She gave me two types of instructions	1	0	0	1	0	1		none
+xnli	Hypothesis: I was told to go to DC	1	0	0	1	0	1		none
+xnli	Hypothesis: The army sent me to DC right	1	0	0	1	0	1		none
+xnli	Hypothesis: Our house in Concord couldn	1	0	0	1	0	1		none
+xnli	Hypothesis: Our house in Concord had	1	0	0	1	0	1		none
+xnli	Hypothesis: We sold all our animals when we	1	0	0	1	0	1		none
+xnli	Hypothesis: We deployed our forces in 1	1	0	0	1	0	1		none
+xnli	Hypothesis: We never ended up deploying anyone.	1	0	0	1	0	1		none
+xnli	Hypothesis: We sent our troops to Japan in	1	0	0	1	0	1		none
+xnli	Hypothesis: She said her mom also walks on	1	0	0	1	0	1		none
+xnli	Hypothesis: She said her mom has the same	1	0	0	1	0	1		none
+xnli	Hypothesis: I have no memories of that house	1	0	0	1	0	1		none
+xnli	Hypothesis: I did not know how to do	1	0	0	1	0	1		none
+xnli	ہم نے دوبارہ نقل مکانی کی۔	1	0	0	1	1	1		none
+xnli	Hypothesis: I was very close friends with Mrs	1	0	0	1	0	1		none
+xnli	Hypothesis: Mrs. Faulk drove a yellow	1	0	0	1	0	1		none
+xnli	Hypothesis: We lived there in the green house	1	0	0	1	0	1		none
+xnli	ہم وہاں بہت سال رہے۔	1	0	0	1	0	1		none
+xnli	Hypothesis: We only lived there two weeks.	1	0	0	1	0	1		none
+xnli	Hypothesis: He is 2 years older than	1	0	0	1	0	1		none
+xnli	Hypothesis: I was so happy and relaxed!	1	0	0	1	0	1		none
+xnli	ہم تکنیکی مستقبل میں داخل ہونے کے لیے در	1	0	0	1	0	1		none
+xnli	ہم ٹرانزسٹر بناتے ہیں،	1	0	0	1	0	1		none
+xnli	Hypothesis: I know they never travel near the	1	0	0	1	0	1		none
+xnli	Hypothesis: Some people believed that all people are	1	0	0	1	0	1		none
+xnli	Hypothesis: The sea was green and appeared to	1	0	0	1	0	1		none
+xnli	Hypothesis: Calabi-Yau spaces are compact	1	0	0	1	0	1		none
+xnli	Hypothesis: Calabi-Yau spaces are represented	1	0	0	1	0	1		none
+xnli	Hypothesis: Children are incapable of sharing higher forms	1	0	0	1	0	1		none
+xnli	None of the neighborhoods had spiritual leaders who weren	1	0	0	1	0	1		none
+xnli	Hypothesis: Trimers and photons can be added	1	0	0	1	0	1		none
+xnli	Hypothesis: You can't add things at a constant	1	0	0	1	0	1		none
+xnli	Hypothesis: You should add trimers and photons	1	0	0	1	0	1		none
+xnli	Hypothesis: A daughter's tenth birthday is a	1	0	0	1	0	1		none
+xnli	Hypothesis: Celebration of a daughter's fifteenth	1	0	0	1	0	1		none
+xnli	Sonja is a child.	1	0	0	1	0	1		none
+xnli	Sonja was upset.	1	0	0	1	0	1		none
+xnli	Hypothesis: Natural selection always happens.	1	0	0	1	0	1		none
+xnli	Hypothesis: There is no interplay.	1	0	0	1	0	1		none
+xnli	Hypothesis: There must be some interplay.	1	0	0	1	0	1		none
+xnli	Hypothesis: Pachucas were bicycles.	1	0	0	1	0	1		none
+xnli	Hypothesis: The particles had already been incorporated.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are three nongravitational	1	0	0	1	0	1		none
+xnli	Hypothesis: Vaquero culture is related to	1	0	0	1	0	1		none
+xnli	Hypothesis: Something has been displaced from equilibrium.	1	0	0	1	0	1		none
+xnli	Hypothesis: The mica flake is a complex device	1	0	0	1	0	1		none
+xnli	Hypothesis: The rate of displacement is important.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Fourteenth Amendment was enacted in	1	0	0	1	0	1		none
+xnli	San Augustin Acolman is a small village	1	0	0	1	0	1		none
+xnli	San Augustin Acolman is a village near	1	0	0	1	0	1		none
+xnli	Hypothesis: The agents in the community could make	1	0	0	1	0	1		none
+xnli	Hypothesis: The agents made $8,0	1	0	0	1	0	1		none
+xnli	Hypothesis: La cancien rancheras are	1	0	0	1	0	1		none
+xnli	Hypothesis: The Fifteenth Amendment was taken	1	0	0	1	0	1		none
+xnli	Hypothesis: Neither building had a creative designer.	1	0	0	1	0	1		none
+xnli	Hypothesis: La Delgadina has completely disappeared	1	0	0	1	0	1		none
+xnli	Hypothesis: American retailers are all thriving right now	1	0	0	1	0	1		none
+xnli	Hypothesis: The Quad is a coed student	1	0	0	1	0	1		none
+xnli	Hypothesis: We cannot draw any conclusions.	1	0	0	1	0	1		none
+xnli	Hypothesis: The regime is in the North.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are avalanches in the	1	0	0	1	0	1		none
+xnli	Hypothesis: There are no avalanches in	1	0	0	1	0	1		none
+xnli	Hypothesis: A girl wanted to dance on Good	1	0	0	1	0	1		none
+xnli	Hypothesis: The plan is important.	1	0	0	1	0	1		none
+xnli	Hypothesis: The plan is not important.	1	0	0	1	0	1		none
+xnli	Hypothesis: The plan is to invade a country	1	0	0	1	0	1		none
+xnli	Hypothesis: Guns are in a category.	1	0	0	1	0	1		none
+xnli	Hypothesis: Genes were always linear to its	1	0	0	1	0	1		none
+xnli	Hypothesis: Juan Osito is her son.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Maxwell demon is the work and	1	0	0	1	0	1		none
+xnli	Hypothesis: There are novels that feature descriptions of	1	0	0	1	0	1		none
+xnli	Hypothesis: No one agreed on a take on	1	0	0	1	0	1		none
+xnli	Hypothesis: People in 1718 thought the	1	0	0	1	0	1		none
+xnli	Hypothesis: There were some schools of thought that	1	0	0	1	0	1		none
+xnli	Taney said congress could suspend the writ.	1	0	0	1	0	1		none
+xnli	Hypothesis: Chinese cooks immigrated to Cuba.	1	0	0	1	0	1		none
+xnli	There is a mixture in Chinese and Cuban cu	1	0	0	1	0	1		none
+xnli	Hypothesis: No one in the eighteenth century understood	1	0	0	1	0	1		none
+xnli	Hypothesis: People in the eighteenth century understood freedom	1	0	0	1	0	1		none
+xnli	Hypothesis: The Constitution is preserved in a vacuum	1	0	0	1	0	1		none
+xnli	Hypothesis: The cultures shared some common practices and	1	0	0	1	0	1		none
+xnli	C. P. Snow wrote of the two cultures	1	0	0	1	0	1		none
+xnli	Hypothesis: It is a complex matter to explain	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a simple explanation of it	1	0	0	1	0	1		none
+xnli	Hypothesis: You can understand it if you can	1	0	0	1	0	1		none
+xnli	Hypothesis: It is not easy for the dimensional	1	0	0	1	0	1		none
+xnli	Hypothesis: The dimensionality of biospheres grow	1	0	0	1	0	1		none
+xnli	Hypothesis: We are doing something new.	1	0	0	1	0	1		none
+xnli	پیش فرض: Early American publications portray Spanish Mexicans	1	0	0	1	0	1		none
+xnli	Hypothesis: Gehry does not care about happiness	1	0	0	1	0	1		none
+xnli	Hypothesis: Gehry seems to say enjoy life	1	0	0	1	0	1		none
+xnli	Hypothesis: Pachucas did not know pach	1	0	0	1	0	1		none
+xnli	Hypothesis: Pachucas knew pachucos	1	0	0	1	0	1		none
+xnli	Hypothesis: Pachucas wore more clothes than	1	0	0	1	0	1		none
+xnli	Hypothesis: There are more than a million different	1	0	0	1	0	1		none
+xnli	Hypothesis: There are two protein shapes in the	1	0	0	1	0	1		none
+xnli	Hypothesis: We are still discovering the different shapes	1	0	0	1	0	1		none
+xnli	Hypothesis: The assassination occurred in the month of	1	0	0	1	0	1		none
+xnli	Hypothesis: The assassination was of a male person	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے جو ایک سوال کا	1	0	0	1	0	1		none
+xnli	Hypothesis: There were lots of different colors.	1	0	0	1	0	1		none
+xnli	Hypothesis: There were tons of different colors on	1	0	0	1	0	1		none
+xnli	Hypothesis: The women had ribbons.	1	0	0	1	0	1		none
+xnli	Hypothesis: Children are capable of imagination.	1	0	0	1	0	1		none
+xnli	Hypothesis: Children cannot engage in make-believe	1	0	0	1	0	1		none
+xnli	Hypothesis: If this reaction is untouched	1	0	0	1	0	1		none
+xnli	Hypothesis: People are never equal.	1	0	0	1	0	1		none
+xnli	Hypothesis: People will be different but equal.	1	0	0	1	0	1		none
+xnli	Hypothesis: Richardson was never influential.	1	0	0	1	0	1		none
+xnli	Hypothesis: Richardson was only influential for a year	1	0	0	1	0	1		none
+xnli	Hypothesis: Richardson wasn't influential for very long	1	0	0	1	0	1		none
+xnli	Hypothesis: Mies Van der Rohe not	1	0	0	1	0	1		none
+xnli	Hypothesis: Always divide the logarithm, and never	1	0	0	1	0	1		none
+xnli	Hypothesis: Multiplying the logarithm will lead to a	1	0	0	1	0	1		none
+xnli	Hypothesis: Probability is involved in the calculations.	1	0	0	1	0	1		none
+xnli	Hypothesis: Molecular clouds are hot.	1	0	0	1	0	1		none
+xnli	Hypothesis: Molecular clouds are the birthplace of stars	1	0	0	1	0	1		none
+xnli	Hypothesis: Molecular clouds do not birth stars.	1	0	0	1	0	1		none
+xnli	Hypothesis: Federal and state governments may share functions	1	0	0	1	0	1		none
+xnli	Hypothesis: Functions will be divided between multiple governments	1	0	0	1	0	1		none
+xnli	Hypothesis: Only federal governments can have functions.	1	0	0	1	0	1		none
+xnli	Hypothesis: The temper of the times was negative	1	0	0	1	0	1		none
+xnli	Hypothesis: We didn't have to pray.	1	0	0	1	0	1		none
+xnli	تو ہم نے سو جانے سے پہلے نماز پڑھنی	1	0	0	1	0	1		none
+xnli	Hypothesis: The alterations are very extreme.	1	0	0	1	0	1		none
+xnli	یہ ایک مضبوط پیش کش ہے جو ایک مض	1	0	0	1	0	1		none
+xnli	یہ ایک پیش کش ہے کہ بچے اپنے والد	1	0	0	1	0	1		none
+xnli	Hypothesis: There were some amendments to the constitution	1	0	0	1	0	1		none
+xnli	Hypothesis: Some molecular species form in black clouds	1	0	0	1	0	1		none
+xnli	Hypothesis: Some molecular species form when a cloud	1	0	0	1	0	1		none
+xnli	Hypothesis: The engine block has a cylinder hole	1	0	0	1	0	1		none
+xnli	Hypothesis: The engine block has a hole in	1	0	0	1	0	1		none
+xnli	Hypothesis: The engine block has no holes.	1	0	0	1	0	1		none
+xnli	Hypothesis: The 23rd amendment says	1	0	0	1	0	1		none
+xnli	Hypothesis: Social and political justice should foster human	1	0	0	1	0	1		none
+xnli	Hypothesis: Hominids have evolved over the	1	0	0	1	0	1		none
+xnli	Hypothesis: The econospheres of hominids	1	0	0	1	0	1		none
+xnli	Hypothesis: A lush landscape was within sight.	1	0	0	1	0	1		none
+xnli	Hypothesis: His Majesty has envoys,	1	0	0	1	0	1		none
+xnli	Hypothesis: His Majesty sent me here about	1	0	0	1	0	1		none
+xnli	Hypothesis: I do not take orders from His	1	0	0	1	0	1		none
+xnli	Hypothesis: He never thought he owed you anything	1	0	0	1	0	1		none
+xnli	Hypothesis: He thought he owed you something.	1	0	0	1	0	1		none
+xnli	Hypothesis: I traveled near to Jamaica after	1	0	0	1	0	1		none
+xnli	Hypothesis: I traveled to Jamaica in a	1	0	0	1	0	1		none
+xnli	Hypothesis: Blood was ruminating while lying down	1	0	0	1	0	1		none
+xnli	Hypothesis: The approaching boat was manned by	1	0	0	1	0	1		none
+xnli	Hypothesis: The boat that was approaching was a	1	0	0	1	0	1		none
+xnli	Hypothesis: The scarlet figure in charge of	1	0	0	1	0	1		none
+xnli	Hypothesis: Wolverstone had been kept prisoner for	1	0	0	1	0	1		none
+xnli	Hypothesis: Wolverstone was not the only person	1	0	0	1	0	1		none
+xnli	Hypothesis: She spoke in sad tones.	1	0	0	1	0	1		none
+xnli	Hypothesis: I have read about your kind,	1	0	0	1	0	1		none
+xnli	Hypothesis: He thought someone would be going to	1	0	0	1	0	1		none
+xnli	Hypothesis: I could not bring myself to det	1	0	0	1	0	1		none
+xnli	Hypothesis: I detained them as soon as I	1	0	0	1	0	1		none
+xnli	Hypothesis: I rode to the Bishop and Cal	1	0	0	1	0	1		none
+xnli	Hypothesis: You are definitely wrong.	1	0	0	1	0	1		none
+xnli	Hypothesis: The person was in a hurry.	1	0	0	1	0	1		none
+xnli	Hypothesis: Everything is included in the bargain.	1	0	0	1	0	1		none
+xnli	Hypothesis: That isn't included in the agreement.	1	0	0	1	0	1		none
+xnli	Hypothesis: He was killed with a sword.	1	0	0	1	0	1		none
+xnli	There were ships chasing after them.	1	0	0	1	0	1		none
+xnli	Hypothesis: Colonel Bishop is heated.	1	0	0	1	0	1		none
+xnli	Hypothesis: She had heard something.	1	0	0	1	0	1		none
+xnli	Hypothesis: His lordship spoke sharply.	1	0	0	1	0	1		none
+xnli	Hypothesis: His lordship was a mute	1	0	0	1	0	1		none
+xnli	Hypothesis: I haven’t spoken to his lord	1	0	0	1	0	1		none
+xnli	Hypothesis: I spoke to his lordship just	1	0	0	1	0	1		none
+xnli	Hypothesis: Lord Julian dressed hurriedly in his	1	0	0	1	0	1		none
+xnli	Hypothesis: Perforce Bishop did not put on	1	0	0	1	0	1		none
+xnli	Hypothesis: The country is not a sovereign one	1	0	0	1	0	1		none
+xnli	Hypothesis: We were told this.	1	0	0	1	0	1		none
+xnli	Hypothesis: He raised his voice.	1	0	0	1	0	1		none
+xnli	Hypothesis: Lord Julian got off the Arabella	1	0	0	1	0	1		none
+xnli	Hypothesis: He was speaking in a Russian accent	1	0	0	1	0	1		none
+xnli	Hypothesis: His accents were unbelievable when he spoke	1	0	0	1	0	1		none
+xnli	Hypothesis: Peter is hated by the Bishop.	1	0	0	1	0	1		none
+xnli	Hypothesis: He had wished him a good morning	1	0	0	1	0	1		none
+xnli	Hypothesis: Neither one of us knows Colonel	1	0	0	1	0	1		none
+xnli	Hypothesis: We are acquainted with Colonel Bishop	1	0	0	1	0	1		none
+xnli	Hypothesis: Pitt wore a shirt and breeches	1	0	0	1	0	1		none
+xnli	Hypothesis: Pitt wore a white shirt and brown	1	0	0	1	0	1		none
+xnli	Hypothesis: I had never known Peter to be	1	0	0	1	0	1		none
+xnli	Hypothesis: Three white ships came.	1	0	0	1	0	1		none
+xnli	Hypothesis: The opportunity was then and now.	1	0	0	1	0	1		none
+xnli	Hypothesis: He was told beforehand of Lord Julian	1	0	0	1	0	1		none
+xnli	Hypothesis: They never misunderstood each other.	1	0	0	1	0	1		none
+xnli	Hypothesis: Lord Julian had ridden his companion.	1	0	0	1	0	1		none
+xnli	Hypothesis: The companion of Lord Julian was a	1	0	0	1	0	1		none
+xnli	Hypothesis: Lord Julian was standing on Captain Blood	1	0	0	1	0	1		none
+xnli	Hypothesis: He drinks blood.	1	0	0	1	0	1		none
+xnli	It is true.	1	0	0	1	0	1		none
+xnli	Hypothesis: Blood got into a boat.	1	0	0	1	0	1		none
+xnli	Hypothesis: Blood got into a purple boat.	1	0	0	1	0	1		none
+xnli	Hypothesis: Miss Bishop was wearing red shoes.	1	0	0	1	0	1		none
+xnli	Ogle,  said he, in a voice	1	0	0	1	0	1		none
+xnli	Hypothesis: Polar bears are attracted to changing leaves	1	0	0	1	0	1		none
+xnli	Hypothesis: You can see polar bears in the	1	0	0	1	0	1		none
+xnli	New Brunswick became a province because it had enough people	1	0	0	1	0	1		none
+xnli	New Brunswick was a province in 178	1	0	0	1	0	1		none
+xnli	Hypothesis: The water and the beach are always	1	0	0	1	0	1		none
+xnli	Hypothesis: The water and the beach may be	1	0	0	1	0	1		none
+xnli	None of the skyscrapers on the Golden	1	0	0	1	0	1		none
+xnli	Hypothesis: Kids will like the exhibits about boats	1	0	0	1	0	1		none
+xnli	Hypothesis: The kids will like being able to	1	0	0	1	0	1		none
+xnli	Hypothesis: Glasgow Lakes trail is considered to be	1	0	0	1	0	1		none
+xnli	Hypothesis: They used to own five hundred miles	1	0	0	1	0	1		none
+xnli	Hypothesis: Kublai Khan erected a capital in Taiwan	1	0	0	1	0	1		none
+xnli	Hypothesis: Kublai Khan has treasures in Beijing.	1	0	0	1	0	1		none
+xnli	Hypothesis: Kublai Khan was a well respected man	1	0	0	1	0	1		none
+xnli	Hypothesis: The Na Pali Coast is an	1	0	0	1	0	1		none
+xnli	Hypothesis: Eastern European Jews assimilate well with	1	0	0	1	0	1		none
+xnli	توثیق، تضاد، یا غیر جان	1	0	0	1	0	1		none
+xnli	Hypothesis: He is buried more than 2	1	0	0	1	0	1		none
+xnli	Hypothesis: He was an important public figure.	1	0	0	1	0	1		none
+xnli	Hypothesis: His burial vaults are made from	1	0	0	1	0	1		none
+xnli	Hypothesis: Greece population was glad that the country	1	0	0	1	0	1		none
+xnli	Hypothesis: Greece's entry into the Common Market	1	0	0	1	0	1		none
+xnli	Hypothesis: Sea temperature are always changing, but	1	0	0	1	0	1		none
+xnli	Hypothesis: Sea temperatures are always at one fixed	1	0	0	1	0	1		none
+xnli	Hypothesis: See temperatures are higher during the day	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a total of three protected	1	0	0	1	0	1		none
+xnli	Hypothesis: The Poble Espanyol is fun	1	0	0	1	0	1		none
+xnli	Hypothesis: The building does not have a slide	1	0	0	1	0	1		none
+xnli	Hypothesis: The building has a 3D	1	0	0	1	0	1		none
+xnli	Hypothesis: The Dora Stratou Folk Dance Theater	1	0	0	1	0	1		none
+xnli	Hypothesis: The auditorium on Philopap	1	0	0	1	0	1		none
+xnli	Hypothesis: There will be dance activities on Phil	1	0	0	1	0	1		none
+xnli	Hypothesis: You will see photographs.	1	0	0	1	0	1		none
+xnli	Hypothesis: You will see some of the first	1	0	0	1	0	1		none
+xnli	Hypothesis: The church had a $1,	1	0	0	1	0	1		none
+xnli	Hypothesis: The church is a very modern style	1	0	0	1	0	1		none
+xnli	Hypothesis: The church looks like Baroque style.	1	0	0	1	0	1		none
+xnli	Hypothesis: The collection has a few European and	1	0	0	1	0	1		none
+xnli	Hypothesis: The collection has no European and Puerto	1	0	0	1	0	1		none
+xnli	تو، یہ ہے۔	1	0	0	1	0	1		none
+xnli	Hypothesis: Bona is the home of the	1	0	0	1	0	1		none
+xnli	Hypothesis: The kecak dance is not from	1	0	0	1	0	1		none
+xnli	Nevada Fall is a great place to avoid crowds.	1	0	0	1	0	1		none
+xnli	Hypothesis: Balza's home and Delac	1	0	0	1	0	1		none
+xnli	Hypothesis: Balzac's home and Delac	1	0	0	1	0	1		none
+xnli	Balzac's home and Delacroix's studio	1	0	0	1	0	1		none
+xnli	Hypothesis: Otto Frank got captured on the second	1	0	0	1	0	1		none
+xnli	Hypothesis: Otto Frank hid for more than	1	0	0	1	0	1		none
+xnli	Hypothesis: Otto Frank hid until the Nazis found	1	0	0	1	0	1		none
+xnli	Hypothesis: You will like the tea kettles	1	0	0	1	0	1		none
+xnli	Hypothesis: It never happens again.	1	0	0	1	0	1		none
+xnli	Coniera is in the Sant Antoni Bay.	1	0	0	1	0	1		none
+xnli	Hypothesis: The music is mainly flutes.	1	0	0	1	0	1		none
+xnli	Hypothesis: The snare drum is in all	1	0	0	1	0	1		none
+xnli	Hypothesis: The ocean has little paths that are	1	0	0	1	0	1		none
+xnli	Hypothesis: The sea has lanes leading to it	1	0	0	1	0	1		none
+xnli	Hypothesis: You can only buy, not rent	1	0	0	1	0	1		none
+xnli	Hypothesis: The land was hard.	1	0	0	1	0	1		none
+xnli	Hypothesis: The walls have 1000 tiles	1	0	0	1	0	1		none
+xnli	Hypothesis: Do not visit villages.	1	0	0	1	0	1		none
+xnli	Hypothesis: Visit all of the villages.	1	0	0	1	0	1		none
+xnli	Hypothesis: Visit some villages.	1	0	0	1	0	1		none
+xnli	Hypothesis: We should keep the islands involved.	1	0	0	1	0	1		none
+xnli	Hypothesis: The gods talked to the oracle	1	0	0	1	0	1		none
+xnli	Hypothesis: Carrer dels Banys Nous is	1	0	0	1	0	1		none
+xnli	Hypothesis: Whitehorse used mainly horse carriages	1	0	0	1	0	1		none
+xnli	Hypothesis: Whitehorse was territorial capital.	1	0	0	1	0	1		none
+xnli	Hypothesis: Whitehorse was the name of a	1	0	0	1	0	1		none
+xnli	Hypothesis: Cala Mondrage is developed.	1	0	0	1	0	1		none
+xnli	Hypothesis: Cala Mondrage is not developed	1	0	0	1	0	1		none
+xnli	Hypothesis: Two churches can be found on the	1	0	0	1	0	1		none
+xnli	Hypothesis: The statue is made entirely of marble	1	0	0	1	0	1		none
+xnli	Hypothesis: The statue of the city founder was	1	0	0	1	0	1		none
+xnli	Hypothesis: The statue was built in the year	1	0	0	1	0	1		none
+xnli	Hypothesis: The road goes from Payangan to	1	0	0	1	0	1		none
+xnli	Hypothesis: The road is 15 miles	1	0	0	1	0	1		none
+xnli	Hypothesis: The road never reaches Batur.	1	0	0	1	0	1		none
+xnli	Hypothesis: MIT was founded in 1861	1	0	0	1	0	1		none
+xnli	اس کے جواب میں، ہم کہہ سکتے ہیں کہ	1	0	0	1	0	1		none
+xnli	The Perak Tong was built by a Buddhist.	1	0	0	1	0	1		none
+xnli	Hypothesis: Kodaly kerend is decorate with	1	0	0	1	0	1		none
+xnli	The Kodaly Kerend is decorated with Classical g	1	0	0	1	0	1		none
+xnli	Hypothesis: The Kodaly kerend is not	1	0	0	1	0	1		none
+xnli	Hypothesis: The Rejan is crystal-clear	1	0	0	1	0	1		none
+xnli	Hypothesis: The Rejan is over 3	1	0	0	1	0	1		none
+xnli	The Megaron is a concert hall.	1	0	0	1	0	1		none
+xnli	The Megaron is the biggest concert hall in the	1	0	0	1	0	1		none
+xnli	Hypothesis: The watergate tapes have never been	1	0	0	1	0	1		none
+xnli	Hypothesis: You can hear the Watergate tape	1	0	0	1	0	1		none
+xnli	The theater is towards the south side.	1	0	0	1	0	1		none
+xnli	Hypothesis: The building had no basement.	1	0	0	1	0	1		none
+xnli	Hypothesis: The building was over the SS guard	1	0	0	1	0	1		none
+xnli	Hypothesis: The art project is really fascinating.	1	0	0	1	0	1		none
+xnli	Hypothesis: This is a fascinating project.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are 29 waterways in	1	0	0	1	0	1		none
+xnli	Hypothesis: The phone line is manned by	1	0	0	1	0	1		none
+xnli	Hypothesis: The phone line is manned on	1	0	0	1	0	1		none
+xnli	Hypothesis: The phone line is open 2	1	0	0	1	0	1		none
+xnli	Hypothesis: There are 90 steps.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are just 3 steps.	1	0	0	1	0	1		none
+xnli	Hypothesis: The buses alternate which stop they end	1	0	0	1	0	1		none
+xnli	Hypothesis: The buses always stop at Isid	1	0	0	1	0	1		none
+xnli	Hypothesis: The buses top at one of two	1	0	0	1	0	1		none
+xnli	Hypothesis: Cheap clothes are for sale in Lal	1	0	0	1	0	1		none
+xnli	Hypothesis: Laleli has the most expensive clothes	1	0	0	1	0	1		none
+xnli	Hypothesis: The indoor skating rinks opened	1	0	0	1	0	1		none
+xnli	Hypothesis: Caldas de Monchique serves	1	0	0	1	0	1		none
+xnli	Hypothesis: There are woods around Caldas de	1	0	0	1	0	1		none
+xnli	Hypothesis: The cruise is much longer than it	1	0	0	1	0	1		none
+xnli	Hypothesis: The cruise is two hours long.	1	0	0	1	0	1		none
+xnli	Hypothesis: The cruise only last 17	1	0	0	1	0	1		none
+xnli	Hypothesis: There have never been pirates in the	1	0	0	1	0	1		none
+xnli	Hypothesis: There were pirates in the Carrib	1	0	0	1	0	1		none
+xnli	Hypothesis: The tourism people want to give the	1	0	0	1	0	1		none
+xnli	Hypothesis: They want to keep the name the	1	0	0	1	0	1		none
+xnli	Hypothesis: The Palace of Fine Arts is all	1	0	0	1	0	1		none
+xnli	Hypothesis: The Palace of Fine Arts was restored	1	0	0	1	0	1		none
+xnli	Hypothesis: Number 8 was a little white	1	0	0	1	0	1		none
+xnli	Hypothesis: The wall goes up and down the	1	0	0	1	0	1		none
+xnli	Hypothesis: The museum focuses on toys.	1	0	0	1	0	1		none
+xnli	Hypothesis: The museum has 1000 cars	1	0	0	1	0	1		none
+xnli	Hypothesis: The museum has antique cars.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Maritime Museum has 10	1	0	0	1	0	1		none
+xnli	Hypothesis: Porcelain is less than furniture	1	0	0	1	0	1		none
+xnli	Hypothesis: Porcelain used to be even	1	0	0	1	0	1		none
+xnli	Hypothesis: Porcelain was more than furniture	1	0	0	1	0	1		none
+xnli	Hypothesis: Pok-Ta-Pok has	1	0	0	1	0	1		none
+xnli	Hypothesis: The street has a lot of hotels	1	0	0	1	0	1		none
+xnli	Hypothesis: The Caste War involved the May	1	0	0	1	0	1		none
+xnli	Hypothesis: They have 2000 monkeys there	1	0	0	1	0	1		none
+xnli	Hypothesis: They have monkeys there.	1	0	0	1	0	1		none
+xnli	Hypothesis: They are decorated with sequins and	1	0	0	1	0	1		none
+xnli	Hypothesis: They are decorated.	1	0	0	1	0	1		none
+xnli	Premise اور hypothesis کے درمیان کوئی تعلق نہیں ہے	1	0	0	1	0	1		none
+xnli	Hypothesis: Xlapak has 20	1	0	0	1	0	1		none
+xnli	Hypothesis: Xlapak has one palace.	1	0	0	1	0	1		none
+xnli	Hypothesis: Xlapak is a palace that	1	0	0	1	0	1		none
+xnli	Hypothesis: Potter's Cay is a very small	1	0	0	1	0	1		none
+xnli	Hypothesis: Rum never has fruit flavors added.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are fruity rums.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are rums made of any	1	0	0	1	0	1		none
+xnli	Hypothesis: The Indian culture uses ball games as	1	0	0	1	0	1		none
+xnli	Hypothesis: They haven't discovered open spaces since	1	0	0	1	0	1		none
+xnli	Hypothesis: They play ball in Indian culture.	1	0	0	1	0	1		none
+xnli	Hypothesis: The terrain has caves.	1	0	0	1	0	1		none
+xnli	Hypothesis: The terrain has slopes.	1	0	0	1	0	1		none
+xnli	Hypothesis: Museums are laid out well.	1	0	0	1	0	1		none
+xnli	Hypothesis: The playing location is a one hour	1	0	0	1	0	1		none
+xnli	Hypothesis: The security group averages 9 sessions	1	0	0	1	0	1		none
+xnli	Hypothesis: Organizations have no idea how to manage	1	0	0	1	0	1		none
+xnli	Hypothesis: Organizations manage their data by hiring data	1	0	0	1	0	1		none
+xnli	Hypothesis: Organizations manage their information resources in several	1	0	0	1	0	1		none
+xnli	Hypothesis: Title 7 deals with air travel	1	0	0	1	0	1		none
+xnli	Hypothesis: Title 7 deals with travel claims	1	0	0	1	0	1		none
+xnli	Hypothesis: Title 7 is about cookies.	1	0	0	1	0	1		none
+xnli	Hypothesis: Case files are only allowed to be	1	0	0	1	0	1		none
+xnli	Hypothesis: Case files can be put in Chinese	1	0	0	1	0	1		none
+xnli	Hypothesis: Case files can be put in other	1	0	0	1	0	1		none
+xnli	Hypothesis: C-R functions can be pooled	1	0	0	1	0	1		none
+xnli	Hypothesis: C-R functions must work separately	1	0	0	1	0	1		none
+xnli	Hypothesis: They deleted the computer files from the	1	0	0	1	0	1		none
+xnli	Hypothesis: They deleted the original computer files.	1	0	0	1	0	1		none
+xnli	Hypothesis: They kept all the original files.	1	0	0	1	0	1		none
+xnli	Hypothesis: The workshare services are in more	1	0	0	1	0	1		none
+xnli	Hypothesis: The workshare services have varying supply	1	0	0	1	0	1		none
+xnli	Hypothesis: The representative visited for an hour.	1	0	0	1	0	1		none
+xnli	There was a visit by a representative.	1	0	0	1	0	1		none
+xnli	Hypothesis: We never got a visit.	1	0	0	1	0	1		none
+xnli	Hypothesis: The SAB talked about it.	1	0	0	1	0	1		none
+xnli	Hypothesis: The cost of basic mail is required	1	0	0	1	0	1		none
+xnli	Hypothesis: You can guess than the worksharing	1	0	0	1	0	1		none
+xnli	Hypothesis: Then they could show how the design	1	0	0	1	0	1		none
+xnli	Hypothesis: SC worked together.	1	0	0	1	0	1		none
+xnli	Hypothesis: The CIO said which work was	1	0	0	1	0	1		none
+xnli	یہ ایک پیش کش ہے، جو کہ ایک اص	1	0	0	1	0	1		none
+xnli	Hypothesis: The commercial companies use prototypes.	1	0	0	1	0	1		none
+xnli	Hypothesis: Capital cities are the best places for	1	0	0	1	0	1		none
+xnli	Hypothesis: Organizations always outsource the work.	1	0	0	1	0	1		none
+xnli	Hypothesis: Organizations decide if they are going to	1	0	0	1	0	1		none
+xnli	Hypothesis: ALl the data is from different	1	0	0	1	0	1		none
+xnli	Hypothesis: Principle XII deals with capital development	1	0	0	1	0	1		none
+xnli	2000 was a great year for Congress.	1	0	0	1	0	1		none
+xnli	Hypothesis: People need IT workers to help install	1	0	0	1	0	1		none
+xnli	ہم زیادہ دقت سے نشانہ لگانا س	1	0	0	1	0	1		none
+xnli	ہم ہر سال فنڈ ریزنگ ہدف حاصل	1	0	0	1	0	1		none
+xnli	Hypothesis: GAO is an entity that requires	1	0	0	1	0	1		none
+xnli	Hypothesis: Postal density doesn't influence costs at	1	0	0	1	0	1		none
+xnli	Hypothesis: Postal density has twice the impact	1	0	0	1	0	1		none
+xnli	Hypothesis: Postal density impacts delivery costs more	1	0	0	1	0	1		none
+xnli	Hypothesis: We shouldn't even discuss the limits of	1	0	0	1	0	1		none
+xnli	Hypothesis: it is important to show the limits	1	0	0	1	0	1		none
+xnli	Hypothesis: Keeping physical receipts is one way to	1	0	0	1	0	1		none
+xnli	Hypothesis: The audited entity can take corrective	1	0	0	1	0	1		none
+xnli	Hypothesis: The Bar Foundation hired the consultant using	1	0	0	1	0	1		none
+xnli	Hypothesis: The Bar Foundation was assisted by funds	1	0	0	1	0	1		none
+xnli	Hypothesis: Group and individual therapy are two types	1	0	0	1	0	1		none
+xnli	Hypothesis: The device helps companies make 1	1	0	0	1	0	1		none
+xnli	Hypothesis: The device helps companies make subsidiaries	1	0	0	1	0	1		none
+xnli	چاؤز کا معاملہ کولورادو	1	0	0	1	0	1		none
+xnli	Hypothesis: The list just says who bought the	1	0	0	1	0	1		none
+xnli	Hypothesis: The list tells that the voucher was	1	0	0	1	0	1		none
+xnli	Hypothesis: The list tells who approved the voucher	1	0	0	1	0	1		none
+xnli	Hypothesis: The lending fund is always guaranteed	1	0	0	1	0	1		none
+xnli	Hypothesis: Appendix A shows the names of the	1	0	0	1	0	1		none
+xnli	Hypothesis: The Appendix A shows the time that	1	0	0	1	0	1		none
+xnli	Hypothesis: The Appendix A shows the time.	1	0	0	1	0	1		none
+xnli	Hypothesis: The commission can make any recommendation that	1	0	0	1	0	1		none
+xnli	یہ اصول تین الگ الگ کتابوں میں بیان	1	0	0	1	0	1		none
+xnli	Hypothesis: Interventions should never be done in	1	0	0	1	0	1		none
+xnli	Hypothesis: Better security can improve workplace efficiency by	1	0	0	1	0	1		none
+xnli	یہ عمل متعدد طریقوں سے حفاظت میں اض	1	0	0	1	0	1		none
+xnli	Reimbursements are tracked every year by H	1	0	0	1	0	1		none
+xnli	Hypothesis: The computer and printing systems required to	1	0	0	1	0	1		none
+xnli	Hypothesis: They said it was important to be	1	0	0	1	0	1		none
+xnli	Hypothesis: Federal finance organizations have had new demands	1	0	0	1	0	1		none
+xnli	Hypothesis: These demands have required a twenty percent	1	0	0	1	0	1		none
+xnli	Hypothesis: Efforts were taken to help institute	1	0	0	1	0	1		none
+xnli	Hypothesis: Each ZIP Code is served by only	1	0	0	1	0	1		none
+xnli	Hypothesis: There is no limit for mercury,	1	0	0	1	0	1		none
+xnli	Hypothesis: They limit mercury for seafood.	1	0	0	1	0	1		none
+xnli	Hypothesis: They limit mercury.	1	0	0	1	0	1		none
+xnli	Hypothesis: The federal agents have adequate human capital	1	0	0	1	0	1		none
+xnli	Hypothesis: 900 MWe units	1	0	0	1	0	1		none
+xnli	Hypothesis: The units burn less sulfur bituminous	1	0	0	1	0	1		none
+xnli	Hypothesis: The units do not burn sulfur bit	1	0	0	1	0	1		none
+xnli	Hypothesis: Five different short-term studies were analyzed	1	0	0	1	0	1		none
+xnli	Hypothesis: Only data collected from long term studies	1	0	0	1	0	1		none
+xnli	Hypothesis: Short term studies were used in some	1	0	0	1	0	1		none
+xnli	Hypothesis: There are other features that could also	1	0	0	1	0	1		none
+xnli	Hypothesis: Leading organizations use a hybrid model.	1	0	0	1	0	1		none
+xnli	Hypothesis: Efficient allocation of resources is important for	1	0	0	1	0	1		none
+xnli	Hypothesis: The CIO is not involved in	1	0	0	1	0	1		none
+xnli	Hypothesis: The CIO organization usually has a	1	0	0	1	0	1		none
+xnli	Hypothesis: The data was assessed to be entirely	1	0	0	1	0	1		none
+xnli	Hypothesis: The Health Resources and Services Administration is	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a Substance Abuse and Mental	1	0	0	1	0	1		none
+xnli	Hypothesis: Dissaving is spending more than you	1	0	0	1	0	1		none
+xnli	Hypothesis: Dissaving is very common in America	1	0	0	1	0	1		none
+xnli	Hypothesis: Travelers do not have to list	1	0	0	1	0	1		none
+xnli	Hypothesis: Allenbrand and Drews are prosecut	1	0	0	1	0	1		none
+xnli	Hypothesis: It takes 17 months to	1	0	0	1	0	1		none
+xnli	Hypothesis: It takes 4 months from start	1	0	0	1	0	1		none
+xnli	Hypothesis: There are 1,312 residential	1	0	0	1	0	1		none
+xnli	Hypothesis: There are more residential routes than business	1	0	0	1	0	1		none
+xnli	یہ خوش آمدید پیکج ٹیکساس	1	0	0	1	0	1		none
+xnli	یہ خوش آمدید پیکجز ان لوگوں کو	1	0	0	1	0	1		none
+xnli	یہ ایک خوش آمدید پیک ہے جس کو ٹ	1	0	0	1	0	1		none
+xnli	Hypothesis: The bypass will send gas to the	1	0	0	1	0	1		none
+xnli	Hypothesis: No reports on pilot programs were submitted	1	0	0	1	0	1		none
+xnli	Hypothesis: There were forty-44 pilot project	1	0	0	1	0	1		none
+xnli	Hypothesis: It is not possible to modify the	1	0	0	1	0	1		none
+xnli	Hypothesis: It will take over a year to	1	0	0	1	0	1		none
+xnli	Hypothesis: France does not have a postal service	1	0	0	1	0	1		none
+xnli	Hypothesis: France has a lower volume of postal	1	0	0	1	0	1		none
+xnli	Hypothesis: On that page you can also find	1	0	0	1	0	1		none
+xnli	Hypothesis: There are details at www.he	1	0	0	1	0	1		none
+xnli	Hypothesis: These are all the details available.	1	0	0	1	0	1		none
+xnli	Hypothesis: Both processes can occur at the same	1	0	0	1	0	1		none
+xnli	Hypothesis: No one has the authority to prescribe	1	0	0	1	0	1		none
+xnli	Hypothesis: The Secretary to the Administrator has many	1	0	0	1	0	1		none
+xnli	Hypothesis: The Secretary to the Administrator of N	1	0	0	1	0	1		none
+xnli	Hypothesis: The group has meetings every month.	1	0	0	1	0	1		none
+xnli	Hypothesis: Federal employees agree to the same terms	1	0	0	1	0	1		none
+xnli	61--Federal employees may be covered by	1	0	0	1	0	1		none
+xnli	Hypothesis: The appendix has all the route data	1	0	0	1	0	1		none
+xnli	Hypothesis: The appendix is empty, and there	1	0	0	1	0	1		none
+xnli	Hypothesis: The data is shown according to the	1	0	0	1	0	1		none
+xnli	Hypothesis: The demographic data helped the schools.	1	0	0	1	0	1		none
+xnli	Hypothesis: Location specific C-R functions are	1	0	0	1	0	1		none
+xnli	Hypothesis: Some trusts have revolving funds.	1	0	0	1	0	1		none
+xnli	Hypothesis: Trusts never have revolving funds.	1	0	0	1	0	1		none
+xnli	Hypothesis: Any more than eight months is excessive	1	0	0	1	0	1		none
+xnli	Hypothesis: The total time is less than	1	0	0	1	0	1		none
+xnli	Hypothesis: There is IT planning.	1	0	0	1	0	1		none
+xnli	Hypothesis: There is not IT planning.	1	0	0	1	0	1		none
+xnli	Hypothesis: They think about what computers to buy	1	0	0	1	0	1		none
+xnli	Hypothesis: The National Mail Count only tracked packages	1	0	0	1	0	1		none
+xnli	Hypothesis: The National Mail Count studied mail.	1	0	0	1	0	1		none
+xnli	Hypothesis: The National Mail count keep track of	1	0	0	1	0	1		none
+xnli	Hypothesis: HIC made feedback changes.	1	0	0	1	0	1		none
+xnli	Hypothesis: HIC made no feedback changes.	1	0	0	1	0	1		none
+xnli	Hypothesis: HIC sent out surveys.	1	0	0	1	0	1		none
+xnli	ہم GAO میں بہت سے بہتری کے ع	1	0	0	1	0	1		none
+xnli	Hypothesis: There is not one solution to alcohol	1	0	0	1	0	1		none
+xnli	Hypothesis: The implementation of SCR on a combustion	1	0	0	1	0	1		none
+xnli	Hypothesis: The opposing counsel and the court will	1	0	0	1	0	1		none
+xnli	community legal education is a crucial service provided by L	1	0	0	1	0	1		none
+xnli	Hypothesis: The AICPA's has been	1	0	0	1	0	1		none
+xnli	Hypothesis: Value- enhancement has never been on	1	0	0	1	0	1		none
+xnli	Hypothesis: Business processes are not static; they	1	0	0	1	0	1		none
+xnli	Hypothesis: New training programs have to be created	1	0	0	1	0	1		none
+xnli	Hypothesis: An al Qaeda member went to	1	0	0	1	0	1		none
+xnli	Hypothesis: A second wave of attacks was planned	1	0	0	1	0	1		none
+xnli	Hypothesis: After the first wave of attacks,	1	0	0	1	0	1		none
+xnli	Hypothesis: The second wave of attacks would have	1	0	0	1	0	1		none
+xnli	Hypothesis: There was communication coming from American	1	0	0	1	0	1		none
+xnli	Hypothesis: There was communication from American 1	1	0	0	1	0	1		none
+xnli	Hypothesis: There was never any communication from American	1	0	0	1	0	1		none
+xnli	Hypothesis: Officers got their own assignments.	1	0	0	1	0	1		none
+xnli	Hypothesis: The OIPR screen processes some	1	0	0	1	0	1		none
+xnli	Hypothesis: Communication worked really well on 9	1	0	0	1	0	1		none
+xnli	Hypothesis: People had a hard time communicating at	1	0	0	1	0	1		none
+xnli	Hypothesis: The FAA air traffic control data	1	0	0	1	0	1		none
+xnli	Hypothesis: All terrorism matters are given the top	1	0	0	1	0	1		none
+xnli	Hypothesis: All terrorism matters get the same label	1	0	0	1	0	1		none
+xnli	Hypothesis: Each terrorism matter is judged and graded	1	0	0	1	0	1		none
+xnli	Hypothesis: Nobody remained in the North Tower after	1	0	0	1	0	1		none
+xnli	یہ افسر، جو جنوبی ٹاور	1	0	0	1	0	1		none
+xnli	Hypothesis: They were briefed on the current	1	0	0	1	0	1		none
+xnli	Hypothesis: The Counterterorist Center was involved	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a detailed record kept of	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a record kept of computer	1	0	0	1	0	1		none
+xnli	Hypothesis: There is no record help for the	1	0	0	1	0	1		none
+xnli	Hypothesis: Al Qaeda didn't receive any money	1	0	0	1	0	1		none
+xnli	Hypothesis: Congressional leaders may or may not have	1	0	0	1	0	1		none
+xnli	Hypothesis: Congressional leaders received briefings at least	1	0	0	1	0	1		none
+xnli	Hypothesis: Ashcroft was interested in the	1	0	0	1	0	1		none
+xnli	Hage was interrogated by FBI agents.	1	0	0	1	0	1		none
+xnli	Hypothesis: Hage was never interrogated by	1	0	0	1	0	1		none
+xnli	Hypothesis: Each company consisted of twenty three fire	1	0	0	1	0	1		none
+xnli	Hypothesis: No interviews were recorded concerning the actions	1	0	0	1	0	1		none
+xnli	Hypothesis: There were several companies of FDNY	1	0	0	1	0	1		none
+xnli	Hypothesis: Fire alarms were not installed in	1	0	0	1	0	1		none
+xnli	Hypothesis: Information about the fire alarm was recorded	1	0	0	1	0	1		none
+xnli	Hypothesis: Everyone showed up for Flight 9	1	0	0	1	0	1		none
+xnli	Hypothesis: Seven passengers missed Flight 9.	1	0	0	1	0	1		none
+xnli	Hypothesis: There were passengers that didn't show up	1	0	0	1	0	1		none
+xnli	Hypothesis: Computer aided dispatch reports were prepared for	1	0	0	1	0	1		none
+xnli	Hypothesis: Computer aided dispatch systems were not in	1	0	0	1	0	1		none
+xnli	Hypothesis: These dispatch reports were delayed because of	1	0	0	1	0	1		none
+xnli	Hypothesis: Ed Ballinger refused to provide any	1	0	0	1	0	1		none
+xnli	Hypothesis: Since then joint work has improved in	1	0	0	1	0	1		none
+xnli	Hypothesis: The financial markets were closed for at	1	0	0	1	0	1		none
+xnli	Hypothesis: James Steinberg testified that more sharing	1	0	0	1	0	1		none
+xnli	Hypothesis: James Steinberg was adamant that	1	0	0	1	0	1		none
+xnli	Hypothesis: Some people were trained near Kand	1	0	0	1	0	1		none
+xnli	Hypothesis: We interviewed a total of fifteen subjects	1	0	0	1	0	1		none
+xnli	Hypothesis: The FBI has an office in Paris	1	0	0	1	0	1		none
+xnli	Hypothesis: Dave sent an email to John on	1	0	0	1	0	1		none
+xnli	Hypothesis: Dave was on vacation in the entire	1	0	0	1	0	1		none
+xnli	Hypothesis: The Intelligence reports on the KSM	1	0	0	1	0	1		none
+xnli	Hypothesis: There are no documents containing information about	1	0	0	1	0	1		none
+xnli	Hypothesis: The controllers were not looking for primary	1	0	0	1	0	1		none
+xnli	Hypothesis: The Thai authorities had watchlisted the	1	0	0	1	0	1		none
+xnli	Hypothesis: There is an easy explanation for the	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ کونڈلی	1	0	0	1	0	1		none
+xnli	Hypothesis: NYPD helicopters were using the SOD	1	0	0	1	0	1		none
+xnli	Hypothesis: Nobody was using the citywide SOD	1	0	0	1	0	1		none
+xnli	None of the Port Authority employees stayed on the upper	1	0	0	1	0	1		none
+xnli	Hypothesis: Civilian interview 14 was	1	0	0	1	0	1		none
+xnli	Hypothesis: There are no aids available with regards	1	0	0	1	0	1		none
+xnli	Hypothesis: Every relevant piece of paper has been	1	0	0	1	0	1		none
+xnli	Ramzi Yousef was also indicted.	1	0	0	1	0	1		none
+xnli	There was an NYPD interview 1.	1	0	0	1	0	1		none
+xnli	There was an interview with the Chief of the NY	1	0	0	1	0	1		none
+xnli	Hypothesis: There was no NYPD interview.	1	0	0	1	0	1		none
+xnli	Hypothesis: NYPD handled the City's emergency	1	0	0	1	0	1		none
+xnli	Hypothesis: The Taliban was not against al Qa	1	0	0	1	0	1		none
+xnli	Hypothesis: Both flights flew in to the same	1	0	0	1	0	1		none
+xnli	Hypothesis: Both flights landed in Miami on June	1	0	0	1	0	1		none
+xnli	Hypothesis: Haznawi (Flight	1	0	0	1	0	1		none
+xnli	Hypothesis: The source knew nothing about Bin L	1	0	0	1	0	1		none
+xnli	Hypothesis: The source was being truthful.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Slahi meeting was held in	1	0	0	1	0	1		none
+xnli	Hypothesis: Atta never went to the Czech	1	0	0	1	0	1		none
+xnli	Hypothesis: Atta traveled to the Czech Republic	1	0	0	1	0	1		none
+xnli	Hypothesis: Atta went to the Czech Republic	1	0	0	1	0	1		none
+xnli	Hypothesis: Clarke was responsible for counter terrorism in	1	0	0	1	0	1		none
+xnli	Hypothesis: Ahmed al Ghamdi and Abdul	1	0	0	1	0	1		none
+xnli	Hypothesis: The stairwells were clear.	1	0	0	1	0	1		none
+xnli	Hypothesis: They were many floors up.	1	0	0	1	0	1		none
+xnli	Hypothesis: Their requirements are much more liberal.	1	0	0	1	0	1		none
+xnli	Hypothesis: Nobody has any information available about building	1	0	0	1	0	1		none
+xnli	Hypothesis: There is an interview available that discusses	1	0	0	1	0	1		none
+xnli	Hypothesis: These systems were all offline at the	1	0	0	1	0	1		none
+xnli	Hypothesis: The CIA cable has details on the	1	0	0	1	0	1		none
+xnli	Hypothesis: There is more information on the identification	1	0	0	1	0	1		none
+xnli	Hypothesis: There is nowhere else to look for	1	0	0	1	0	1		none
+xnli	Hypothesis: Hazmi and Mihdhar traveled	1	0	0	1	0	1		none
+xnli	Hypothesis: Hazmi has never been to Los	1	0	0	1	0	1		none
+xnli	Hypothesis: Jennifer Stangel was interviewed by the	1	0	0	1	0	1		none
+xnli	Hypothesis: KSM was killed in 2	1	0	0	1	0	1		none
+xnli	Hypothesis: Terminal C was entirely deserted at the	1	0	0	1	0	1		none
+xnli	There was a pay phone located in Terminal C.	1	0	0	1	0	1		none
+xnli	Hypothesis: More information about hotel arrangements is in	1	0	0	1	0	1		none
+xnli	Hypothesis: Nothing further is know about the hotel	1	0	0	1	0	1		none
+xnli	Hypothesis: Three different hotel rooms were booked for	1	0	0	1	0	1		none
+xnli	43 Tommy Franks, the commanding general	1	0	0	1	0	1		none
+xnli	New Jersey as selected as one place for the people	1	0	0	1	0	1		none
+xnli	Hypothesis: Rababah recommended that they stay in	1	0	0	1	0	1		none
+xnli	Hypothesis: The lead was never forwarded and was	1	0	0	1	0	1		none
+xnli	Hypothesis: The supervisor sent the lead to someone	1	0	0	1	0	1		none
+xnli	Hypothesis: The chief arrived at the WTC	1	0	0	1	0	1		none
+xnli	Hypothesis: The chief arrived at the site.	1	0	0	1	0	1		none
+xnli	Hypothesis: The chief never showed up.	1	0	0	1	0	1		none
+xnli	Hypothesis: There were PAPD officers assisting at	1	0	0	1	0	1		none
+xnli	Hypothesis: These officers were assigned to operate radio	1	0	0	1	0	1		none
+xnli	Hypothesis: The Police Commissioner and Mayor were involved	1	0	0	1	0	1		none
+xnli	Hypothesis: All of the hijackers were	1	0	0	1	0	1		none
+xnli	Hypothesis: Most of the hijackers were	1	0	0	1	0	1		none
+xnli	Hypothesis: The hijackers made a point	1	0	0	1	0	1		none
+xnli	Hypothesis: KSM always failed to get clean	1	0	0	1	0	1		none
+xnli	Hypothesis: KSM got clean passports that	1	0	0	1	0	1		none
+xnli	Hypothesis: KSM got clean passports.	1	0	0	1	0	1		none
+xnli	Hypothesis: NORAD always operates at maximum alert	1	0	0	1	0	1		none
+xnli	Hypothesis: The Czech government looked at photos they	1	0	0	1	0	1		none
+xnli	Hypothesis: Both Murad and Yousef	1	0	0	1	0	1		none
+xnli	Hypothesis: Deputy national intelligence directors have a rank	1	0	0	1	0	1		none
+xnli	Hypothesis: People can only contact us via mail	1	0	0	1	0	1		none
+xnli	ہم 24 گھنٹے، 7	1	0	0	1	0	1		none
+xnli	ہم ہر ہفتے پیر اور جمعرات کو	1	0	0	1	0	1		none
+xnli	ہم نے بہت سے انڈیاناپولس	1	0	0	1	0	1		none
+xnli	Hypothesis: Our pediatric physicians are investigating a variety	1	0	0	1	0	1		none
+xnli	Hypothesis: We fired our pediatricians last	1	0	0	1	0	1		none
+xnli	Hypothesis: We hope to cure childhood cancer in	1	0	0	1	0	1		none
+xnli	Hypothesis: Some of this group's members have	1	0	0	1	0	1		none
+xnli	Hypothesis: Please do not make any changes to	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a white envelope enclosed,	1	0	0	1	0	1		none
+xnli	Hypothesis: You are free to make changes to	1	0	0	1	0	1		none
+xnli	ہم اب بھی اپنے صارفین اور عطیات	1	0	0	1	0	1		none
+xnli	Hypothesis: If you sponsor an American Indian child	1	0	0	1	0	1		none
+xnli	ہم آپ کو مستقبل کے لیے بچوں میں شرکت	1	0	0	1	0	1		none
+xnli	Hypothesis: We decided that you cannot be a	1	0	0	1	0	1		none
+xnli	Hypothesis: The law school is paper-based,	1	0	0	1	0	1		none
+xnli	Hypothesis: Our monetary goal exceeds $30	1	0	0	1	0	1		none
+xnli	Our Civil Practice Clinic has operated for several years.	1	0	0	1	0	1		none
+xnli	Our Civil Practice Clinic is celebrating its first full year	1	0	0	1	0	1		none
+xnli	Hypothesis: The Civil Practice Clinic has been in	1	0	0	1	0	1		none
+xnli	Hypothesis: The Society promotes the gaining of knowledge	1	0	0	1	0	1		none
+xnli	Inner Circle members receive select seating, special invitations,	1	0	0	1	0	1		none
+xnli	Inner Circle membership is not free.	1	0	0	1	0	1		none
+xnli	Hypothesis: The law school does not employ anyone	1	0	0	1	0	1		none
+xnli	Hypothesis: The law school employs at least one	1	0	0	1	0	1		none
+xnli	Hypothesis: The IUPUI is not accepting	1	0	0	1	0	1		none
+xnli	Hypothesis: Three people contributed to the costume's	1	0	0	1	0	1		none
+xnli	Hypothesis: Law schools want the best students.	1	0	0	1	0	1		none
+xnli	Hypothesis: Gourmet food and champagne will	1	0	0	1	0	1		none
+xnli	Hypothesis: You must donate at least $1	1	0	0	1	0	1		none
+xnli	Hypothesis: The IUPUI University Libraries have	1	0	0	1	0	1		none
+xnli	Hypothesis: The IUPUI needs 2	1	0	0	1	0	1		none
+xnli	Hypothesis: We accomplished everything on our list already	1	0	0	1	0	1		none
+xnli	ہم نے بہت سے کام کرنے کے لیے بہت زیادہ	1	0	0	1	0	1		none
+xnli	Hypothesis: We do better when we know more	1	0	0	1	0	1		none
+xnli	Hypothesis: We don’t need to know anything	1	0	0	1	0	1		none
+xnli	Hypothesis: There are only two lockers in	1	0	0	1	0	1		none
+xnli	Hypothesis: There are way more lockers than	1	0	0	1	0	1		none
+xnli	Hypothesis: The Indiana University School of Medicine owes	1	0	0	1	0	1		none
+xnli	Hypothesis: The Indiana University School of Medicine shut	1	0	0	1	0	1		none
+xnli	Hypothesis: We didn't send any letters out last	1	0	0	1	0	1		none
+xnli	Hypothesis: We send letters out in November.	1	0	0	1	0	1		none
+xnli	Hypothesis: We send letters out in honor of	1	0	0	1	0	1		none
+xnli	Hypothesis: I hope you will send us money	1	0	0	1	0	1		none
+xnli	Hypothesis: Return this card to tell us what	1	0	0	1	0	1		none
+xnli	ہم آپ اور دیگر مہربان دوستوں پر ان	1	0	0	1	0	1		none
+xnli	Hypothesis: We help cats and dogs.	1	0	0	1	0	1		none
+xnli	Hypothesis: All of the animals are recovered by	1	0	0	1	0	1		none
+xnli	The Military Rate is $3 and free for those	1	0	0	1	0	1		none
+xnli	0.	1	0	0	1	0	1		none
+xnli	Hypothesis: Sending your gift via mail would	1	0	0	1	0	1		none
+xnli	بیٹسی گری ہاؤ ٹاور نے م	1	0	0	1	0	1		none
+xnli	Hypothesis: Betty Groh Tower graduated forty years	1	0	0	1	0	1		none
+xnli	Hypothesis: Betty Groh Tower is the only	1	0	0	1	0	1		none
+xnli	Your contributions are matched by foundations.	1	0	0	1	0	1		none
+xnli	Your contributions are matched.	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے کہ ہمیں امریکی	1	0	0	1	0	1		none
+xnli	Hypothesis: All the 6,50	1	0	0	1	0	1		none
+xnli	Hypothesis: There will be thousands of students from	1	0	0	1	0	1		none
+xnli	Hypothesis: There will only be three thousand students	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے کہ انڈی	1	0	0	1	0	1		none
+xnli	Hypothesis: We have all the help we need	1	0	0	1	0	1		none
+xnli	Hypothesis: We need your support this season.	1	0	0	1	0	1		none
+xnli	ہم نے 85 سال سے زیادہ عرص	1	0	0	1	0	1		none
+xnli	ہم نے اس کام کو 85 سال سے	1	0	0	1	0	1		none
+xnli	Hypothesis: Please donate to the IRT today	1	0	0	1	0	1		none
+xnli	Premise اور Hypothesis کے درمیان ایک واضح فرق	1	0	0	1	0	1		none
+xnli	Hypothesis: We need seed money to help the	1	0	0	1	0	1		none
+xnli	Hypothesis: The art was acquired and was put	1	0	0	1	0	1		none
+xnli	Hypothesis: The art was acquired, which was	1	0	0	1	0	1		none
+xnli	Hypothesis: Endangered animals are helped by Nussbaum	1	0	0	1	0	1		none
+xnli	Hypothesis: Some of the endangered animals helped by	1	0	0	1	0	1		none
+xnli	ہم ایک سیزن میں ایک فیسٹی	1	0	0	1	0	1		none
+xnli	Chris Young is a man who is our Membership Services	1	0	0	1	0	1		none
+xnli	Hypothesis: If you have any additional questions,	1	0	0	1	0	1		none
+xnli	Hypothesis: Please call our Membership Services Coordinator if	1	0	0	1	0	1		none
+xnli	Hypothesis: 100% of our	1	0	0	1	0	1		none
+xnli	17% of our alumni contributed to the	1	0	0	1	0	1		none
+xnli	Hypothesis: Alumni contributions to the school have increased	1	0	0	1	0	1		none
+xnli	Hypothesis: Here is a membership application you can	1	0	0	1	0	1		none
+xnli	Hypothesis: Eugene Debs never left California.	1	0	0	1	0	1		none
+xnli	Hypothesis: Eugene Debs played sports at UI	1	0	0	1	0	1		none
+xnli	Hypothesis: Most people gave more than $1	1	0	0	1	0	1		none
+xnli	Hypothesis: No one donated more than $5	1	0	0	1	0	1		none
+xnli	someone gave over $2,800.	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے کہ اس سرمایہ	1	0	0	1	0	1		none
+xnli	Hypothesis: They gutted the apartments and red	1	0	0	1	0	1		none
+xnli	Hypothesis: The IRT Education Programs help kids	1	0	0	1	0	1		none
+xnli	Hypothesis: I work with President Bush.	1	0	0	1	0	1		none
+xnli	Hypothesis: I have directed other plays since then	1	0	0	1	0	1		none
+xnli	Hypothesis: I have never worked as a stage	1	0	0	1	0	1		none
+xnli	Hypothesis: We don't need any more funds for	1	0	0	1	0	1		none
+xnli	Hypothesis: We need your help to keep our	1	0	0	1	0	1		none
+xnli	Hypothesis: Heart cells can be transplanted in animals	1	0	0	1	0	1		none
+xnli	پیش فرض: سائنس میں شائع ہونے والی	1	0	0	1	0	1		none
+xnli	Hypothesis: School have more money than they could	1	0	0	1	0	1		none
+xnli	Hypothesis: Schools have had their arts programs cut	1	0	0	1	0	1		none
+xnli	Hypothesis: You have to donate more than $	1	0	0	1	0	1		none
+xnli	Hypothesis: It would be great if the fundraising	1	0	0	1	0	1		none
+xnli	Hypothesis: The center said no visitors could come	1	0	0	1	0	1		none
+xnli	Hypothesis: The center was happy to have so	1	0	0	1	0	1		none
+xnli	Hypothesis: Dr. Field is the most important	1	0	0	1	0	1		none
+xnli	Hypothesis: Dr. Field works as a dentist	1	0	0	1	0	1		none
+xnli	Hypothesis: Dr. Field works at IU's	1	0	0	1	0	1		none
+xnli	Hypothesis: I hope you send this back to	1	0	0	1	0	1		none
+xnli	Hypothesis: The Republican National Convention has only been	1	0	0	1	0	1		none
+xnli	Hypothesis: The Republican National Convention is always in	1	0	0	1	0	1		none
+xnli	Hypothesis: There are no state schools in Indianapolis	1	0	0	1	0	1		none
+xnli	Hypothesis: Two state schools in Indianapolis are joining	1	0	0	1	0	1		none
+xnli	Your contribution will assist the IRT.	1	0	0	1	0	1		none
+xnli	Hypothesis: The museum always hits their funding goals	1	0	0	1	0	1		none
+xnli	Hypothesis: The museum is $500	1	0	0	1	0	1		none
+xnli	Bepko honored Kent.	1	0	0	1	0	1		none
+xnli	Hypothesis: We are becoming dependent on others.	1	0	0	1	0	1		none
+xnli	Hypothesis: We hope you will help us as	1	0	0	1	0	1		none
+xnli	Hypothesis: You received a degree in molecular biology	1	0	0	1	0	1		none
+xnli	Hypothesis: Two thirds of female business leaders have	1	0	0	1	0	1		none
+xnli	Hypothesis: The AMRA Annual Meeting is in	1	0	0	1	0	1		none
+xnli	There is a challenge for the seniors.	1	0	0	1	0	1		none
+xnli	Hypothesis: The humane society cares for 1	1	0	0	1	0	1		none
+xnli	Hypothesis: The humane society is Nashua's	1	0	0	1	0	1		none
+xnli	Hypothesis: We had everything we really needed.	1	0	0	1	0	1		none
+xnli	Hypothesis: I don’t have anything to do	1	0	0	1	0	1		none
+xnli	Hypothesis: I have worked on fundraising for the	1	0	0	1	0	1		none
+xnli	Hypothesis: I have worked with IRT for	1	0	0	1	0	1		none
+xnli	Hypothesis: Alan Dixon is a Democrat politician.	1	0	0	1	0	1		none
+xnli	یہ پیش کش ہے کہ الین ڈاکسن	1	0	0	1	0	1		none
+xnli	Hypothesis: Alan Dixon was a state senator.	1	0	0	1	0	1		none
+xnli	Hypothesis: They started the award in 1	1	0	0	1	0	1		none
+xnli	Hypothesis: Indiana doesn't offer tax credits.	1	0	0	1	0	1		none
+xnli	یہ دونوں الفاظ ایک دوسرے سے متعلق ہیں،	1	0	0	1	0	1		none
+xnli	Hypothesis: The YMCA has over	1	0	0	1	0	1		none
+xnli	Hypothesis: The YMCA strives to promote	1	0	0	1	0	1		none
+xnli	There are two levels of Friends.	1	0	0	1	0	1		none
+xnli	Hypothesis: We don't need any more donations.	1	0	0	1	0	1		none
+xnli	ہم تاریخ، ادب اور سماجی مط	1	0	0	1	0	1		none
+xnli	ہم نے تین تاریخی ناول کھیلے ہیں	1	0	0	1	0	1		none
+xnli	ہم تاریخ یا ادب سے متعلق پلے نہیں	1	0	0	1	0	1		none
+xnli	Hypothesis: Brit Hume is the lead reporter at	1	0	0	1	0	1		none
+xnli	Hume speculates on why Lewinsky might not have	1	0	0	1	0	1		none
+xnli	Hypothesis: I learned about the United States	1	0	0	1	0	1		none
+xnli	The world’s oldest and largest university press, Oxford	1	0	0	1	0	1		none
+xnli	Hypothesis: The Enquirer didn't talk about	1	0	0	1	0	1		none
+xnli	Hypothesis: The Enquirer had information about	1	0	0	1	0	1		none
+xnli	Hypothesis: The Enquirer had pictures of	1	0	0	1	0	1		none
+xnli	Hypothesis: Sidewalk It made a recording.	1	0	0	1	0	1		none
+xnli	Hypothesis: Sidewalk It recorded music.	1	0	0	1	0	1		none
+xnli	Hypothesis: Sidewalk It recorded nothing.	1	0	0	1	0	1		none
+xnli	Hypothesis: Johnson never thought about withdrawing.	1	0	0	1	0	1		none
+xnli	Hypothesis: Johnson threatened to withdraw.	1	0	0	1	0	1		none
+xnli	یہ ایک نتیجہ ہے، کیونکہ یہ ایک ایسی	1	0	0	1	0	1		none
+xnli	Hypothesis: The White House uses the FBI properly	1	0	0	1	0	1		none
+xnli	Hypothesis: Mr Singleton is a convicted rapist	1	0	0	1	0	1		none
+xnli	Hypothesis: Jacob Weisberg's excellent essay,	1	0	0	1	0	1		none
+xnli	یہ ایک سوال ہے جس کا جواب آپ کو خود	1	0	0	1	0	1		none
+xnli	Hypothesis: Yes, it is a form of	1	0	0	1	0	1		none
+xnli	Hypothesis: Woodward wrote a book about Colin Powell	1	0	0	1	0	1		none
+xnli	Hypothesis: None of them have succeeded.	1	0	0	1	0	1		none
+xnli	Hypothesis: Some of them have been successful during	1	0	0	1	0	1		none
+xnli	Hypothesis: Some of them have been successful.	1	0	0	1	0	1		none
+xnli	یہ سوال ایک ایسے شخص کے ساتھ محبت کا معامل	1	0	0	1	0	1		none
+xnli	Hypothesis: The question is related to love and	1	0	0	1	0	1		none
+xnli	Hypothesis: They did a good job designing the	1	0	0	1	0	1		none
+xnli	Hypothesis: They hired seasoned architects to design the	1	0	0	1	0	1		none
+xnli	Kabul is one of the cities with liberal minded residents	1	0	0	1	0	1		none
+xnli	someone	1	0	0	1	0	1		none
+xnli	Hypothesis: Nobody should pay to use it.	1	0	0	1	0	1		none
+xnli	Harriman was married eight times.	1	0	0	1	0	1		none
+xnli	Hypothesis: The agency has specialized software for the	1	0	0	1	0	1		none
+xnli	نہیں، یہ غلط ہے۔	1	0	0	1	0	1		none
+xnli	Hypothesis: Armey is all we are left	1	0	0	1	0	1		none
+xnli	Hypothesis: Armey is no where to be	1	0	0	1	0	1		none
+xnli	Hypothesis: People didn't respond at all.	1	0	0	1	0	1		none
+xnli	غلط۔ یہ پیش کش ہے، جو کہ ایک	1	0	0	1	0	1		none
+xnli	Hypothesis: 1mg at night is a	1	0	0	1	0	1		none
+xnli	3 mg is too much to take at night	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے۔	1	0	0	1	0	1		none
+xnli	Hypothesis: I was 12 when I	1	0	0	1	0	1		none
+xnli	Hypothesis: I went to the Christmas Pageant	1	0	0	1	0	1		none
+xnli	Hypothesis: The Smithsonian's webpage was created	1	0	0	1	0	1		none
+xnli	Hypothesis: Glass is a painter.	1	0	0	1	0	1		none
+xnli	Hypothesis: Glass is a writer for the Times	1	0	0	1	0	1		none
+xnli	Hypothesis: Glass is a writer.	1	0	0	1	0	1		none
+xnli	Walcott's father was a painter and teacher.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are no known interviews with Michael	1	0	0	1	0	1		none
+xnli	Hypothesis: Some Asians crossed the Bering Strait	1	0	0	1	0	1		none
+xnli	Hypothesis: Greenlee County has a public library	1	0	0	1	0	1		none
+xnli	Hypothesis: Greenlee County has multiple public libraries	1	0	0	1	0	1		none
+xnli	Hypothesis: Greenlee County is not located in	1	0	0	1	0	1		none
+xnli	Hypothesis: I was expected to sign up.	1	0	0	1	0	1		none
+xnli	Hypothesis: Some files cannot be deleted while Windows	1	0	0	1	0	1		none
+xnli	Hypothesis: Public health consequences are not related to	1	0	0	1	0	1		none
+xnli	ہاں، میں واقعی سنجیدہ ہوں۔	1	0	0	1	0	1		none
+xnli	غلط۔	1	0	0	1	0	1		none
+xnli	Hypothesis: Glenn Loury is a street swe	1	0	0	1	0	1		none
+xnli	Hypothesis: Would I purchase a set for myself	1	0	0	1	0	1		none
+xnli	Hypothesis: De Kooning ended up dying	1	0	0	1	0	1		none
+xnli	Hypothesis: De Kooning is in perfect	1	0	0	1	0	1		none
+xnli	Premise اور Hypothesis کے درمیان کوئی فرق نہیں	1	0	0	1	0	1		none
+xnli	Newsweek published a story about the Hamptons	1	0	0	1	0	1		none
+xnli	Hypothesis: Heseltine has no plans to	1	0	0	1	0	1		none
+xnli	Hypothesis: Other people have noted this flow after	1	0	0	1	0	1		none
+xnli	Hypothesis: Facts contribute more to protests.	1	0	0	1	0	1		none
+xnli	Hypothesis: There exist both facts and speculation.	1	0	0	1	0	1		none
+xnli	Hypothesis: The White House has made a decision	1	0	0	1	0	1		none
+xnli	Hypothesis: The theories identify ages with features of	1	0	0	1	0	1		none
+xnli	Hypothesis: The theories identify ages with features.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are no theories.	1	0	0	1	0	1		none
+xnli	Hypothesis: Debrah Eappen gave an interview	1	0	0	1	0	1		none
+xnli	Hypothesis: I did not eat the cake the	1	0	0	1	0	1		none
+xnli	Hypothesis: The doctor sent me a bottle of	1	0	0	1	0	1		none
+xnli	The team had a name before this one that could	1	0	0	1	0	1		none
+xnli	Hypothesis: Writers are very meticulous; not	1	0	0	1	0	1		none
+xnli	Hypothesis: I found the definition in the thes	1	0	0	1	0	1		none
+xnli	Hypothesis: I looked in the thesaurus and	1	0	0	1	0	1		none
+xnli	یہ ایک سوال ہے جو ایک پیش کش (p	1	0	0	1	0	1		none
+xnli	Hypothesis: It has all of the slang contained	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a lot of different slang	1	0	0	1	0	1		none
+xnli	Hypothesis: The 1984 edition is the	1	0	0	1	0	1		none
+xnli	Hypothesis: The book is not for sale.	1	0	0	1	0	1		none
+xnli	Hypothesis: The supplement is cheaper than the book	1	0	0	1	0	1		none
+xnli	Hypothesis: Phonemes do not ever change	1	0	0	1	0	1		none
+xnli	Split Ends is a hair salon.	1	0	0	1	0	1		none
+xnli	Split Ends is an ice cream shop.	1	0	0	1	0	1		none
+xnli	Split Ends is for edgy people.	1	0	0	1	0	1		none
+xnli	Hypothesis: Nebraska doesn't have any cities with funny	1	0	0	1	0	1		none
+xnli	Hypothesis: Surprise Nebraska has 1,	1	0	0	1	0	1		none
+xnli	Hypothesis: Surprise is a town in Nebraska	1	0	0	1	0	1		none
+xnli	Illiteracy is a major issue in the third world	1	0	0	1	0	1		none
+xnli	Hypothesis: Anglo- Saxon input is very important	1	0	0	1	0	1		none
+xnli	Hypothesis: M. Tesniares did not	1	0	0	1	0	1		none
+xnli	Hypothesis: M. Tesniares performs Anglo	1	0	0	1	0	1		none
+xnli	Hypothesis: Excessive heat can cause dizziness in some	1	0	0	1	0	1		none
+xnli	Hypothesis: Vanilla comes from a tropical plant.	1	0	0	1	0	1		none
+xnli	Hypothesis: Vanilla is named after a Dutch word	1	0	0	1	0	1		none
+xnli	Hypothesis: The British had no respect.	1	0	0	1	0	1		none
+xnli	Hypothesis: Other currencies also use names of weights	1	0	0	1	0	1		none
+xnli	Hypothesis: June and July are also very hot	1	0	0	1	0	1		none
+xnli	Hypothesis: The weather is hot and rainless	1	0	0	1	0	1		none
+xnli	Hypothesis: In order to avoid heartbreak.	1	0	0	1	0	1		none
+xnli	Hypothesis: In order to avoid loss.	1	0	0	1	0	1		none
+xnli	Hypothesis: In order to seek loss.	1	0	0	1	0	1		none
+xnli	Say break	1	0	0	1	0	1		none
+xnli	Hypothesis: The Greek word from which diagnosis was	1	0	0	1	0	1		none
+xnli	Hypothesis: The origins of the word diagnosis can	1	0	0	1	0	1		none
+xnli	Hypothesis: There is evidence to suggest that diagnosis	1	0	0	1	0	1		none
+xnli	Hypothesis: I am sure the Yiddish will still	1	0	0	1	0	1		none
+xnli	Hypothesis: The Yiddish culture has survived for more	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگوئی ہے۔ یہ پیشگو	1	0	0	1	0	1		none
+xnli	Hypothesis: Boswell wrote the Life of Johnson	1	0	0	1	0	1		none
+xnli	Hypothesis: I have never heard of the International	1	0	0	1	0	1		none
+xnli	Hypothesis: This review is limited in scope and	1	0	0	1	0	1		none
+xnli	VIP is not an example.	1	0	0	1	0	1		none
+xnli	VIP (Vasoactive Intestinal Poly- peptide	1	0	0	1	0	1		none
+xnli	Hypothesis: The book talks about the meanings of	1	0	0	1	0	1		none
+xnli	یہ ایک مضبوط پیشگوئی ہے کہ یہ	1	0	0	1	0	1		none
+xnli	Hypothesis: Dictionaries do not talk about these	1	0	0	1	0	1		none
+xnli	Hypothesis: Dictionaries usually expound on these	1	0	0	1	0	1		none
+xnli	Hypothesis: There are other experts in the field	1	0	0	1	0	1		none
+xnli	Goistering refers to a baby laugh.	1	0	0	1	0	1		none
+xnli	Hypothesis: He made it a rhyming	1	0	0	1	0	1		none
+xnli	Hypothesis: He wrote a poem with the word	1	0	0	1	0	1		none
+xnli	Hypothesis: Huevos is fun to say.	1	0	0	1	0	1		none
+xnli	Hypothesis: French translations are not interesting without any	1	0	0	1	0	1		none
+xnli	Hypothesis: There are only three articles.	1	0	0	1	0	1		none
+xnli	There are twelve articles collected together in the book.	1	0	0	1	0	1		none
+xnli	There are twelve articles in the collection.	1	0	0	1	0	1		none
+xnli	Hypothesis: Echar sapos y culebras	1	0	0	1	0	1		none
+xnli	اس کے ساتھ، ہم کہہ سکتے ہیں کہ اس	1	0	0	1	0	1		none
+xnli	Hypothesis: Languages can never be combined.	1	0	0	1	0	1		none
+xnli	Hypothesis: Some languages are other languages combined.	1	0	0	1	0	1		none
+xnli	Hypothesis: Some languages get made up by children	1	0	0	1	0	1		none
+xnli	Hypothesis: Mathematical instructions written for computers never contain	1	0	0	1	0	1		none
+xnli	Hypothesis: We only use the historic spellings	1	0	0	1	0	1		none
+xnli	ہم شیکسپیر کے کاموں کے عنوان	1	0	0	1	0	1		none
+xnli	ہم ایک دوسرے کو بھولنے سے بچنے	1	0	0	1	0	1		none
+xnli	Hypothesis: Lucretius lived two thousand	1	0	0	1	0	1		none
+xnli	Hypothesis: I had only been on the Cont	1	0	0	1	0	1		none
+xnli	Hypothesis: Alice said no.	1	0	0	1	0	1		none
+xnli	Both Indians and white settlers used the oil from Oil	1	0	0	1	0	1		none
+xnli	Hypothesis: Nobody ever used the oil from Oil	1	0	0	1	0	1		none
+xnli	Hypothesis: The oil was an effective medicine for	1	0	0	1	0	1		none
+xnli	Hypothesis: Typesetters and typists never	1	0	0	1	0	1		none
+xnli	Hypothesis: Linguists make a lot of money	1	0	0	1	0	1		none
+xnli	Hypothesis: The technical term for this is not	1	0	0	1	0	1		none
+xnli	Hypothesis: There are few shepherds	1	0	0	1	0	1		none
+xnli	Hypothesis: The Construction Batallion is an independent	1	0	0	1	0	1		none
+xnli	Hypothesis: The Construction Batallion is one of	1	0	0	1	0	1		none
+xnli	Hypothesis: The abbreviation of the Construction Batallion	1	0	0	1	0	1		none
+xnli	Hypothesis: Skeat is going to pay attention	1	0	0	1	0	1		none
+xnli	Hypothesis: Skeat will study the note every	1	0	0	1	0	1		none
+xnli	There are two volumes of laws concerning trademarks.	1	0	0	1	0	1		none
+xnli	Hypothesis: I am interested in LBC Radio	1	0	0	1	0	1		none
+xnli	Hypothesis: I don't own a radio and have	1	0	0	1	0	1		none
+xnli	Hypothesis: It is very obvious what happens.	1	0	0	1	0	1		none
+xnli	Hypothesis: What happens is a surprise.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Gazette was the most popular newspaper	1	0	0	1	0	1		none
+xnli	Hypothesis: The Gazette was the news paper in	1	0	0	1	0	1		none
+xnli	Hypothesis: The newspaper in NY was called the	1	0	0	1	0	1		none
+xnli	They typed in numbers.	1	0	0	1	0	1		none
+xnli	Cliches are a certain type of expression.	1	0	0	1	0	1		none
+xnli	Hypothesis: Grammar has changed but not too	1	0	0	1	0	1		none
+xnli	Hypothesis: Grammar has changed so much that	1	0	0	1	0	1		none
+xnli	The reference I have is sketchy.	1	0	0	1	0	1		none
+xnli	Hypothesis: The reference i have is complete.	1	0	0	1	0	1		none
+xnli	Money got its name from animals.	1	0	0	1	0	1		none
+xnli	Hypothesis: Hackers enjoy translating computer slang into	1	0	0	1	0	1		none
+xnli	Hypothesis: Hackers would not understand what I	1	0	0	1	0	1		none
+xnli	Hypothesis: I think hackers can generally understand computer	1	0	0	1	0	1		none
+xnli	Hypothesis: There are 200 syll	1	0	0	1	0	1		none
+xnli	Hypothesis: There are more than 10	1	0	0	1	0	1		none
+xnli	Hypothesis: There are only 50 syll	1	0	0	1	0	1		none
+xnli	'The e stands for the phoneme /e	1	0	0	1	0	1		none
+xnli	Hypothesis: There are 20 varieties of	1	0	0	1	0	1		none
+xnli	Hypothesis: That person is being discharged honorably	1	0	0	1	0	1		none
+xnli	Hypothesis: That person is being discharged.	1	0	0	1	0	1		none
+xnli	Hypothesis: Mr. Levitt was childless	1	0	0	1	0	1		none
+xnli	Hypothesis: Mr. Levitt had a daughter	1	0	0	1	0	1		none
+xnli	Hypothesis: Mr. Levitt's daughter was	1	0	0	1	0	1		none
+xnli	Hypothesis: The subjective satisfactory is a person.	1	0	0	1	0	1		none
+xnli	Hypothesis: The subjective satisfactory is not trouble.	1	0	0	1	0	1		none
+xnli	Hypothesis: Honey's treatment needs no explanation.	1	0	0	1	0	1		none
+xnli	women are included in the label of man.	1	0	0	1	0	1		none
+xnli	Hypothesis: The pronunciation list helped everyone.	1	0	0	1	0	1		none
+xnli	Hypothesis: Typewriters require electric assistance to	1	0	0	1	0	1		none
+xnli	Hypothesis: Typewriters required no electric components	1	0	0	1	0	1		none
+xnli	Hypothesis: Gruyare makes the best cheese	1	0	0	1	0	1		none
+xnli	Hypothesis: I cannot see that curious little beast	1	0	0	1	0	1		none
+xnli	Hypothesis: I enjoy reading back magazine issues.	1	0	0	1	0	1		none
+xnli	Hypothesis: I only read current issues.	1	0	0	1	0	1		none
+xnli	Hypothesis: Some groups need to make up new	1	0	0	1	0	1		none
+xnli	Hypothesis: The groups can't make up new words	1	0	0	1	0	1		none
+xnli	Hypothesis: It is easy to add carvings	1	0	0	1	0	1		none
+xnli	Hypothesis: It is easy to make a variation	1	0	0	1	0	1		none
+xnli	Hypothesis: It is hard to make a variation	1	0	0	1	0	1		none
+xnli	یہ نہیں کہ مغربی روایت میں نیکر ہونے کا	1	0	0	1	0	1		none
+xnli	یہ نہیں کہ مغربی روایت میں نیک ہونے کا ایک	1	0	0	1	0	1		none
+xnli	Hypothesis: No one answered the caller.	1	0	0	1	0	1		none
+xnli	The caller was thankful.	1	0	0	1	0	1		none
+xnli	Hypothesis: A slow and painful urine stream was	1	0	0	1	0	1		none
+xnli	Via della Scrofa is a sculpture.	1	0	0	1	0	1		none
+xnli	Via della Scrofa is named after a town	1	0	0	1	0	1		none
+xnli	Via della Scrofa is named after another sculpture	1	0	0	1	0	1		none
+xnli	Hypothesis: I keep speeches the same.	1	0	0	1	0	1		none
+xnli	Hypothesis: I reedit speeches for my job	1	0	0	1	0	1		none
+xnli	Hypothesis: I reedit speeches.	1	0	0	1	0	1		none
+xnli	Hypothesis: Prisoners created them.	1	0	0	1	0	1		none
+xnli	Hypothesis: It would be better if Davidson rh	1	0	0	1	0	1		none
+xnli	海滩	1	0	0	1	0	1		none
+xnli	当然	1	0	0	1	0	1		none
+xnli	够自然	1	0	0	1	0	1		none
+xnli	关系是：entailment.	1	1	0	0	0	1	entailment	english_substring
+xnli	非交换交易-收益和损失	1	0	0	1	0	1		none
+xnli	不是	1	0	0	1	0	1		none
+xnli	重复	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它可以被推	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾，因为假设中所有的	1	1	0	0	0	1	contradiction	native_substring
+xnli	我们正在看电视。	1	0	0	1	0	1		none
+xnli	哈利波特的书是我的最爱	1	0	0	1	0	1		none
+xnli	假设与前提无关。	1	0	0	1	0	1		none
+xnli	一致	1	0	0	1	0	1		none
+xnli	是的，它很乖。	1	0	0	1	0	1		none
+xnli	是的，噢，你有什么样的小狗	1	0	0	1	0	1		none
+xnli	假设和前提是等同的。	1	0	0	1	0	1		none
+xnli	听起来像是个可怕的经历。	1	0	0	1	0	1		none
+xnli	前提和假设是两种不同的概念。前提	1	0	0	1	0	1		none
+xnli	海滩很漂亮，海滩是我的	1	0	0	1	0	1		none
+xnli	没有问题。	1	0	0	1	0	1		none
+xnli	计算机科学和认知科学之间存在entail	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它直接从前提	1	0	0	1	0	1		none
+xnli	我们会发生什么？	1	0	0	1	0	1		none
+xnli	假设是前提的延伸，强调了位	1	0	0	1	0	1		none
+xnli	胡德的RCA建筑是更有创意	1	0	0	1	0	1		none
+xnli	枪支和其他形式的武器属于这一类	1	0	0	1	0	1		none
+xnli	假设是前提的entailment，因为它	1	0	0	1	0	1		none
+xnli	乐高世界可以构建机器工具来构建	1	0	0	1	0	1		none
+xnli	假设entails前提，因为假设中提到pie	1	0	0	1	0	1		none
+xnli	隐含。	1	0	0	1	0	1		none
+xnli	父母如何辨别语言障碍和正常语言	1	0	0	1	0	1		none
+xnli	假设是前提的肯定。	1	0	0	1	0	1		none
+xnli	假设entails前提，因为假设表明前提是	1	0	0	1	0	1		none
+xnli	这些露天市场也是北京最有趣的	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它暗示了前提	1	0	0	1	0	1		none
+xnli	都拉史特拉朵民间舞蹈剧	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾，因为假设的天气	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设与前提不矛盾，也没有被前提	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的延伸，强调了他们	1	0	0	1	0	1		none
+xnli	假设是前提的entailment。ent	1	0	0	1	0	1		none
+xnli	假设与前提不矛盾，因为假设是前提	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设entails前提，因为它包含在前提	1	0	0	1	0	1		none
+xnli	假设是正确的，因为如果Milne和R	1	0	0	1	0	1		none
+xnli	假设entails前提，因为如果证人不愿作	1	0	0	1	0	1		none
+xnli	假设是entailment，因为它推测	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它不能被证明	1	0	0	1	0	1		none
+xnli	假设是前提的延展，表明网络	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它支持或解释	1	0	0	1	0	1		none
+xnli	这些官员试图将尽可能多的人从	1	0	0	1	0	1		none
+xnli	假设是前提的直接结果，因为如果 FBI	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它与前提相	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它直接支持并	1	0	0	1	0	1		none
+xnli	假设entails 前提，因为它可以从	1	0	0	1	0	1		none
+xnli	支持	1	0	0	1	0	1		none
+xnli	假设是前提的entailment，因为假设	1	0	0	1	0	1		none
+xnli	假设与前提不矛盾。	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是entailment，因为如果前提成立	1	0	0	1	0	1		none
+xnli	假设是前提的延伸，强调了我们	1	0	0	1	0	1		none
+xnli	假设是前提的延伸和扩展。假设	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它基于前提的事实	1	0	0	1	0	1		none
+xnli	假设是前提的自然延伸。假设是	1	0	0	1	0	1		none
+xnli	平衡是重要的。	1	0	0	1	0	1		none
+xnli	假设是entailment，因为它直接依赖	1	0	0	1	0	1		none
+xnli	假设是entailment，因为它依赖于	1	0	0	1	0	1		none
+xnli	这是因为皮大衣更保暖、更耐	1	0	0	1	0	1		none
+xnli	排泄	1	0	0	1	0	1		none
+xnli	前提和假设是两个不同的概念，但它们	1	0	0	1	0	1		none
+xnli	社会学构成了答案的一个方面。	1	0	0	1	0	1		none
+xnli	混合计划和小额支付计划是两种不同的	1	0	0	1	0	1		none
+xnli	前提：让大学新生探索这两所	1	0	0	1	0	1		none
+xnli	让大学新生探索这两所大学现状	1	0	0	1	0	1		none
+xnli	终结理论和假设之间存在矛盾，因为	1	0	1	0	0	1	contradiction	native_substring
+xnli	没有。	1	0	0	1	0	1		none
+xnli	没有entailment、contradiction或中立	1	0	1	0	0	1	neutral	native_substring
+xnli	这些报纸的名声不好。	1	0	0	1	0	1		none
+xnli	前提和假设之间没有直接的关系。	1	0	0	1	0	1		none
+xnli	红色。	1	0	0	1	0	1		none
+xnli	假设是前提的延伸或解释。	1	0	0	1	0	1		none
+xnli	没有entailment、contradiction或neutral	1	1	0	0	0	1	neutral	native_substring
+xnli	卡普兰先生一代的大部分人已经	1	0	0	1	0	1		none
+xnli	只有三篇文章。	1	0	0	1	0	1		none
+xnli	陈词滥调是一种特定的表达方式。	1	0	0	1	0	1		none
+xnli	陈词滥调是美味的食物。	1	0	0	1	0	1		none
+xnli	好	1	0	0	1	0	1		none
+xnli	解释	1	0	0	1	0	1		none
+xnli	嗯，我有三个孩子。	1	0	0	1	0	1		none
+xnli	故事的结局是：	1	0	0	1	0	1		none
+xnli	好，假设我同意五天的等待时间	1	0	0	1	0	1		none
+xnli	好吧，假设我们认为等待手枪	1	0	0	1	0	1		none
+xnli	而你是少数派，	1	0	0	1	0	1		none
+xnli	当你在逛街的时候，你在寻找的是	1	0	0	1	0	1		none
+xnli	连	1	0	0	1	0	1		none
+xnli	呃，嗯，嗯，嗯，	1	0	0	1	0	1		none
+xnli	帕丘卡是年轻的Chicanas	1	0	0	1	0	1		none
+xnli	然而，	1	0	0	1	0	1		none
+xnli	然而	1	0	0	1	0	1		none
+xnli	显性孟德尔基因，环境条件	1	0	0	1	0	1		none
+xnli	而当然	1	0	0	1	0	1		none
+xnli	当	1	0	0	1	0	1		none
+xnli	照你的方法，美术宫都是原创的	1	0	0	1	0	1		none
+xnli	限制	1	0	0	1	0	1		none
+xnli	避免	1	0	0	1	0	1		none
+xnli	有关盖茨报告的建议，参见	1	0	0	1	0	1		none
+xnli	参见2	1	0	0	1	0	1		none
+xnli	再次附上会员申请表和商务回复	1	0	0	1	0	1		none
+xnli	因此	1	0	0	1	0	1		none
+xnli	当然可以！	1	0	0	1	0	1		none
+xnli	保留微波炉的货币成本为6	1	0	0	1	0	1		none
+xnli	反诽谤联盟 (Anti-	1	0	0	1	0	1		none
+xnli	好吧，	1	0	0	1	0	1		none
+xnli	肯定	1	0	0	1	0	1		none
+xnli	道路保洁员	1	0	0	1	0	1		none
+xnli	许多人怎么会无所作为？	1	0	0	1	0	1		none
+xnli	并且带着自豪感，	1	0	0	1	0	1		none
+xnli	停止	1	0	0	1	0	1		none
+xnli	交叉谈话取决于观众。	1	0	0	1	0	1		none
+xnli	Hypothesis: 1900 میں پیدا ہوا۔	1	0	0	1	0	1		none
+xnli	اگر ہم ہود کی آر سی اے عم	1	0	0	1	0	1		none
+xnli	Balzac's house and Delacroix's studio	1	0	0	1	0	1		none
+xnli	HIC نے ایک سروے بھیجا۔	1	0	0	1	0	1		none
+xnli	Hypothesis: 没有记录帮助派发۔	1	0	0	1	0	1		none
+xnli	Hypothesis: 6th month recorded fire alarm	1	0	0	1	0	1		none
+xnli	یہ دونوں طیارے 2001 میں	1	0	0	1	0	1		none
+xnli	KSM 2003 میں جیل میں رہا	1	0	0	1	0	1		none
+xnli	2003 کے جولائی 1 اور	1	0	0	1	0	1		none
+xnli	توازن کی تلاش میں؟ تو، توازن	1	0	0	1	0	1		none
+xnli	فرضیہ: فیڈرل ڈاکٹر	1	0	0	1	0	1		none
+xnli	فرضیہ: ہیریمن امریکہ کے	1	0	0	1	0	1		none
+xnli	1. Premise: 保持整合主义	1	0	0	1	0	1		none
+xnli	1. 1972 میں، فیلی	1	0	0	1	0	1		none
+xnli	e 代表音素 /e/, 在这个	1	0	0	1	0	1		none
+xnli	Premise: 一个不同的是, 其他小组	1	0	0	1	0	1		none
+xnli	Hypothesis: 25美元的20	1	0	0	1	0	1		none
+xnli	Entendí.	1	0	0	1	0	1		none
+xnli	entrometiéndose	1	0	0	1	0	1		none
+xnli	Limitan	1	0	0	1	0	1		none
+xnli	假设是前提的否定或反驳。	1	0	0	1	0	1		none
+xnli	1900.	1	0	0	1	0	1		none
+xnli	假设推论了前提。	1	0	0	1	0	1		none
+xnli	假设与前提不矛盾，也没有强加	1	1	0	0	0	1	contradiction	native_substring
+xnli	Sí, tengo un cachorro de raza mixta	1	0	0	1	0	1		none
+xnli	Bueno, dije que tenía hijos, ¿cu	1	0	0	1	0	1		none
+xnli	假设是前提的实现。	1	0	0	1	0	1		none
+xnli	假设是正确的，因为它表明两个建筑之间的	1	0	0	1	0	1		none
+xnli	假设是中立的，因为它没有涉及	1	0	1	0	0	1	neutral	native_substring
+xnli	只有一个答案。	1	0	0	1	0	1		none
+xnli	假设是正确的，因为一个正常的语言发展过程	1	0	0	1	0	1		none
+xnli	¡Ah! 意味着“是的”，这意味着	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它提供了前提中	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾，因为假设声称水	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的矛盾，因为假设中提	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的自然延伸，提出了一种	1	0	0	1	0	1		none
+xnli	假设是错误的，因为 Whitehorse 不是一个	1	0	0	1	0	1		none
+xnli	假设是矛盾的，因为它声称MIT在	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的等同关系。假设	1	0	0	1	0	1		none
+xnli	假设: Centrelink no sabe cómo abordar el	1	0	0	1	0	1		none
+xnli	假设是前提的矛盾。假设声称发展	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设与前提之间存在矛盾。假设提出	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是错误的，因为它假设了前提是	1	0	0	1	0	1		none
+xnli	20 Contrariamente, el desahorro	1	0	0	1	0	1		none
+xnli	假设是矛盾的，因为它否定了前提	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是entailment，因为它暗示着	1	0	0	1	0	1		none
+xnli	假设是正确的，因为它表明在不同的地理	1	0	0	1	0	1		none
+xnli	假设是前提的反面。假设认为	1	0	0	1	0	1		none
+xnli	假设是entailment，因为它意味着Mih	1	0	0	1	0	1		none
+xnli	假设entails 前提，因为它直接支持	1	0	0	1	0	1		none
+xnli	假设entails 前提，因为假设提供了关于	1	0	0	1	0	1		none
+xnli	假设entailment.	1	0	0	1	0	1		none
+xnli	假设是正确的，因为如果 FBI 没有在	1	0	0	1	0	1		none
+xnli	假设是前提的假设，因为它暗示了	1	0	0	1	0	1		none
+xnli	假设entails前提，因为它直接支持前提	1	0	0	1	0	1		none
+xnli	假设是前提的假设，因为假设是前提	1	0	0	1	0	1		none
+xnli	假设是前提的假设，因为它假设前提	1	0	0	1	0	1		none
+xnli	假设是前提的否定。假设表明前提	1	0	0	1	0	1		none
+xnli	假设与前提不矛盾，也没有明确的	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的推论，因为假设是	1	0	0	1	0	1		none
+xnli	假设是矛盾的，因为它与前提不	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的矛盾，因为假设中假设	1	1	0	0	0	1	contradiction	native_substring
+xnli	假设是前提的矛盾，因为假设表明过去	1	0	1	0	0	1	contradiction	native_substring
+xnli	假设entails 前提，因为它基于前提	1	0	0	1	0	1		none
+xnli	假设和前提是等价的，因为假设	1	0	0	1	0	1		none
+xnli	假设是前提的推论，因为它基于	1	0	0	1	0	1		none
+xnli	假设是中立的，因为它没有与	1	0	1	0	0	1	neutral	native_substring
+xnli	没有答案。	1	0	0	1	0	1		none
+xnli	假设是肯定的，因为它与前提相	1	0	0	1	0	1		none
+xnli	假设是前提的假设，因为它延伸了	1	0	0	1	0	1		none
+xnli	假设是中立的，因为它描述了一个	1	0	1	0	0	1	neutral	native_substring
+xnli	假设是关于彗星的。	1	0	0	1	0	1		none
+xnli	Ninguno de estos tiene mucho atractivo actual,	1	0	0	1	0	1		none
+xnli	比较前提和假设：	1	0	0	1	1	1		none
+xnli	一个人的行为是他们自己的选择和决定	1	0	0	1	0	1		none
+xnli	没有答案，因为这是一个开放式的问题，没有	1	0	0	1	0	1		none
+xnli	Ninguna otra profesión tiene una tradición de autodes	1	0	0	1	0	1		none
+xnli	假设是正确的，因为它暗示着前提是	1	0	0	1	0	1		none
+xnli	假设是正确的，因为假设 Missouri no era un	1	0	0	1	0	1		none
+xnli	假设是正确的，因为它表明 Missouri no es	1	0	0	1	0	1		none
+xnli	假设是前提的替代或补充。假设	1	0	0	1	0	1		none
+xnli	Apuesto.	1	0	0	1	0	1		none
+xnli	Implicación.	1	1	0	0	0	1	entailment	native_substring
+xnli	Libertad.	1	0	0	1	0	1		none
+xnli	Libertad	1	0	0	1	0	1		none
+xnli	Coincidente	1	0	0	1	0	1		none
+xnli	Contratación	1	0	0	1	0	1		none
+xnli	Sociología.	1	0	0	1	0	1		none
+xnli	Hypothesis: Me retiré en 2020	1	0	0	1	0	1		none
+xnli	Hypothesis:	1	0	0	1	0	1		none
+xnli	Hypothesis: وہ تین مختلف زیرน้ำ� جہاز	1	0	0	1	0	1		none
+xnli	Hypothesis: وہ تین چیزوں پر بات کر رہے	1	0	0	1	0	1		none
+xnli	Hypothesis: El Jefe está retirado de la	1	0	0	1	0	1		none
+xnli	Hypothesis: Lo calcularé basándome en	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella no pesaba mucho.	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella estaba muy feliz.	1	0	0	1	0	1		none
+xnli	Hypothesis: Kennedy le dijo a nuestras tropas que	1	0	0	1	0	1		none
+xnli	Hypothesis: No pararon ningún barco porque no	1	0	0	1	0	1		none
+xnli	Hypothesis: Encontraron 20 mis	1	0	0	1	0	1		none
+xnli	Hypothesis: Mis abuelos eran una pareja	1	0	0	1	0	1		none
+xnli	Hypothesis: Nuestros trajes eran los mismos	1	0	0	1	0	1		none
+xnli	Hypothesis: No tuvimos formación con nadie.	1	0	0	1	0	1		none
+xnli	Hypothesis: Entrenamos durante 5 semanas	1	0	0	1	0	1		none
+xnli	Hypothesis: Entrenamos con otros muchos soldados	1	0	0	1	0	1		none
+xnli	Hypothesis: No he leído ningún libro que	1	0	0	1	0	1		none
+xnli	Hypothesis: No he leído muchos libros.	1	0	0	1	0	1		none
+xnli	Hypothesis: Leo libros todos los días.	1	0	0	1	0	1		none
+xnli	Hypothesis: Llevé la bolsa a donde	1	0	0	1	0	1		none
+xnli	یہ پہلی بار تھا کہ، 75	1	0	0	1	0	1		none
+xnli	Hypothesis: Embajadores TX.	1	0	0	1	0	1		none
+xnli	Hypothesis: Nació antes de 1900	1	0	0	1	0	1		none
+xnli	Hypothesis: Nació en diciembre de 1	1	0	0	1	0	1		none
+xnli	Hypothesis: Nació en mil ochocientos	1	0	0	1	0	1		none
+xnli	Entendí el punto.	1	0	0	1	0	1		none
+xnli	Hypothesis: No sé para qué se supone que	1	0	0	1	0	1		none
+xnli	Hypothesis: Fui a la capital de la	1	0	0	1	0	1		none
+xnli	Hypothesis: Papá me sirvió un vaso	1	0	0	1	0	1		none
+xnli	Hypothesis: La propiedad y el equipo fueron compr	1	0	0	1	0	1		none
+xnli	Hypothesis: Nació el 1 de enero	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella nació a principios del siglo	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella no nació hasta 1	1	0	0	1	0	1		none
+xnli	تو، تو، لیکن، تو، تو،	1	0	0	1	0	1		none
+xnli	Hypothesis: La Fuerza Aérea compró	1	0	0	1	0	1		none
+xnli	Hypothesis: Las fuerzas aéreas compraron av	1	0	0	1	0	1		none
+xnli	Hypothesis: Su hermana está casada con un	1	0	0	1	0	1		none
+xnli	Hypothesis: Su hermana está casada.	1	0	0	1	0	1		none
+xnli	Hypothesis: Su hermana está soltera.	1	0	0	1	0	1		none
+xnli	Hypothesis: Tenían veinte familiares que vivían	1	0	0	1	0	1		none
+xnli	Hypothesis: Vivían en Atlanta.	1	0	0	1	0	1		none
+xnli	Hypothesis: Ellos inventaron un nuevo regul	1	0	0	1	0	1		none
+xnli	Hypothesis: Nunca fui a Las Vegas.	1	0	0	1	0	1		none
+xnli	اس کے پاس ایک فائل ہے جس میں مختلف	1	0	0	1	0	1		none
+xnli	Hypothesis: Ellos no tienen ningún archivo.	1	0	0	1	0	1		none
+xnli	Hypothesis: Guardan todos los archivos.	1	0	0	1	0	1		none
+xnli	Hypothesis: Guardan los archivos médicos y legales	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella me dio dos versiones.	1	0	0	1	0	1		none
+xnli	Hypothesis: Augusta tiene 1000 personas.	1	0	0	1	0	1		none
+xnli	Hypothesis: Augusta no es una gran ciudad.	1	0	0	1	0	1		none
+xnli	Hypothesis: Desplegamos nuestras fuerzas en	1	0	0	1	0	1		none
+xnli	Hypothesis: Nunca terminamos desplegando a nadie	1	0	0	1	0	1		none
+xnli	Hypothesis: Han estado de gira desde antes de	1	0	0	1	0	1		none
+xnli	Hypothesis: Has dicho que tienes hijos, ¿	1	0	0	1	0	1		none
+xnli	Hypothesis: ¿Visitó algún museo europeo?	1	0	0	1	0	1		none
+xnli	Hypothesis: A mi esposo le gusta mi	1	0	0	1	0	1		none
+xnli	Hypothesis: ¿Qué piensa tu hermana de	1	0	0	1	0	1		none
+xnli	Hypothesis: Eso tiene sentido que el estado lo	1	0	0	1	0	1		none
+xnli	ہم نے کوئی تعطیل نہیں حاصل کی ہے۔	1	0	0	1	0	1		none
+xnli	ہم سب کو تمام تعطیلات پر پورا مال	1	0	0	1	0	1		none
+xnli	ہم کچھ تعطیلات سال کے دوران حاصل کرتے	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella siente que puede gastar todo lo	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella feels that she can spend more	1	0	0	1	0	1		none
+xnli	Ahorra cada centavo que tiene.	1	0	0	1	0	1		none
+xnli	Hypothesis: My boyfriend listens to music.	1	0	0	1	0	1		none
+xnli	Hypothesis: Se pueden usar otras dimensiones para construir	1	0	0	1	0	1		none
+xnli	Hypothesis: Los espacios Calabi-Yau son	1	0	0	1	0	1		none
+xnli	Hypothesis: Los espacios de Calabi-Yau	1	0	0	1	0	1		none
+xnli	Hypothesis: Los trímeros y los fotones	1	0	0	1	0	1		none
+xnli	Sonja is a girl.	1	0	0	1	0	1		none
+xnli	اس کے ساتھ، ہم یہ کہہ سکتے ہیں کہ	1	0	0	1	0	1		none
+xnli	کچھ لوگ جو قانون میں کوانٹم عدم	1	0	0	1	0	1		none
+xnli	Hypothesis: No hay interacción.	1	0	0	1	0	1		none
+xnli	interaction	1	0	0	1	0	1		none
+xnli	Hypothesis: Las partículas ya se habían incorporado.	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay tres fuerzas no gravitatorias.	1	0	0	1	0	1		none
+xnli	Hypothesis: The Fourteenth Amendment was promulgated	1	0	0	1	0	1		none
+xnli	Hypothesis: Los agentes ganaron 80	1	0	0	1	0	1		none
+xnli	Hypothesis: El plan es importante.	1	0	0	1	0	1		none
+xnli	Hypothesis: El plan no es importante	1	0	0	1	1	1		none
+xnli	Hypothesis: Juan Osito is his son.	1	0	0	1	0	1		none
+xnli	Hypothesis: The dimensionality of biosferas	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay más de un millón de proteínas	1	0	0	1	0	1		none
+xnli	Hypothesis: We are still discovering the different forms	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella escribió Mexican Village.	1	0	0	1	0	1		none
+xnli	کچھ ماں باپ اور کوچز جو تنق	1	0	0	1	0	1		none
+xnli	Premise: La influencia de H. H.	1	0	0	1	0	1		none
+xnli	Hypothesis: Mies Van der Rohe no	1	0	0	1	0	1		none
+xnli	Hypothesis: The probability is involved in the calculations	1	0	0	1	0	1		none
+xnli	Hypothesis: Las funciones se dividirán entre varios	1	0	0	1	0	1		none
+xnli	Hypothesis: Bios Group contribuye a su producción.	1	0	0	1	0	1		none
+xnli	H. H. Richardson y su protegido Charles F	1	0	0	1	0	1		none
+xnli	H. H. Richardson y Charles Follen Mc	1	0	0	1	0	1		none
+xnli	H. H. Richardson, Charles Follen Mc	1	0	0	1	0	1		none
+xnli	Hypothesis: Los gráficos muestran el marco adecuado.	1	0	0	1	0	1		none
+xnli	Hypothesis: Some molecular species form as a cloud	1	0	0	1	0	1		none
+xnli	Hypothesis: Un vidrio de espín es un	1	0	0	1	0	1		none
+xnli	Hypothesis: Un cristal giratorio es un imán	1	0	0	1	0	1		none
+xnli	Hypothesis: El estudio general de los seres vivos	1	0	0	1	0	1		none
+xnli	Hypothesis: Homínidos han evolucionado en	1	0	0	1	0	1		none
+xnli	اسپیشولیشن: اس بوت کو	1	0	0	1	0	1		none
+xnli	Premise: ¡Ah! Hypothesis: Al	1	0	0	1	0	1		none
+xnli	Hypothesis: No tuve el valor de det	1	0	0	1	0	1		none
+xnli	Hypothesis: Cabalgué hacia el Ob	1	0	0	1	0	1		none
+xnli	تو، تو صرف آج اس مٹھی میں	1	0	0	1	0	1		none
+xnli	Entendió muy claramente la amenaza que tenía frente	1	0	0	1	0	1		none
+xnli	Hypothesis: Ella estaba sin aliento y por	1	0	0	1	0	1		none
+xnli	Hypothesis: وہ بلند آواز میں بول رہا	1	0	0	1	0	1		none
+xnli	Entendió la situación completa y muy claramente.	1	0	0	1	0	1		none
+xnli	Hypothesis: Lord Julian was very interested in the	1	0	0	1	0	1		none
+xnli	Hypothesis: Peter is odiado por el	1	0	0	1	0	1		none
+xnli	Hypothesis: El oficial sonrió.	1	0	0	1	0	1		none
+xnli	Hypothesis: Ogle was very in love with	1	0	0	1	0	1		none
+xnli	Hypothesis: Lord Julian had mounted his companion.	1	0	0	1	0	1		none
+xnli	Hypothesis: Rescaté a la señor	1	0	0	1	0	1		none
+xnli	Es cierto.	1	0	0	1	0	1		none
+xnli	Hypothesis: Blood se metió en una ba	1	0	0	1	0	1		none
+xnli	Hypothesis: La sangre se metió en un	1	0	0	1	0	1		none
+xnli	Hypothesis: Puedes ver osos polares en	1	0	0	1	0	1		none
+xnli	New Brunswick se convirtió en una provincia debido a la	1	0	0	1	0	1		none
+xnli	New Brunswick was a province in 1784.	1	0	0	1	0	1		none
+xnli	Hypothesis: El agua y la playa pueden estar	1	0	0	1	0	1		none
+xnli	Hypothesis: Solo veinticinco personas visitar	1	0	0	1	0	1		none
+xnli	Hypothesis: Kublai Khan tiene tesoros en Beijing	1	0	0	1	0	1		none
+xnli	Hypothesis: La costa de Na Pali es	1	0	0	1	0	1		none
+xnli	Hypothesis: Está enterrado a más de	1	0	0	1	0	1		none
+xnli	Hypothesis: Sus panteones están hechos de	1	0	0	1	0	1		none
+xnli	Hypothesis: Ve temperaturas más altas durante el día	1	0	0	1	0	1		none
+xnli	Hypothesis: No verás fotografías.	1	0	0	1	0	1		none
+xnli	Hypothesis: Verás fotografías.	1	0	0	1	0	1		none
+xnli	Hypothesis: La Iglesia tenía un proyecto de renovación	1	0	0	1	0	1		none
+xnli	Hypothesis: El lago se encuentra cerca de la	1	0	0	1	0	1		none
+xnli	Hypothesis: La colección tiene algunas piezas de arte	1	0	0	1	0	1		none
+xnli	Hypothesis: La colección de arte europeo y pu	1	0	0	1	0	1		none
+xnli	Hypothesis: Por lo general, son 7	1	0	0	1	0	1		none
+xnli	Hypothesis: Temperatures are warm during the summer	1	0	0	1	0	1		none
+xnli	Hypothesis: La casa de Balza y el	1	0	0	1	0	1		none
+xnli	Hypothesis: Otto Frank se escondió por mas	1	0	0	1	0	1		none
+xnli	Hypothesis: No hay una nueva exhibición de	1	0	0	1	0	1		none
+xnli	Hypothesis: Nunca pasa de nuevo.	1	0	0	1	0	1		none
+xnli	Hypothesis: No visite pueblos.	1	0	0	1	0	1		none
+xnli	Hypothesis: Visita todos los pueblos	1	0	0	1	0	1		none
+xnli	Hypothesis: Visita algunos pueblos.	1	0	0	1	0	1		none
+xnli	Whitehorse was the capital of the territory.	1	0	0	1	0	1		none
+xnli	Cala Mondrage is not developed.	1	0	0	1	0	1		none
+xnli	Hypothesis: La estatua del fundador de	1	0	0	1	0	1		none
+xnli	Hypothesis: La estatua fue construida en	1	0	0	1	0	1		none
+xnli	Hypothesis: El camino va de Payangan a	1	0	0	1	0	1		none
+xnli	Hypothesis: La carretera está a 15	1	0	0	1	0	1		none
+xnli	Hypothesis: La carretera nunca llega a Batur	1	0	0	1	0	1		none
+xnli	Hypothesis: Kodaly kerend está decorado	1	0	0	1	0	1		none
+xnli	Hypothesis: Kodaly Kerend (la media	1	0	0	1	0	1		none
+xnli	Hypothesis: El Rejan tiene más de	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay 29 vías fluv	1	0	0	1	0	1		none
+xnli	Hypothesis: The telephone line is open 24	1	0	0	1	0	1		none
+xnli	پیش فرض: ایک پلیٹ فارم پر ک	1	0	0	1	0	1		none
+xnli	Hypothesis: Los pasos van hasta el punto más	1	0	0	1	0	1		none
+xnli	Hypothesis: 90 escalones.	1	0	0	1	0	1		none
+xnli	Hypothesis: Solo hay 3 pasos.	1	0	0	1	0	1		none
+xnli	Hypothesis: Se vende ropa barata en Laleli	1	0	0	1	0	1		none
+xnli	Hypothesis: Las pistas de patinaje sobre	1	0	0	1	0	1		none
+xnli	Hypothesis: No hay ningún lugar para patinar	1	0	0	1	0	1		none
+xnli	Hypothesis: You can skate indoors at a few	1	0	0	1	0	1		none
+xnli	فرضی: تہران کی تاریخی عمارت	1	0	0	1	0	1		none
+xnli	Hypothesis: El crucero dura dos horas.	1	0	0	1	0	1		none
+xnli	Hypothesis: El Palacio de Bellas Artes	1	0	0	1	0	1		none
+xnli	Hypothesis: El museo tiene 100	1	0	0	1	0	1		none
+xnli	Hypothesis: El museo cuenta con coches antiguos.	1	0	0	1	0	1		none
+xnli	Hypothesis: La colección de Madrid contiene 5	1	0	0	1	0	1		none
+xnli	Hypothesis: El Museo Marítimo tiene 1	1	0	0	1	0	1		none
+xnli	Hypothesis: Xlapak tiene 20	1	0	0	1	0	1		none
+xnli	Hypothesis: Xlapak tiene un palacio	1	0	0	1	0	1		none
+xnli	Hypothesis: Barcino-Barcelona is the focal	1	0	0	1	0	1		none
+xnli	Hypothesis: Since 1932, no have	1	0	0	1	0	1		none
+xnli	Hypothesis: Juegan a la pelota	1	0	0	1	0	1		none
+xnli	Hypothesis: El terreno tiene cuevas.	1	0	0	1	0	1		none
+xnli	Hypothesis: El terreno tiene pendientes.	1	0	0	1	0	1		none
+xnli	Hypothesis: El grupo de seguridad promedia	1	0	0	1	0	1		none
+xnli	Los archivos de los casos se pueden traducir	1	0	0	1	0	1		none
+xnli	Hypothesis: The scientists can combine the C-R	1	0	0	1	0	1		none
+xnli	Hypothesis: Las líneas calculan que el nivel	1	0	0	1	0	1		none
+xnli	1. Contradiction	1	0	1	0	1	1	contradiction	english_substring
+xnli	Hypothesis: Los datos son de julio de	1	0	0	1	0	1		none
+xnli	Hypothesis: GAO is a resource-intensive entity	1	0	0	1	0	1		none
+xnli	Hypothesis: GAO is a federal agency with	1	0	0	1	0	1		none
+xnli	Hypothesis: La entidad auditada puede tomar medidas	1	0	0	1	0	1		none
+xnli	1. Entailment	1	0	1	0	1	1	entailment	english_substring
+xnli	Hypothesis: El dispositivo ayuda a las empresas a	1	0	0	1	0	1		none
+xnli	Hypothesis: La lista sólo indica quién compró	1	0	0	1	0	1		none
+xnli	Hypothesis: La lista indica quién ha sido el	1	0	0	1	0	1		none
+xnli	Hypothesis: HIC no es el departamento responsable	1	0	0	1	0	1		none
+xnli	Hypothesis: Only $500 in reimbursements are	1	0	0	1	0	1		none
+xnli	Hypothesis: Both units take 46 weeks to	1	0	0	1	0	1		none
+xnli	Hypothesis: No hay límite para el mercurio	1	0	0	1	0	1		none
+xnli	Hypothesis: Ellos limtan el mercurی	1	0	0	1	0	1		none
+xnli	Hypothesis: Las unidades de 900	1	0	0	1	0	1		none
+xnli	Hypothesis: The units burn less bituminous sulfur	1	0	0	1	0	1		none
+xnli	Hypothesis: Las unidades no queman carbón	1	0	0	1	0	1		none
+xnli	فرضیہ: بہت سی ایجنسیوں نے	1	0	0	1	0	1		none
+xnli	Hypothesis: Una agencia intentó hacerlo,	1	0	0	1	0	1		none
+xnli	Hypothesis: Los viajeros no tienen que enumer	1	0	0	1	0	1		none
+xnli	Hypothesis: Allenbrand and Drews are the	1	0	0	1	0	1		none
+xnli	Hypothesis: 1,3,2,	1	0	0	1	0	1		none
+xnli	Hypothesis: El paquete de bienvenida es entregado	1	0	0	1	0	1		none
+xnli	فرضیاتی: ٹی وی اے نے ایک	1	0	0	1	0	1		none
+xnli	Hypothesis: The circumvention will send gas to	1	0	0	1	0	1		none
+xnli	Hypothesis: Estos son todos los detalles disponibles.	1	0	0	1	0	1		none
+xnli	اسٹینٹل۔	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay varios tipos de prototipos.	1	0	0	1	0	1		none
+xnli	Hypothesis: Los datos demográficos se pueden	1	0	0	1	0	1		none
+xnli	Hypothesis: Por lo general, las funciones de	1	0	0	1	0	1		none
+xnli	کچھ فیدیشس میں روٹیشنل	1	0	0	1	0	1		none
+xnli	Hypothesis: La ingeniería preliminar y la negociación	1	0	0	1	0	1		none
+xnli	Hypothesis: El tiempo total es inferior a	1	0	0	1	0	1		none
+xnli	Hypothesis: El National Mail Count estudió el	1	0	0	1	0	1		none
+xnli	Hypothesis: HIC hizo cambios de devolucion	1	0	0	1	0	1		none
+xnli	Hypothesis: HIC no hizo correcciones.	1	0	0	1	0	1		none
+xnli	Hypothesis: HIC envió encuestas.	1	0	0	1	0	1		none
+xnli	Hypothesis: Hazmi and Mihdhar bought	1	0	0	1	0	1		none
+xnli	Hypothesis: Por 500 $ al	1	0	0	1	0	1		none
+xnli	Hypothesis: American 11 had communication.	1	0	0	1	0	1		none
+xnli	Hypothesis: Each terrorism matter is judged and rated	1	0	0	1	0	1		none
+xnli	Hypothesis: Los secuestradores habían estado	1	0	0	1	0	1		none
+xnli	Hypothesis: El DCI parece haber informado tanto	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a detailed record of each	1	0	0	1	0	1		none
+xnli	Hypothesis: There is a computer-assisted dispatch	1	0	0	1	0	1		none
+xnli	Hypothesis: No hay ayuda de registro para los	1	0	0	1	0	1		none
+xnli	Hypothesis: Todas las compañías estaban formadas por	1	0	0	1	0	1		none
+xnli	Hypothesis: No se registraron entrevistas relacionadas	1	0	0	1	0	1		none
+xnli	Hypothesis: En ese momento estaban presentes varias compañías	1	0	0	1	0	1		none
+xnli	Hypothesis: La mayor parte del liderazgo de Al	1	0	0	1	0	1		none
+xnli	Hypothesis: Las alarmas contra incendios no se	1	0	0	1	0	1		none
+xnli	Hypothesis: The information about the fire alarm was	1	0	0	1	0	1		none
+xnli	Hypothesis: There were passengers who did not present	1	0	0	1	0	1		none
+xnli	Hypothesis: Los informes de envío asistido	1	0	0	1	0	1		none
+xnli	Hypothesis: Los sistemas de envío asistido	1	0	0	1	0	1		none
+xnli	Hypothesis: These delayed delivery reports were caused by	1	0	0	1	0	1		none
+xnli	None	1	0	0	1	0	1		none
+xnli	Hypothesis: There was a study on airplane hij	1	0	0	1	0	1		none
+xnli	Hypothesis: Ed Ballinger emitió varias adver	1	0	0	1	0	1		none
+xnli	Bandar al Hazmi continuó su entrenamiento en Arizona	1	0	0	1	0	1		none
+xnli	Hypothesis: James Steinberg testificó que	1	0	0	1	0	1		none
+xnli	Hypothesis: The TSA funds aviation work to combat	1	0	0	1	0	1		none
+xnli	Hypothesis: TSA aviation works are funded by TSA	1	0	0	1	0	1		none
+xnli	Hypothesis: El FBI abrió una oficina	1	0	0	1	0	1		none
+xnli	Hypothesis: El Tribunal FISA puede rechazar	1	0	0	1	0	1		none
+xnli	Hypothesis: Dave envió un correo electrónico a	1	0	0	1	0	1		none
+xnli	Hypothesis: Dave estuvo de vacaciones en todo el	1	0	0	1	0	1		none
+xnli	Hypothesis: El hawaladar paquistan	1	0	0	1	0	1		none
+xnli	یہ بیان پیش کیا گیا ہے کہ "اس کے	1	0	0	1	0	1		none
+xnli	اس کے ساتھ، ہم یہ نتیجہ اخذ کر	1	0	0	1	0	1		none
+xnli	Condoleezza Rice was incredible in her work	1	0	0	1	0	1		none
+xnli	Hypothesis: According to KSM, Bin L	1	0	0	1	0	1		none
+xnli	Hypothesis: KSM quería utilizar en principio un	1	0	0	1	0	1		none
+xnli	Hypothesis: La entrevista del civil 14	1	0	0	1	0	1		none
+xnli	Hypothesis: Los agentes volaron muchas veces a	1	0	0	1	0	1		none
+xnli	Ramzi Yousef بھی الزامات کا	1	0	0	1	0	1		none
+xnli	Hypothesis: There was an interview of NYPD	1	0	0	1	0	1		none
+xnli	Hypothesis: There was an interview with the NY	1	0	0	1	0	1		none
+xnli	Hypothesis: No hubo ninguna entrevista en NYPD	1	0	0	1	0	1		none
+xnli	دونوں پروازیں 8 جون 2001 کو	1	0	0	1	0	1		none
+xnli	فرضی: ہازنوی (فلائٹ	1	0	0	1	0	1		none
+xnli	Hypothesis: La fuente estaba siendo sincera.	1	0	0	1	0	1		none
+xnli	Hypothesis: La reunión tuvo lugar en diciembre de	1	0	0	1	0	1		none
+xnli	Hypothesis: Atta viajó a la República	1	0	0	1	0	1		none
+xnli	Hypothesis: Atta was alone in the Czech	1	0	0	1	0	1		none
+xnli	Hypothesis: Ahmed al Ghamdi y Abdul	1	0	0	1	0	1		none
+xnli	Hypothesis: Hazmi y Hanjour sab	1	0	0	1	0	1		none
+xnli	Hypothesis: No hay información disponible sobre el estado	1	0	0	1	0	1		none
+xnli	Hypothesis: There is an interview available that analyzes	1	0	0	1	0	1		none
+xnli	Hypothesis: Estos sistemas estaban desconectados en	1	0	0	1	0	1		none
+xnli	Hypothesis: Hazmi y Mihdhar viaj	1	0	0	1	0	1		none
+xnli	Hypothesis: Hazmi nunca ha estado en Los	1	0	0	1	0	1		none
+xnli	Hypothesis: En ese momento la Terminal C estaba	1	0	0	1	0	1		none
+xnli	3. La llamada se realizó en la terminal	1	0	0	1	0	1		none
+xnli	Hypothesis: El gobierno estadounidense pudiera estar organizado de	1	0	0	1	0	1		none
+xnli	Hypothesis: Más información sobre los arreglos del	1	0	0	1	0	1		none
+xnli	Hypothesis: Nada más se sabe sobre los arreg	1	0	0	1	0	1		none
+xnli	Hypothesis: Tres habitaciones de hotel diferentes fueron	1	0	0	1	0	1		none
+xnli	New Jersey was selected as a place to live.	1	0	0	1	0	1		none
+xnli	Hypothesis: El supervisor envió la pista a	1	0	0	1	0	1		none
+xnli	Hypothesis: El supervisor cedió el mando	1	0	0	1	0	1		none
+xnli	Hypothesis: El jefe llegó al sitio del W	1	0	0	1	0	1		none
+xnli	Hypothesis: El jefe llegó al sitio.	1	0	0	1	0	1		none
+xnli	Hypothesis: El jefe nunca apareció.	1	0	0	1	0	1		none
+xnli	یہ اصول اور فرضی تصورات کے درمیان	1	0	0	1	0	1		none
+xnli	Hypothesis: The Commissioner and the Mayor participated in	1	0	0	1	0	1		none
+xnli	Hypothesis: Todos los secuestradores fueron	1	0	0	1	0	1		none
+xnli	Hypothesis: La mayoría de los secuestr	1	0	0	1	0	1		none
+xnli	Hypothesis: Los secuestradores se han	1	0	0	1	0	1		none
+xnli	Hypothesis: KSM نے کبھی بھی صاف دست	1	0	0	1	0	1		none
+xnli	Hypothesis: KMS obtained clean passports that	1	0	0	1	0	1		none
+xnli	Hypothesis: KSM نے پاکستانی شہ	1	0	0	1	0	1		none
+xnli	اسپیشولٹی	1	0	0	1	1	1		none
+xnli	Hypothesis: Por favor, no haga ningún cambio	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay un sobre blanco adjunto,	1	0	0	1	0	1		none
+xnli	Hypothesis: You can make changes to your address	1	0	0	1	0	1		none
+xnli	Hypothesis: La facultad de derecho tiene orden	1	0	0	1	0	1		none
+xnli	Hypothesis: Las escuelas de leyes quieren estudiantes con	1	0	0	1	0	1		none
+xnli	Hypothesis: Las escuelas de Derecho quieren a los	1	0	0	1	0	1		none
+xnli	Hypothesis: Usted y un acompañante serán	1	0	0	1	0	1		none
+xnli	فرضیاتی: آپ کو اس تقریب میں	1	0	0	1	0	1		none
+xnli	Hypothesis: Al menos 6 estudiantes de Columb	1	0	0	1	0	1		none
+xnli	بیٹی گرہ ٹاور نے 40 سال	1	0	0	1	0	1		none
+xnli	Hypothesis: Habrá miles de estudiantes de K	1	0	0	1	0	1		none
+xnli	Hypothesis: Solo habrá tres mil estudiantes de K	1	0	0	1	0	1		none
+xnli	یہ بیان کرتا ہے کہ انڈیانا ہی	1	0	0	1	0	1		none
+xnli	Hypothesis: Tenemos toda la ayuda que necesitamos	1	0	0	1	0	1		none
+xnli	Hypothesis: Esta temporada necesitamos $10.	1	0	0	1	0	1		none
+xnli	Hypothesis: Necesitamos su apoyo esta temporada	1	0	0	1	0	1		none
+xnli	Hypothesis: Hemos celebrado nuestra historia cada año	1	0	0	1	0	1		none
+xnli	Hypothesis: Lo hemos hecho durante mucho tiempo.	1	0	0	1	0	1		none
+xnli	Hypothesis: Acabamos de empezar a hacerlo	1	0	0	1	0	1		none
+xnli	فرضیاتی: فن کا حصول اور ف	1	0	0	1	0	1		none
+xnli	Hypothesis: Los animales en peligro son ayudados	1	0	0	1	0	1		none
+xnli	Chris Young is our member services coordinator.	1	0	0	1	0	1		none
+xnli	Hypothesis: Los miembros de Citywide Friends of	1	0	0	1	0	1		none
+xnli	Hypothesis: Complete this membership form and send us	1	0	0	1	0	1		none
+xnli	Hypothesis: Aquí hay una solicitud de membresía	1	0	0	1	0	1		none
+xnli	Hypothesis: Eugene Debs practiced sports at the	1	0	0	1	0	1		none
+xnli	Hypothesis: La mayoría aportó más de $	1	0	0	1	0	1		none
+xnli	Hypothesis: None donated more than 5,	1	0	0	1	0	1		none
+xnli	Hypothesis: Alguien cedió más	1	0	0	1	0	1		none
+xnli	Hypothesis: Se repararon muchos apartamentos as	1	0	0	1	0	1		none
+xnli	Hypothesis: He dirigido otras obras desde entonces.	1	0	0	1	0	1		none
+xnli	Hypothesis: Nunca he trabajado como director de	1	0	0	1	0	1		none
+xnli	Hypothesis: Tienes que donar más de	1	0	0	1	0	1		none
+xnli	Hypothesis: En julio، مرکز نے 1	1	0	0	1	0	1		none
+xnli	Hypothesis: The midfielder was happy that so many	1	0	0	1	0	1		none
+xnli	Hypothesis: El Dr. Field trabaja en la	1	0	0	1	0	1		none
+xnli	Hypothesis: The Republican National Convention in Houston was	1	0	0	1	0	1		none
+xnli	Hypothesis: Has sido nominado para ser miembro	1	0	0	1	0	1		none
+xnli	Hypothesis: El museo tiene un costo de	1	0	0	1	0	1		none
+xnli	Bepko honró a Kent.	1	0	0	1	0	1		none
+xnli	Hypothesis: The AMRA Annual Meeting is held	1	0	0	1	0	1		none
+xnli	Hypothesis: La reunión anual del AMRA se	1	0	0	1	0	1		none
+xnli	Hypothesis: La sociedad humana es el refugio	1	0	0	1	0	1		none
+xnli	Hypothesis: Alan Dixon is a Democratic politician.	1	0	0	1	0	1		none
+xnli	Hypothesis: Comenzaron el premio en	1	0	0	1	0	1		none
+xnli	Hypothesis: Brit Hume works for Fox.	1	0	0	1	0	1		none
+xnli	Hypothesis: Sidewalk no grabó nada.	1	0	0	1	0	1		none
+xnli	Hypothesis: Johnson amenazó مع retirنا	1	0	0	1	0	1		none
+xnli	Hypothesis: The White House uses the FBI appropriately	1	0	0	1	0	1		none
+xnli	Hypothesis: La OMS tiene una estrategia para	1	0	0	1	0	1		none
+xnli	Premise: Entonces, ¿por qué es mejor	1	0	0	1	0	1		none
+xnli	Hypothesis: Mantener un microondas cuesta	1	0	0	1	0	1		none
+xnli	Premise: Some of these concepts have demonstrated success	1	0	0	1	0	1		none
+xnli	Hypothesis: La columna de Moneybox de James	1	0	0	1	0	1		none
+xnli	اس کے پاس کوئی ثبوت نہیں ہے کہ	1	0	0	1	0	1		none
+xnli	Harriman نے متعدد بار شادی کی ہے۔	1	0	0	1	0	1		none
+xnli	Harriman نے 8 بار شادی کی۔	1	0	0	1	1	1		none
+xnli	Premise: Slate is a television program.	1	0	0	1	0	1		none
+xnli	Hypothesis: It is easy for a first-year	1	0	0	1	0	1		none
+xnli	Hypothesis: Fui al desfile de Navidad	1	0	0	1	0	1		none
+xnli	Hypothesis: Never been to the Radio City Music	1	0	0	1	0	1		none
+xnli	Hypothesis: Glass es un escritor del Times.	1	0	0	1	0	1		none
+xnli	Hypothesis: Glass es un escritor.	1	0	0	1	0	1		none
+xnli	Hypothesis: Walcott کے والدین نے اس	1	0	0	1	0	1		none
+xnli	Hypothesis: Michael Lewis dio más de 5	1	0	0	1	0	1		none
+xnli	کچھ آسینکروکسٹس نے اس	1	0	0	1	0	1		none
+xnli	Hypothesis: El condado de Greenlee tiene	1	0	0	1	0	1		none
+xnli	کچھ فائلیں Windows چل رہی ہے جب تک	1	0	0	1	0	1		none
+xnli	Hypothesis: La gente de la escuela hizo su	1	0	0	1	0	1		none
+xnli	La implicación más sorprendente de la teoría C	1	0	1	0	0	1	entailment	native_substring
+xnli	Hypothesis: Glenn Loury is a gardener	1	0	0	1	0	1		none
+xnli	Hypothesis: The longevity of the World Trade Organization	1	0	0	1	0	1		none
+xnli	Hypothesis: De Kooning terminó muriendo	1	0	0	1	0	1		none
+xnli	اسپیشولاسٹک ایک بہت مش	1	0	0	1	0	1		none
+xnli	Hypothesis: Heseltine renunció a su	1	0	0	1	0	1		none
+xnli	یہ پیشنگوئی ہے کہ ہسلت	1	0	0	1	0	1		none
+xnli	Hypothesis: Los escritores son muy meticulosos	1	0	0	1	0	1		none
+xnli	Premise: ¿Cómo puede uno hacer eso؟	1	0	0	1	0	1		none
+xnli	Hypothesis: La edición de 1984 es	1	0	0	1	0	1		none
+xnli	Hypothesis: El libro  no está en venta	1	0	0	1	0	1		none
+xnli	Hypothesis: El suplemento es más barato que	1	0	0	1	0	1		none
+xnli	Hypothesis: Surprise, in Nebraska, has	1	0	0	1	0	1		none
+xnli	Surprise is a city in Nebraska.	1	0	0	1	0	1		none
+xnli	Hypothesis: La cerveza puede tener la etiqueta	1	0	0	1	0	1		none
+xnli	Hypothesis: La cerveza ligera no tiene	1	0	0	1	0	1		none
+xnli	پیش فرض: فرنٹ ایل اسٹ	1	0	0	1	0	1		none
+xnli	[Se debe decir con total franqueza que	1	0	0	1	0	1		none
+xnli	Hypothesis: Junio و جولائی بھی	1	0	0	1	0	1		none
+xnli	Hypothesis: The majority of days in August are	1	0	0	1	0	1		none
+xnli	Hypothesis: Para buscar la pérdida.	1	0	0	1	0	1		none
+xnli	Hypothesis: La palabra griega de la que	1	0	0	1	0	1		none
+xnli	Hypothesis: Los orígenes de la palabra diagnosis se	1	0	0	1	0	1		none
+xnli	Hypothesis: There is evidence to suggest that the	1	0	0	1	0	1		none
+xnli	Hypothesis: Estoy seguro de que el yiddish	1	0	0	1	0	1		none
+xnli	Boswell spent a year in the company of Johnson	1	0	0	1	0	1		none
+xnli	Boswell wrote about the life of Johnson in the	1	0	0	1	0	1		none
+xnli	Hypothesis: La editorial Cambridge University Press honrar	1	0	0	1	0	1		none
+xnli	Hypothesis: Nunca he oído hablar del alfabet	1	0	0	1	0	1		none
+xnli	یہ رشتے کا ایک مثال ہے جو ایک نتی	1	0	0	1	0	1		none
+xnli	Hypothesis: Los VIP proporcionan un ejemplo.	1	0	0	1	0	1		none
+xnli	Hypothesis: VIP no es un ejemplo	1	0	0	1	1	1		none
+xnli	Hypothesis: Estados Unidos añadió diez estados a	1	0	0	1	0	1		none
+xnli	Hypothesis: Hasta hoy, Missouri no se considera	1	0	0	1	0	1		none
+xnli	Hypothesis: Los grupos étnicos están avergon	1	0	0	1	0	1		none
+xnli	Goistering era un término curioso para la risa	1	0	0	1	0	1		none
+xnli	Hypothesis: Esta frase se usa en entornos inus	1	0	0	1	0	1		none
+xnli	Hypothesis: Huevos no significa bolas.	1	0	0	1	0	1		none
+xnli	Hypothesis: Huevos significa cojones.	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay doce artículos reunidos en el	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay doce artículos en la colección.	1	0	0	1	0	1		none
+xnli	Hypothesis: Los idiomas nunca se pueden combinar.	1	0	0	1	0	1		none
+xnli	Hypothesis: There are languages that are a combination	1	0	0	1	0	1		none
+xnli	Hypothesis: Some languages are invented by children.	1	0	0	1	0	1		none
+xnli	Hypothesis: La ortografía de una palabra está	1	0	0	1	0	1		none
+xnli	Hypothesis: Alice said that she was not.	1	0	0	1	0	1		none
+xnli	Hypothesis: No se utilizó el aceite de Oil	1	0	0	1	0	1		none
+xnli	Hypothesis: There are few pastors in Broadway.	1	0	0	1	0	1		none
+xnli	Entiendo por qué no les gusta la palabra Negro	1	0	0	1	0	1		none
+xnli	Hypothesis: No tengo una radio y no tengo	1	0	0	1	0	1		none
+xnli	False	1	0	0	1	1	1		none
+xnli	Hypothesis: No tiene un acento marcado y	1	0	0	1	0	1		none
+xnli	Hypothesis: Su acento y posiblemente su ent	1	0	0	1	0	1		none
+xnli	Hypothesis: La gramática ha cambiado, pero	1	0	0	1	0	1		none
+xnli	Hypothesis: The reference is complete.	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay 200 modificadores	1	0	0	1	0	1		none
+xnli	Hypothesis: Hay 20 variedades de	1	0	0	1	0	1		none
+xnli	Hypothesis: El Sr. Levitt no tenía	1	0	0	1	0	1		none
+xnli	Hypothesis: El Sr. Levitt tenía una	1	0	0	1	0	1		none
+xnli	Hypothesis: La hija del Sr. Levitt	1	0	0	1	0	1		none
+xnli	Hypothesis: El tratamiento de Honey no necesita explic	1	0	0	1	0	1		none
+xnli	Hypothesis: Las máquinas de escribir no requir	1	0	0	1	0	1		none
+xnli	فرضی: Gruyere کا بہترین م	1	0	0	1	0	1		none
+xnli	Hypothesis: Solo leo los problemas actuales.	1	0	0	1	0	1		none
+xnli	اس کے ساتھ، ہم کہہ سکتے ہیں کہ "	1	0	0	1	0	1		none
+xnli	Hypothesis: Via della Scrofa is a	1	0	0	1	0	1		none
+xnli	Hypothesis: Reedito discursos para mi trabajo.	1	0	0	1	0	1		none
+xnli	Hypothesis: Our vocabulary has a linguistic process.	1	0	0	1	0	1		none
+xnli	Hypothesis: Our vocabulary is expanding.	1	0	0	1	0	1		none
+xnli	Hypothesis: Los prisioneros los crearon.	1	0	0	1	0	1		none
+xnli	Premise: Uno debe ser muy cauteloso	1	0	0	1	0	1		none
+xnli	وفاقی	1	0	0	1	0	1		none
+xnli	یا	1	0	0	1	0	1		none
+xnli	یہ ایک امتیاز ہے، اور یہ اب	1	0	0	1	0	1		none
+xnli	ہم اس چیز کو بچانا چاہتے تھے کیونکہ	1	0	0	1	0	1		none
+xnli	یہ فینی فلونیو ہے,اور وہ	1	0	0	1	0	1		none
+xnli	تو، یہ ایک پیش گوئی ہے۔	1	0	0	1	0	1		none
+xnli	ہم سب نے کیا ہے، ہم نے انہیں کسی	1	0	0	1	0	1		none
+xnli	假设是前提的 假设  اور	1	0	0	1	0	1		none
+xnli	3.0 or 4.0 is	1	0	0	1	0	1		none
+xnli	100 صفحات سے زیادہ نہیں پڑھی	1	0	0	1	0	1		none
+xnli	تو میں اس نقطہ پر پہنچ گیا جہاں میں	1	0	0	1	0	1		none
+xnli	تو میں نے کیا کیا؟	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ کیوبا کرائ	1	0	0	1	0	1		none
+xnli	ام، اور اس نے کہا، اس نے کہا	1	0	0	1	0	1		none
+xnli	ٹھیک ہے، میں سن سکتا ہوں۔	1	0	0	1	0	1		none
+xnli	ٹھیک ہے، میں سن سکتا ہوں جو آپ	1	0	0	1	0	1		none
+xnli	یہ دونوں ایک دوسرے کو شامل کرتے ہیں۔	1	0	0	1	0	1		none
+xnli	یہ دونوں ایک دوسرے کے ساتھ تعلق رکھتے ہیں۔	1	0	0	1	0	1		none
+xnli	ہم غلطی نہیں کر سکتے.	1	0	0	1	0	1		none
+xnli	ہم غلطی نہیں کر سکے.	1	0	0	1	0	1		none
+xnli	ہم غلطی نہیں کر سکتے۔	1	0	0	1	0	1		none
+xnli	تو، یہ تو ہے، ام، وہ وہاں	1	0	0	1	0	1		none
+xnli	اس نے شادی کی تقریب کو نہیں سمجھا	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے، کیونکہ اگر میری بہ	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے، کیونکہ اگر ٹ	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگر آپ یہ	1	0	0	1	0	1		none
+xnli	1. 1962 میں مجھے واشنگ	1	0	0	1	0	1		none
+xnli	1. 假设是前提的。假设	1	0	0	1	0	1		none
+xnli	ٹھیک ہے کہ میں نے اس کے بارے میں	1	0	0	1	0	1		none
+xnli	假设和假设之间没有关系。	1	0	0	1	0	1		none
+xnli	1. 假设是前提的否定。	1	0	0	1	0	1		none
+xnli	تو آپ نے کہا کہ آپ کے بچے ہیں	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگر میں اپنی	1	0	0	1	0	1		none
+xnli	ہم فطرت پسند نہیں ہیں۔	1	0	0	1	0	1		none
+xnli	ہم ام ہیں، اور ہم کبھی بھی فطرت	1	0	0	1	0	1		none
+xnli	1. 前提: Kapray per sales	1	0	0	1	0	1		none
+xnli	ساحل بہت خوبصورت تھے اور وہ جانے کے	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے ، کیونکہ اگر آپ	1	0	0	1	0	1		none
+xnli	یہ قیاس ہے کہ وہ اگلے سات دن	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ اگر لوگ بیٹھ	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ اگر میں اخبارات	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ اگر میں دن میں	1	0	0	1	0	1		none
+xnli	یہ ہے کے آپ کے پاس اخبار پڑھنے کے	1	0	0	1	0	1		none
+xnli	جب آپ خریداری کرتے ہیں تو آپ کس چیز	1	0	0	1	0	1		none
+xnli	ٹھیک ہے، یہ ایک پیش گوئی ہے	1	0	0	1	0	1		none
+xnli	ٹھیک ہے، یہ دونوں ایک دوسرے کے ساتھ	1	0	0	1	0	1		none
+xnli	假设是前提的	1	0	0	1	0	1		none
+xnli	یہ بہت حیران کن ہے کہ آپ تھو	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ آپ اس میں ک	1	0	0	1	0	1		none
+xnli	ہم اس بات سے اتفاق کرتے ہیں کہ ہم ان	1	0	0	1	0	1		none
+xnli	假设是前提的自然结果。假设是	1	0	0	1	0	1		none
+xnli	ہم اس بات سے اتفاق کرتے ہیں کہ یہ عجیب	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ موسم مزید	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگر برف	1	0	0	1	0	1		none
+xnli	ہم ایک پیش رو تیار کررہے	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، عام کرس	1	0	0	1	0	1		none
+xnli	اس کے ساتھ، ایک عام کرسٹل	1	0	0	1	0	1		none
+xnli	نتیجتا، چھوٹے بچے چھوٹے	1	0	0	1	0	1		none
+xnli	نتیجتا، یہ پیش گوئی کی جاتی	1	0	0	1	0	1		none
+xnli	نتیجتا، چھوٹے بچے اسک	1	0	0	1	0	1		none
+xnli	افادیت پسندوں کا کہنا ہے کہ	1	0	0	1	0	1		none
+xnli	افادیب پسند یہ دعوی کرتے ہیں کہ	1	0	0	1	0	1		none
+xnli	ځینې هغه کسان	1	0	0	1	0	1		none
+xnli	پیشگوئی	1	0	0	1	1	1		none
+xnli	ڈارون کی مخلوقات کو ترجیح دینے کے	1	0	0	1	0	1		none
+xnli	یہ دلچسپ ہے کہ معیشت میں	1	0	0	1	0	1		none
+xnli	假设和前提是密切相關的。假设	1	0	0	1	0	1		none
+xnli	اگرچہ میں Gropius کے پین	1	0	0	1	0	1		none
+xnli	ایڈوبی اینٹیں اور ریت کا	1	0	0	1	0	1		none
+xnli	ایڈوبی اینٹیں مٹی کے بھ	1	0	0	1	0	1		none
+xnli	گیلے پشت کے تجربے کی تفص	1	0	0	1	0	1		none
+xnli	ایڈوب گھروں اور عمارتیں ان	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، اگر تمام ک	1	0	0	1	0	1		none
+xnli	eVectively diVerent سائز کی	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، آپ کے پاس	1	0	0	1	0	1		none
+xnli	یہ ردعمل، اگر مداخلت نہیں کی	1	0	0	1	0	1		none
+xnli	1. Entailment: یہ پیش گو	1	1	0	0	0	1	entailment	english_substring
+xnli	یہ ایک انتہائی ہے، کیونکہ یہ دونوں	1	0	0	1	0	1		none
+xnli	Piata zameen pe lagi hai.	1	0	0	1	0	1		none
+xnli	پیچوکو زبان انگریزی اور ہس	1	0	0	1	0	1		none
+xnli	اس گروپ میں بیس تیسری ترمیم	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، اس کشتی کے	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، اس کے نتی	1	0	0	1	0	1		none
+xnli	Colonel Bishop ko meri amad ka pata h	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، مس بیشپ	1	0	0	1	0	1		none
+xnli	اس نے اپنے آپ کو ایک ایسی لڑکی	1	0	0	1	0	1		none
+xnli	آپ غلط ہیں.	1	0	0	1	0	1		none
+xnli	اس نے ان سے پوچھا کہ اچانک دل	1	0	0	1	0	1		none
+xnli	یہ دونوں ایک دوسرے کے ساتھ مربوط ہیں، جو	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ وہ گولی چل	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، اس نے فیصلہ	1	0	0	1	0	1		none
+xnli	ہم ایک دوسرے سے ملنے سے پہلے ہم حد	1	0	0	1	0	1		none
+xnli	مس بشپ اور اس کے ساتھ اس کے وف	1	0	0	1	0	1		none
+xnli	Aur agar tum bewaqoof nahi hote	1	0	0	1	0	1		none
+xnli	2.7 hiking trails mai sab se begg	1	0	0	1	0	1		none
+xnli	اگر ممکن ہو تو، اپنے آپ کو پہلے ہی	1	0	0	1	0	1		none
+xnli	اس کا مقبرہ اس کی دفن و	1	0	0	1	0	1		none
+xnli	ڈورا سٹراٹو فولک نا	1	0	0	1	0	1		none
+xnli	اس کے علاوہ، گرجا گھر $	1	0	0	1	0	1		none
+xnli	اس کے علاوہ، گرجا گحر	1	0	0	1	0	1		none
+xnli	اس کے علاوہ، اس چرچ میں پ	1	0	0	1	0	1		none
+xnli	1. 1896 میں نیو گ	1	0	0	1	0	1		none
+xnli	نمائش اور فرض کے درمیان کوئی تعلق نہیں ہے	1	0	0	1	0	1		none
+xnli	اسکوایمش نے اس مقابلہ میں حصہ نہیں	1	0	0	1	0	1		none
+xnli	اسکوایمش مشہور ہے بہت لم	1	0	0	1	0	1		none
+xnli	(ایونٹ دوبارہ 14-1	1	0	0	1	0	1		none
+xnli	سمندر صرف تنگ لائنوں اور فارم	1	0	0	1	0	1		none
+xnli	سمندر کی طرف جانے والی گلیاں بہت	1	0	0	1	0	1		none
+xnli	مضبوطی کے ساتھ،سبین لوگوں نے	1	0	0	1	0	1		none
+xnli	گھوڑوں کی نالیاں تیار	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ یہ پینٹ	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ یہ مجسمہ	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ یہ سڑک	1	0	0	1	0	1		none
+xnli	کوڈلی کیرنڈ (کوڈ	1	0	0	1	0	1		none
+xnli	کوڈڈی کیریڈ ایک شاند	1	0	0	1	0	1		none
+xnli	1. 前提: آزادی کے بعد یہاں	1	0	0	1	0	1		none
+xnli	假设是前提的自然延伸。假设中	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ یہ جگہ کہیں زیادہ	1	0	0	1	0	1		none
+xnli	اگرچہ یہ اس کی مدد کرتا ہے کہ	1	0	0	1	0	1		none
+xnli	Imarat SS guard houses ko chupaty hai	1	0	0	1	0	1		none
+xnli	اس کا مطلب ہے کہ اس نے اصل کمپی	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، سنٹر کا	1	0	0	1	0	1		none
+xnli	假设是前提的直接结果或推论	1	0	0	1	0	1		none
+xnli	-انہیں نئے راکٹ کے حصوں	1	0	0	1	0	1		none
+xnli	سی ای او لوگ کس کو کیا معلومات ملتی	1	0	0	1	0	1		none
+xnli	2000 کا سال کانگریس اور امر	1	0	0	1	0	1		none
+xnli	2000 کا سال GAO کے	1	0	0	1	0	1		none
+xnli	اس کے علاوہ GOA کے متاثر کن	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، GOA کو	1	0	0	1	0	1		none
+xnli	اس کے علاوہ، اعداد و شمار کی حدود	1	0	0	1	0	1		none
+xnli	ایل ایس سی سے مالی مدد کی منصوب	1	0	0	1	0	1		none
+xnli	ایل ایس سی نے اس منصوبے کا	1	0	0	1	0	1		none
+xnli	چاویز کا کیس مکئ کے	1	0	0	1	0	1		none
+xnli	چاویز کا معاملہ چائے کی	1	0	0	1	0	1		none
+xnli	اس وقت کی ضرورت ہوتی ہے جو کچھ ما	1	0	0	1	0	1		none
+xnli	ہم یہ پیش کرتے ہیں کہ جی پی آر کی	1	0	0	1	0	1		none
+xnli	ہم اس بات سے متفق ہیں کہ جی پی	1	0	0	1	0	1		none
+xnli	ہم یہ نتیجہ اخذ کرتے ہیں کہ GPRA	1	0	0	1	0	1		none
+xnli	فوائد کے تجزیہ میں ایمرجنسی	1	0	0	1	0	1		none
+xnli	假设是肯定的，因为它表明该方法	1	0	0	1	0	1		none
+xnli	2.0.0.0.0	1	0	0	1	0	1		none
+xnli	اس کے مطابق، وفاقی اہل	1	0	0	1	0	1		none
+xnli	اس مطالعہ کے لئے پانچ مختلف	1	0	0	1	0	1		none
+xnli	24 یہ خصوصیات GMRA احتساب	1	0	0	1	0	1		none
+xnli	جائزے کے کاموں کو اوٹ سورس	1	0	0	1	0	1		none
+xnli	ډیزایننونه ډ	1	0	0	1	0	1		none
+xnli	ایلن برانڈ اور لورن ڈری	1	0	0	1	0	1		none
+xnli	4.1.4 GAGAS کے مطابق	1	0	0	1	0	1		none
+xnli	4.14 جی اے جی اے ایس	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ بچت اثاث	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ اگر آپ پیسے	1	0	0	1	0	1		none
+xnli	سی۔آر تعلقات ہر جگہ مختلف ہوتے	1	0	0	1	0	1		none
+xnli	1700 MWe کی یونٹس کو	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگر ہم ف	1	0	0	1	0	1		none
+xnli	ایڈ دورہ لوگوں کے لئے پینے کے	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، گروپ	1	0	0	1	0	1		none
+xnli	اس کی پیش گوئی ہے کہ تحقیقات	1	0	0	1	0	1		none
+xnli	ایف اے اے ٹریفک کنٹرول	1	0	0	1	0	1		none
+xnli	203 میں، یہ نامزد کیا	1	0	0	1	0	1		none
+xnli	یہ ایک پیشنگوئی ہے. یہ پیش	1	0	0	1	0	1		none
+xnli	1.6 مئی کو سی آئی	1	0	0	1	0	1		none
+xnli	假设是entailment. 假设是	1	0	0	1	0	1		none
+xnli	1.0:4.5	1	0	0	1	0	1		none
+xnli	تاہم، بجٹ کے رہنمائی میں	1	0	0	1	0	1		none
+xnli	تاہم، گنوں کے جرائم،	1	0	0	1	0	1		none
+xnli	جو جو جو جو جو جو جو جو جو جو	1	0	0	1	0	1		none
+xnli	ہم تسلیم کرتے ہیں کہ نوراڈ کے	1	0	0	1	0	1		none
+xnli	ممکن ہے کہ کے ایس ایم نے بنال شب	1	0	0	1	0	1		none
+xnli	ہم دن کے 24 گھنٹے ہ	1	0	0	1	0	1		none
+xnli	انٹینلنس	1	0	0	1	1	1		none
+xnli	اگر ہم اپنی قیمتیں کم رکھے تو،	1	0	0	1	0	1		none
+xnli	00 نے ہمیں تقریبا 4	1	0	0	1	0	1		none
+xnli	اس کے نتیجے میں، آپ کو اپنے	1	0	0	1	0	1		none
+xnli	اس کا مطلب ہے کہ آپ کے تحفے	1	0	0	1	0	1		none
+xnli	ہم اس بات سے اتفاق کرتے ہیں کہ ہمیں بہت	1	0	0	1	0	1		none
+xnli	1. 1991 میں آپ کی طرف	1	0	0	1	0	1		none
+xnli	پیشنگوئی	1	0	0	1	1	1		none
+xnli	ہم آپ کے تعاون کی توقع کرتے ہیں اور آپ	1	0	0	1	0	1		none
+xnli	روحانی رہنمائی اور دل کی بات چیت	1	0	0	1	0	1		none
+xnli	ہم آپ کو یقین دلاتے ہیں کہ آپ ان	1	0	0	1	0	1		none
+xnli	ہم آپ کو ان سے بات کرنے پر خوشی	1	0	0	1	0	1		none
+xnli	11 دسمبر کو آپ کے لئے	1	0	0	1	0	1		none
+xnli	1.1.1.1.1	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ ہمیں 10	1	0	0	1	0	1		none
+xnli	1. 前提: مجھے امید ہے کہ	1	0	0	1	0	1		none
+xnli	ہم ہر جولائی میں سوسائٹی	1	0	0	1	0	1		none
+xnli	آپ کے پاس کوئی اور سوالات ہیں؟ اگر	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگی رکنیت کی رسید ہے	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگی پیشگی پیشگی پیشگی	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ ہم آپ کی مدد	1	0	0	1	0	1		none
+xnli	اگر آپ IU سکول آف میڈیس	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ میں نے آئی	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ اگر امریکی خوات	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگر امریکی	1	0	0	1	0	1		none
+xnli	پیشنگوئی: اگر آپ نے 100	1	0	0	1	0	1		none
+xnli	پیش کیا ہوا ہے۔	1	0	0	1	0	1		none
+xnli	یہ ایک انتہائی اہم پیشنگو	1	0	0	1	0	1		none
+xnli	نیویارکر کے آدم گوپنک کا	1	0	0	1	0	1		none
+xnli	اس کے بارے میں علم تھا	1	0	0	1	1	1		none
+xnli	اس کائناتی دلیل کی منطق پر مخ	1	0	0	1	0	1		none
+xnli	اسزم کے معاصر مخالفین نے اس	1	0	0	1	0	1		none
+xnli	فر کوٹ بننے سے بہتر کیوں ہے	1	0	0	1	0	1		none
+xnli	اس کے باوجود، یو اس اے ٹود	1	0	0	1	0	1		none
+xnli	جب آپ تیسری پیراگراف تک پہنچ	1	0	0	1	0	1		none
+xnli	[نیویارک پولیس کے سیک	1	0	0	1	0	1		none
+xnli	تو، میں نے یو- ہول کو کر	1	0	0	1	0	1		none
+xnli	تو، میں نے یو-ہول کو ان	1	0	0	1	0	1		none
+xnli	تو، میں نے یو ہال سے ان کے	1	0	0	1	0	1		none
+xnli	یہ ایک انتہائی پیشنگوئی ہے	1	0	0	1	0	1		none
+xnli	مسز ڈالاؤ کے لئے تعریفی پیغام	1	0	0	1	0	1		none
+xnli	ډالر هر وخت ارزښ	1	0	0	1	0	1		none
+xnli	جو ہمیں فوج کے ساتھ چھوڑ دیتا ہے،	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ اگر ہم زیادہ ج	1	0	0	1	0	1		none
+xnli	اس کے علاوہ، جہاں تک ہم جانتے ہیں	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ میں کرسمس	1	0	0	1	0	1		none
+xnli	آپ جانتے ہیں کون سمجھ نہیں پائے گا؟	1	0	0	1	0	1		none
+xnli	میں واقعی میں سنجیدہ ہوں.	1	0	0	1	0	1		none
+xnli	میں سچ میں سنجیدہ ہوں۔	1	0	0	1	0	1		none
+xnli	میں لازما اس سوال کا جواب دینے سے	1	0	0	1	0	1		none
+xnli	یہ ایک پیشگی شرط ہے کہ میں اپنے لیے	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ وائٹ ہ	1	0	0	1	0	1		none
+xnli	ډاکتر ماته په ه	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ لکھنے	1	0	0	1	0	1		none
+xnli	یہ ایک انتہائی پیچیدہ سوال ہے جس	1	0	0	1	0	1		none
+xnli	یہ ایک ایسا کرنے کے لئے ممکن ہے۔	1	0	0	1	0	1		none
+xnli	اگر یہ کتاب بیچنے کے لئے نہیں ہے	1	0	0	1	0	1		none
+xnli	کرنسی کے نام کی دیگر اوزان	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی کرتا ہے کہ لاطینی	1	0	0	1	0	1		none
+xnli	假设是前提的，因为它表明了一个假设	1	0	0	1	0	1		none
+xnli	(الف) ہر سی کوڈی میں تبدیل	1	0	0	1	0	1		none
+xnli	گرامر اور گلیمر کے درمیان کوئی	1	0	0	1	0	1		none
+xnli	مسکرات ریمبل، جو اس سیشن	1	0	0	1	0	1		none
+xnli	یہ ایک واضح پیش گوئی ہے، ریڈ	1	0	0	1	0	1		none
+xnli	اس نے اسے ایک ہم قافیہ لفظ	1	0	0	1	0	1		none
+xnli	پیشکش کے جواب میں، میں پیش کرتا ہوں	1	0	0	1	0	1		none
+xnli	جب ایلس نے اعتراض کیا، لیکن یہ ایک	1	0	0	1	0	1		none
+xnli	جب ایلس نے انکار کر دیا، تو اس	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگر کوئی شخص	1	0	0	1	0	1		none
+xnli	تعارفی تبصرہ.	1	0	0	1	0	1		none
+xnli	تعارفی.	1	0	0	1	0	1		none
+xnli	تعارفی جملے بہت طویل تھے	1	0	0	1	0	1		none
+xnli	اس طرح کے گڑھوں کے نام رکھنا	1	0	0	1	0	1		none
+xnli	اس طرح، اس کا مطلب ہے کہ اگر کوئی	1	0	0	1	0	1		none
+xnli	یہ پیسے کا راستہ ہے - یہ پ	1	0	0	1	0	1		none
+xnli	اگر ایسپرانٹو ایک حقیقی زبان بن	1	0	0	1	0	1		none
+xnli	اس کے باوجود، کھانی کا علاج عملی	1	0	0	1	0	1		none
+xnli	یہ ایک مفروضہ ہے جو ایک ممکنہ	1	0	0	1	0	1		none
+xnli	جب میں نے سوئٹزرلینڈ میں	1	0	0	1	0	1		none
+xnli	اس کے ساتھ کوئی تعلق نہیں ہے۔	1	0	0	1	0	1		none
+xnli	یہ پیش گوئی ہے کہ اگر آپ جنوبی	1	0	0	1	0	1		none
+xnli	假设是正确的，因为前提中提到的“	1	0	0	1	0	1		none
+xnli	اسکی وجہ اب شدید تکلیفدہ پیشاب	1	0	0	1	0	1		none
+xnli	200.000 alfaz	1	0	0	1	0	1		none
+xnli	سوراخ والا ڈھول تمام موسیقی میں	1	0	0	1	0	1		none
+xnli	Imarat	1	0	0	1	0	1		none
+xnli	ستؑاؑیس	1	0	0	1	0	1		none
+xnli	وفاقی ملازمین بھی اسی شرائط	1	1	0	0	0	1	entailment	native_substring
+xnli	وفاقی ملازمین کے پاس دستیاب	1	0	1	0	0	1	entailment	native_substring
+xnli	ضمیمہ	1	0	0	1	0	1		none
+xnli	نام تنظیم (اگر قابل اطلاق) ایڈ	1	0	0	1	0	1		none
+xnli	توازن	1	0	0	1	0	1		none
+xnli	ہم سب کو ایک ہی نمبر دیا گیا تھا	1	0	0	1	0	1		none
+xnli	یو2 نے بہت ساری فلمیں حاصل کیں۔	1	0	0	1	0	1		none
+xnli	ہم نے اندازہ لگایا کہ وہ جواب	1	0	0	1	0	1		none
+xnli	ہم نے کسی کے ساتھ ٹریننگ نہیں	1	0	0	1	0	1		none
+xnli	ہم نے برطانویوں کے ساتھ 5	1	0	0	1	0	1		none
+xnli	تو، premise اور hypothesis کے درمیان کوئی تعلق نہیں	1	0	0	1	0	1		none
+xnli	تو، میں نے رومانہ سے ایک دوسرے	1	0	0	1	0	1		none
+xnli	تو، میں سوچتا ہوں کہ میں نے	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ کیوبا کے	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ کیوبا بح	1	0	0	1	0	1		none
+xnli	وہ 1 جنوری 1900	1	0	0	1	0	1		none
+xnli	وہ 1900 میں پیدا ہوئے تھے کیونکہ وہ	1	0	0	1	0	1		none
+xnli	وہ 190 میں پیدا ہوئی تھیں	1	0	0	1	0	1		none
+xnli	Contradiction (مخالف)	1	1	0	0	0	1	contradiction	english_substring
+xnli	ہم غلطی نہیں کر سکتے تھے	1	0	0	1	1	1		none
+xnli	ہم وہاں نہیں جائیں گے۔	1	0	0	1	0	1		none
+xnli	ہم اس گھر کو منتقل ہوگئے جسے ہم نے	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ میں لاس	1	0	0	1	0	1		none
+xnli	ہم نے لاس ویگاس اور واشنگ	1	0	0	1	0	1		none
+xnli	premise اور hypothesis کے درمیان کوئی تضاد نہیں ہے	1	0	0	1	0	1		none
+xnli	ہم نے کبھی کسی کو تعینات نہیں کیا	1	0	0	1	0	1		none
+xnli	ہم نے 1969 میں اوکیناوا	1	0	0	1	0	1		none
+xnli	premise اور hypothesis کے درمیان کوئی واضح موازن	1	0	0	1	0	1		none
+xnli	تو اب، یہاں ہے، وہ آج چاہتا	1	0	0	1	0	1		none
+xnli	ہم کسی اور وقت چلے گئے تھے۔	1	0	0	1	0	1		none
+xnli	ہم اس کے بعد کبھی نہیں منتقل ہوئے۔	1	0	0	1	0	1		none
+xnli	ہم وہاں کافی سال رہے	1	0	0	1	1	1		none
+xnli	ہم ملارڈ کریک 85 میں	1	0	0	1	0	1		none
+xnli	یا تو میرا بوس واقعی خوش تھا یا واقعی پا	1	0	0	1	0	1		none
+xnli	نہیں وہ ابھی تک ٹوڑ پر ہیں	1	0	0	1	0	1		none
+xnli	یہ ایک غلطی ہے، یہ ثابت نہیں ہوتا	1	0	0	1	0	1		none
+xnli	ہم یہ نتیجہ اخذ کرتے ہیں کہ ہمارا	1	0	0	1	0	1		none
+xnli	ہم آپ کے ساتھ ہیں، ہم آپ کے ساتھ	1	0	0	1	0	1		none
+xnli	ہم زیادہ جارحانہ جواب دہندگان	1	0	0	1	0	1		none
+xnli	ہم اصل میں تاریخی ماہر نہیں ہیں،	1	0	0	1	0	1		none
+xnli	ہم لوگ میرے والد کے گھر پارٹی پر ج	1	0	0	1	0	1		none
+xnli	یہ میچ بچت کی طرح ہے۔	1	0	0	1	0	1		none
+xnli	ہم کچھ بھی الگ نہیں کرتے ، سارا ایک	1	0	0	1	0	1		none
+xnli	نہیں ، یہ دو متضاد بیان ہیں۔	1	0	0	1	0	1		none
+xnli	نہیں، یہ ایک غلطی ہے۔ یہ ایک	1	0	0	1	0	1		none
+xnli	یہ دونوں ایک دوسرے سے منسلک ہیں،	1	0	0	1	0	1		none
+xnli	یہ ایک انتہائی مشکل سوال ہے،	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ پی جے	1	0	0	1	0	1		none
+xnli	یہ ایک انتہائی واضح اور واضح جواب ہے	1	0	0	1	0	1		none
+xnli	ہم ان کے ساتھ تنخواہ کے لحاظ سے	1	0	0	1	0	1		none
+xnli	یہ دونوں ایک دوسرے کے ساتھ تعلق رکھتے ہیں،	1	0	0	1	0	1		none
+xnli	ہم سکینگ نہیں کرتے، ہم بولنگ کا	1	0	0	1	0	1		none
+xnli	ہم کراس کنٹری اسکائی کے پ	1	0	0	1	0	1		none
+xnli	ہم ملک بھر کے آسمان کے مالک ہیں۔	1	0	0	1	0	1		none
+xnli	ہم یہ نتیجہ اخذ کرتے ہیں کہ یہ زمین	1	0	0	1	0	1		none
+xnli	ہم مستقبل کی ٹیکنالوجی کے لیے	1	0	0	1	0	1		none
+xnli	اگر premise اور hypothesis کے درمیان کوئی تعلق ہے،	1	0	0	1	0	1		none
+xnli	یہ ایک غلطی ہے۔	1	0	0	1	0	1		none
+xnli	ہم آہنگی نہ ہونا	1	0	0	1	1	1		none
+xnli	یہ ایک پیش کش ہے، جو ایک ایسی بات	1	0	0	1	0	1		none
+xnli	اسپین گلاس ایک مقناطیس	1	0	0	1	0	1		none
+xnli	یہ ایک پیش کش ہے، جو کہ ایک ایسی	1	0	0	1	0	1		none
+xnli	یہ ایک واضح نتیجہ ہے، کیونکہ اگر وہ	1	0	0	1	0	1		none
+xnli	آپ غلط ہو سکتے ہیں لیکن یہ ممکن ہے کہ	1	0	0	1	0	1		none
+xnli	یہ سودا میں نہیں ہے۔	1	0	0	1	0	1		none
+xnli	دونوں کے ذریعے.	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگر یہ سچ	1	0	0	1	0	1		none
+xnli	وہ ٹھیک ہو سکتا ہے، اور وہ غلط	1	0	0	1	0	1		none
+xnli	یہ سچ ہے۔	1	0	0	1	0	1		none
+xnli	خون کی منتقلی کی کشتی میں چڑھ	1	0	0	1	0	1		none
+xnli	اگر آپ کر سکتے ہو تو پہلے سے پہلے پ	1	0	0	1	0	1		none
+xnli	اس کے علاوہ، نارون گوتھ	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ اگست کے	1	0	0	1	0	1		none
+xnli	یہ 15 اگست کو منگل کو	1	0	0	1	0	1		none
+xnli	مورز، الموہاد سے معاونت حاصل	1	0	0	1	0	1		none
+xnli	موروں نے المہدوں سے مدد لی	1	0	0	1	0	1		none
+xnli	پرمٹ۔	1	0	0	1	0	1		none
+xnli	Rejan bilkul saaf hai.	1	0	0	1	0	1		none
+xnli	یہ لفظ جواب نہیں ہے کیونکہ یہ لفظ	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ سراکک	1	0	0	1	0	1		none
+xnli	کوئی بھی گاڑیوں کے بارے میں  پر	1	0	0	1	0	1		none
+xnli	یہ انڈور اسکیٹنگ رنکس	1	0	0	1	0	1		none
+xnli	یہ ایک نیا، غیر متوقع نتیجہ ہے	1	0	0	1	0	1		none
+xnli	یہ ان کا بنایا ہوا اب تک کا سب سے	1	0	0	1	0	1		none
+xnli	-کیریبین میں کبھی قزاقوں	1	0	0	1	0	1		none
+xnli	unke pass wahan bandr han.	1	0	0	1	0	1		none
+xnli	Hypothesis: ساحل سے دور، خطے	1	0	0	1	0	1		none
+xnli	خطے فلیٹ ہے.	1	0	0	1	0	1		none
+xnli	یہ طریقہ مختلف طریقوں سے سیکیور	1	0	0	1	0	1		none
+xnli	Hypothesis: www.healtheffects	1	0	0	1	0	1		none
+xnli	یہ پیش کش اور فرضی کے درمیان ایک واضح	1	0	0	1	0	1		none
+xnli	پیشہ ور طبیبوں کے فیڈ ب	1	0	0	1	0	1		none
+xnli	ایڈی دورہ لوگوں کے لئے پینے	1	0	0	1	0	1		none
+xnli	Hypothesis: ہر کمپیوٹر ایڈ	1	0	0	1	0	1		none
+xnli	Hypothesis: کمپیوٹر کی مدد سے	1	0	0	1	0	1		none
+xnli	Hypothesis: جون میں آگ کے الارم کے	1	0	0	1	0	1		none
+xnli	تنبیہ	1	0	0	1	0	1		none
+xnli	انٹیلی جنس اور دہشت گردی	1	0	0	1	0	1		none
+xnli	یہ نظام اس وقت تمام آف لائن تھے	1	0	0	1	0	1		none
+xnli	یہ ایک تنخواہ فون تھا.	1	0	0	1	0	1		none
+xnli	اگر دستیاب ہے تو ادارے کا نام	1	0	0	1	0	1		none
+xnli	اگر تنظیم  آپ کے نام  میں  ای	1	0	0	1	0	1		none
+xnli	ہم اپنی خواہش پالیں گے۔	1	0	0	1	0	1		none
+xnli	ہم نے پہلے ہی ہماری فہرست پر سب	1	0	0	1	0	1		none
+xnli	ہم جو کچھ بھی چاہتے ہیں اس کے لئے	1	0	0	1	0	1		none
+xnli	یہ ایک پیشنگوئی ہے، جو ایک	1	0	0	1	0	1		none
+xnli	.د زده کونکو لپاره  د لا	1	0	0	1	0	1		none
+xnli	ہم آپ پر بھروسہ کرتے ہیں اور امید	1	0	0	1	0	1		none
+xnli	ہم بچوں کو اچھا ووٹر بننے کی	1	0	0	1	0	1		none
+xnli	ہم بچوں کی مدد کرسکتے ہیں	1	0	0	1	0	1		none
+xnli	یہ قوم شروع میں 13 کالونیاں	1	0	0	1	0	1		none
+xnli	دل اور روح سے مشورہ۔	1	0	0	1	0	1		none
+xnli	روحانی رہنمائی اور حوصلہ افز	1	0	0	1	0	1		none
+xnli	یہ دونوں الفاظ ایک دوسرے سے مختلف ہیں۔	1	0	0	1	0	1		none
+xnli	ہم نے 85 سال سے زائد برس	1	0	0	1	0	1		none
+xnli	ہم یہ 85 سال سے زائد عر	1	0	0	1	0	1		none
+xnli	ہم نے ایسا کرنا شروع کر دیا.	1	0	0	1	0	1		none
+xnli	ہم غلط ہیں۔ premise اور hypothesis کے درمیان کوئی	1	0	0	1	0	1		none
+xnli	کرس جوان ایک ایسا شخص ہے جو ہماری ر	1	0	0	1	0	1		none
+xnli	اگر آپ کے پاس کوئی اور سوالات ہیں تو	1	0	0	1	0	1		none
+xnli	اگر آپ کے پاس کوئی اضافی سوالات ہیں	1	0	0	1	0	1		none
+xnli	رکنیت درخواست فارم ہے اور کاروب	1	0	0	1	0	1		none
+xnli	یہ رکنیت کی رسید ہے جس کے لئے	1	0	0	1	0	1		none
+xnli	رکنیت کی درخواست فارم اور کاروب	1	0	0	1	0	1		none
+xnli	توازن، توازن، توازن!	1	0	0	1	0	1		none
+xnli	ہم آپ کی مدد کرنے کے لئے تیار ہیں	1	0	0	1	0	1		none
+xnli	ہم اس پر غور کریں گے اور جلد ہی	1	0	0	1	0	1		none
+xnli	ہم آپ کو یہ جاننا چاہتے ہیں کہ	1	0	0	1	0	1		none
+xnli	ہم آزاد ہو جاتے ہیں، براہ کرم	1	0	0	1	0	1		none
+xnli	ہم بزرگوں کو روزانہ ایک میل چلنے	1	0	0	1	0	1		none
+xnli	ہم دوستوں میں درجہ بندی نہیں کرتے ہیں	1	0	0	1	0	1		none
+xnli	براہ مہربانی ابھی عنایت فرم	1	0	0	1	0	1		none
+xnli	براہ کرم دعائیہ انداز میں	1	0	0	1	0	1		none
+xnli	ہم آپ کی مدد کرنے کے لیے یہاں ہیں۔	1	0	0	1	0	1		none
+xnli	ہم ماضی میں تین تاریخی ڈرام	1	0	0	1	0	1		none
+xnli	ہم ایسے ڈرامے کو نہ کرنے کی کو	1	0	0	1	0	1		none
+xnli	تلمدک میں کوئی مسئلہ نہیں ہے	1	0	0	1	0	1		none
+xnli	NEA کا یہ سوال ادب کے بارے میں	1	0	0	1	0	1		none
+xnli	تو، میں نے یو- ہول کو ان	1	0	0	1	0	1		none
+xnli	تو، میں نے یو- ہول کو ر	1	0	0	1	0	1		none
+xnli	یہ ایک پیشنگوئی ہے، جو کہ	1	0	0	1	0	1		none
+xnli	برائے مہربانی سمجھیں کہ فدرال	1	0	0	1	0	1		none
+xnli	یہ ایک ہی وقت میں پیش کیا گیا ہے،	1	0	0	1	0	1		none
+xnli	پیش کردہ سوالات کے جواب میں، میں	1	0	0	1	0	1		none
+xnli	پیش کردہ سوالات کے جواب دینے کے لیے	1	0	0	1	0	1		none
+xnli	برنسٹن نے اسے ذیادہ تفصل	1	0	0	1	0	1		none
+xnli	برنسٹین نے صرف اس کی وضاحت	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ انگریزی	1	0	0	1	0	1		none
+xnli	توڑ مت کرو.	1	0	0	1	0	1		none
+xnli	توڑ دو	1	0	0	1	0	1		none
+xnli	یہ پیش کش ہے.	1	0	0	1	0	1		none
+xnli	Hypothesis: Huevos کا مطلب گیند نہیں	1	0	0	1	0	1		none
+xnli	پرانے دقیانوسیت کے غماز،	1	0	0	1	0	1		none
+xnli	کوئی بھی نہیں جانتا کہ فلویان امفیت	1	0	0	1	0	1		none
+xnli	یہ ایک واضح تنازعہ ہے۔ premise	1	0	0	1	0	1		none
+xnli	انکارت	1	0	0	1	1	1		none
+xnli	ارادہ، حاضرین، اور ردعمل پر	1	0	0	1	0	1		none
+xnli	premise اور hypothesis کے درمیان کوئی فرق نہیں ہے۔	1	0	0	1	0	1		none
+xnli	یہ ایک نیا سوال ہے جس کا جواب نہیں	1	0	0	1	0	1		none
+xnli	یہ ایک پیش گوئی ہے کہ یہ عمارت	1	0	0	1	0	1		none

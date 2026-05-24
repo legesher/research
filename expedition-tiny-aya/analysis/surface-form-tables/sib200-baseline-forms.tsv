@@ -1,0 +1,137 @@
+benchmark	first_line	total	correct	wrong_label	parse_fail	multiline	n_cells	pred	match_via
+sib200	Science/Technology	1328	621	707	0	7	22	science/technology	normalized
+sib200	science/technology	960	494	466	0	23	20	science/technology	exact
+sib200	politics	408	362	46	0	0	21	politics	exact
+sib200	سائنس/تکنالوجی	398	221	177	0	0	8	science/technology	rule_b
+sib200	Politics	367	285	82	0	0	17	politics	normalized
+sib200	Travel	267	240	27	0	0	15	travel	normalized
+sib200	سیاست	257	0	0	257	36	8		none
+sib200	sports	240	228	12	0	0	19	sports	exact
+sib200	travel	216	184	32	0	0	16	travel	exact
+sib200	Sports	149	139	10	0	0	13	sports	normalized
+sib200	science/تکنالوجی	120	56	64	0	64	6	science/technology	rule_a
+sib200	سیاحت	120	0	0	120	58	8		none
+sib200	科学/技术	120	10	110	0	0	8	science/technology	rule_b
+sib200	旅行	98	0	0	98	0	10		none
+sib200	Geography	96	76	20	0	0	12	geography	normalized
+sib200	کھیل/تکنالوجی	94	0	0	94	69	7		none
+sib200	health	91	64	27	0	0	12	health	exact
+sib200	سائنس/ٹیکنالوجی	88	0	0	88	0	3		none
+sib200	Health	84	57	27	0	0	11	health	normalized
+sib200	سفر	79	0	0	79	48	8		none
+sib200	viajes	79	0	0	79	0	6		none
+sib200	Entertainment	78	75	3	0	0	12	entertainment	normalized
+sib200	سیاست/تکنالوجی	74	4	70	0	72	3	science/technology	rule_b
+sib200	سیاحت/تفریح	47	0	0	47	27	6		none
+sib200	entertainment	46	40	6	0	0	7	entertainment	exact
+sib200	Ciencia y Tecnología	43	18	25	0	0	2	science/technology	rule_b
+sib200	ciencia y tecnología	43	20	23	0	0	2	science/technology	rule_b
+sib200	Ciencia y tecnología	42	18	24	0	0	4	science/technology	rule_b
+sib200	政治	32	0	0	32	0	8		none
+sib200	سیاحت/تکنالوجی	29	0	0	29	18	7		none
+sib200	science/health	29	14	15	0	0	13	science/technology	rule_a
+sib200	کھیل/سائنس/تکنال	26	0	0	26	0	6		none
+sib200	تفریح	22	0	0	22	3	6		none
+sib200	Política	22	0	0	22	0	6		none
+sib200	صحت	20	0	0	20	3	6		none
+sib200	کھیل/سپورٹس	20	0	0	20	6	5		none
+sib200	صحت/تکنالوجی	19	0	0	19	19	5		none
+sib200	Science/Tecnología	19	8	11	0	0	1	science/technology	rule_a
+sib200	deportes	16	0	0	16	0	3		none
+sib200	salud	14	0	0	14	0	3		none
+sib200	geography	12	12	0	0	0	8	geography	exact
+sib200	娱乐	10	0	0	10	0	3		none
+sib200	Salud	9	0	0	9	0	2		none
+sib200	سفر/مسافر	9	0	0	9	9	3		none
+sib200	science/science	9	9	0	0	0	2	science/technology	rule_a
+sib200	体育	7	0	0	7	0	5		none
+sib200	entretenimiento	7	0	0	7	0	4		none
+sib200	کھیل	6	0	0	6	6	2		none
+sib200	科学与技术	6	0	0	6	0	2		none
+sib200	旅游	5	0	0	5	0	4		none
+sib200	تعلیم/تکنالوجی	5	0	0	5	3	4		none
+sib200	سائنس/تکنولوجی	5	0	0	5	4	1		none
+sib200	علم و ٹیکنالوجی	5	0	0	5	5	1		none
+sib200	کھیل/ٹیکنالوجی	4	0	0	4	2	3		none
+sib200	salud y bienestar	4	0	0	4	0	3		none
+sib200	Deportes	4	0	0	4	0	2		none
+sib200	política	4	0	0	4	0	2		none
+sib200	الرياضة	4	0	0	4	0	1		none
+sib200	Viajes	4	0	0	4	0	1		none
+sib200	Science and Technology	4	4	0	0	0	1	science/technology	alias
+sib200	ciencia/tecnología	4	3	1	0	0	1	science/technology	rule_b
+sib200	سیاحت/ٹیکنالوجی	3	0	0	3	3	1		none
+sib200	سفر/مسافرت	3	0	0	3	3	2		none
+sib200	تفریح/سرگرمی	3	0	0	3	1	2		none
+sib200	naturaleza	3	0	0	3	0	2		none
+sib200	العلوم والتكنولوجيا	3	0	0	3	3	1		none
+sib200	سیاحت/سفر	3	0	0	3	3	2		none
+sib200	Ciencia/Tecnología	3	1	2	0	0	1	science/technology	rule_b
+sib200	فن/تکنالوجی	2	0	0	2	1	2		none
+sib200	地理	2	0	0	2	0	2		none
+sib200	انٹرایکٹو ڈیزائن	2	0	0	2	1	2		none
+sib200		2	0	0	2	0	1		none
+sib200	سیٹیلائٹ فون	2	0	0	2	0	2		none
+sib200	تحقیق/تکنالوجی	2	0	0	2	0	2		none
+sib200	سائنس/تکنالوجی،	2	1	1	0	0	2	science/technology	rule_b
+sib200	تفریح/سفر	2	0	0	2	2	2		none
+sib200	السياسة/التكنولوجيا، السفر، السياسة، الرياضة	2	0	0	2	0	1		none
+sib200	سیاست/تکنالوجی، سفر،	2	0	2	0	0	2	science/technology	rule_b
+sib200	فن اور سائنس/تکنالوج	2	0	0	2	0	2		none
+sib200	سیاحت/سائنس/تکنال	2	0	0	2	0	1		none
+sib200	science/	1	1	0	0	0	1	science/technology	rule_a
+sib200	تعلیم	1	0	0	1	0	1		none
+sib200	صحافت/تکنالوجی	1	0	0	1	0	1		none
+sib200	Entretenimiento	1	0	0	1	0	1		none
+sib200	科学和技术	1	0	0	1	0	1		none
+sib200	ٹیکس/ٹیکنالوجی	1	0	0	1	0	1		none
+sib200	سیٹیکنیکل	1	0	0	1	0	1		none
+sib200	فن اور تخلیق	1	0	0	1	1	1		none
+sib200	کھیل/سرگرمی	1	0	0	1	1	1		none
+sib200	Transportation	1	0	1	0	0	1	science/technology	rule_c
+sib200	摄影/技术	1	0	0	1	0	1		none
+sib200	transportation	1	0	1	0	0	1	science/technology	rule_c
+sib200	戏剧	1	0	0	1	0	1		none
+sib200	Salud y bienestar	1	0	0	1	0	1		none
+sib200	فن اور تصویروں کا تخلیقی استعمال	1	0	0	1	0	1		none
+sib200	حیات/تکنالوجی	1	0	0	1	1	1		none
+sib200	سفر/تکنالوجی	1	0	0	1	1	1		none
+sib200	Science/تکنالوجی	1	0	1	0	1	1	science/technology	rule_a
+sib200	صحت/طب	1	0	0	1	0	1		none
+sib200	狮群	1	0	0	1	0	1		none
+sib200	公共交通	1	0	0	1	0	1		none
+sib200	赌场	1	0	0	1	0	1		none
+sib200	سفر و سیاحت	1	0	0	1	1	1		none
+sib200	سیاست/سیاست	1	0	0	1	1	1		none
+sib200	الرياضة/التكنولوجيا	1	0	0	1	1	1		none
+sib200	طبیعیات/تکنالوجی	1	0	0	1	0	1		none
+sib200	تعلیم و تربیت	1	0	0	1	1	1		none
+sib200	فن اور ثقافت	1	0	0	1	0	1		none
+sib200	علم و ٹیکنالوجی، سفر،	1	0	0	1	0	1		none
+sib200	الجغرافيا	1	0	0	1	0	1		none
+sib200	摄影/摄影	1	0	0	1	0	1		none
+sib200	Tecnología	1	0	0	1	0	1		none
+sib200	Salud y Bienestar	1	0	0	1	0	1		none
+sib200	سفر/تفریح	1	0	0	1	0	1		none
+sib200	قانون و ضابطہ	1	0	0	1	0	1		none
+sib200	سیاست/دیپلومسی	1	0	0	1	1	1		none
+sib200	بیماریوں کا پتہ	1	0	0	1	1	1		none
+sib200	کتابیں/علم/تکنالوجی	1	0	0	1	0	1		none
+sib200	سیٹیک/ٹیکنالوجی	1	0	0	1	0	1		none
+sib200	تفریح اور سرگرمی	1	0	0	1	1	1		none
+sib200	tecnología	1	0	0	1	0	1		none
+sib200	انٹرنیٹ پراکسی	1	0	0	1	1	1		none
+sib200	سونا	1	0	0	1	1	1		none
+sib200	ٹرانسپورٹیشن/سائ	1	0	0	1	0	1		none
+sib200	ٹرانسپورٹ اور پارکنگ	1	0	0	1	0	1		none
+sib200	ٹرانسپورٹیشن	1	0	0	1	1	1		none
+sib200	سیاست/خارجہ پالیسی	1	0	0	1	1	1		none
+sib200	جنگ	1	0	0	1	1	1		none
+sib200	ٹیکس/ٹیکس	1	0	0	1	0	1		none
+sib200	تعمیر نو کی کوشش پر آزادانہ	1	0	0	1	0	1		none
+sib200	سائتو کی زندگی اور کارکردگی کا	1	0	0	1	0	1		none
+sib200	کھیل/ٹورنامنٹ	1	0	0	1	1	1		none
+sib200	فلمی خاکے	1	0	0	1	1	1		none
+sib200	ماحولیات	1	0	0	1	1	1		none
+sib200	جاپان	1	0	0	1	0	1		none
+sib200	جنوبی شیٹلینڈ جزیرے،	1	0	0	1	0	1		none
