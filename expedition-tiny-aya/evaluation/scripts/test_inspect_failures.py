@@ -10,7 +10,11 @@ paper-grade refined Phase-3 scorer on main), so all tests run unconditionally.
 
 from __future__ import annotations
 
+import contextlib
+import io
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -424,6 +428,51 @@ class TestInstrumentedMatchesLive(unittest.TestCase):
                 with self.subTest(raw=raw, choices=choices):
                     instrumented, _ = inspect_failures.classify_choice(raw, choices)
                     self.assertEqual(instrumented, live(raw, choices=choices))
+
+
+class TestUtf8Encoding(unittest.TestCase):
+    """Pin the UTF-8 hygiene applied in a8f1ef7. Phase-3 _results_*.json
+    files and the aggregate-mode TSV both carry non-ASCII multilingual
+    surface forms (Urdu, Chinese, Spanish, Arabic). All file opens must
+    pass encoding="utf-8" explicitly, not lean on the platform default
+    (which is ASCII under LC_ALL=C and a non-UTF-8 codepage on Windows).
+
+    This test pins the full pipeline: write a JSON with multilingual
+    raw_outputs the same way Phase-3 evaluate does, run it through
+    aggregate_surface_forms + write_surface_form_tsv, and confirm every
+    surface form survives the round-trip when read back as UTF-8."""
+
+    def test_multilingual_roundtrip_through_aggregate_and_tsv(self):
+        forms = ("سیاست", "科学/技术", "viajes", "السياسة")  # ur, zh, es, ar
+        dataset = {
+            "summary": {},
+            "parse_failure_rates": {},
+            "template1_sib200_data=ur_instr=ur": [
+                {"raw_output": form, "gold": "politics"} for form in forms
+            ],
+        }
+        with tempfile.TemporaryDirectory() as td:
+            tmpdir = Path(td)
+            json_path = tmpdir / "fake_results.json"
+            # Match how reparse_results._atomic_write_json writes JSON:
+            # ensure_ascii=False + utf-8, so the source file itself is multilingual.
+            json_path.write_text(
+                json.dumps(dataset, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            # Read via the same code path inspect_failures.main() uses.
+            with json_path.open(encoding="utf-8") as f:
+                loaded = json.load(f)
+            rows = inspect_failures.aggregate_surface_forms([loaded])
+
+            tsv_path = tmpdir / "out.tsv"
+            # write_surface_form_tsv prints "Wrote N forms → path"; swallow it.
+            with contextlib.redirect_stdout(io.StringIO()):
+                inspect_failures.write_surface_form_tsv(rows, tsv_path)
+
+            # The bytes on disk must be valid UTF-8 and contain every form.
+            content = tsv_path.read_text(encoding="utf-8")
+            for form in forms:
+                self.assertIn(form, content)
 
 
 if __name__ == "__main__":
