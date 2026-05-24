@@ -25,14 +25,16 @@ Usage:
     # Plan-only — list what would be processed (no downloads or uploads):
     python upload_reparsed_summaries.py --dry-run
 
-    # Full run — creates one HF discussion PR with all new summaries:
+    # Full run — creates one HF discussion PR with all new summaries.
+    # Default is to SKIP sessions whose reparsed sibling already exists on HF,
+    # so a careless re-run on the wrong branch can't clobber good numbers:
     python upload_reparsed_summaries.py
 
     # Limit to a single session (handy for spot-checking):
     python upload_reparsed_summaries.py --only condition-2-es-5k/seed42
 
-    # Re-run only sessions that don't already have a reparsed sibling:
-    python upload_reparsed_summaries.py --skip-existing
+    # Regenerate after an extractor change — explicitly clobber existing siblings:
+    python upload_reparsed_summaries.py --overwrite
 
 Auth:
     Reads from HF auth cache (huggingface-cli login). Token must have WRITE
@@ -248,7 +250,7 @@ def _print_plan(sessions: list[dict], skipped_existing: int = 0) -> int:
     if skipped_existing:
         print(
             f"  (skipped {skipped_existing} canonical files because their reparsed "
-            f"siblings already exist on HF — pass without --skip-existing to overwrite)"
+            f"siblings already exist on HF — pass --overwrite to clobber them)"
         )
     print()
     print(f"Total reparses to perform: {total}")
@@ -272,11 +274,13 @@ def main() -> None:
         help="Limit to a single session, e.g., 'condition-2-es-5k/seed42'.",
     )
     parser.add_argument(
-        "--skip-existing",
+        "--overwrite",
         action="store_true",
-        help="Skip canonical results whose `_summary_reparsed_*.json` sibling "
-        "already exists on HF. Default is to overwrite — useful when "
-        "regenerating after an extractor change.",
+        help="Clobber existing `_summary_reparsed_*.json` siblings on HF. "
+        "Default is to SKIP sessions whose reparsed sibling already exists, "
+        "so a careless re-run on the wrong branch can't overwrite good "
+        "numbers. Pass this explicitly when regenerating after an extractor "
+        "change.",
     )
     parser.add_argument(
         "--max-workers",
@@ -314,7 +318,7 @@ def main() -> None:
     print()
 
     skipped_existing = 0
-    if args.skip_existing:
+    if not args.overwrite:
         sessions, skipped_existing = filter_skip_existing(sessions)
 
     total = _print_plan(sessions, skipped_existing=skipped_existing)
@@ -323,8 +327,8 @@ def main() -> None:
     if total == 0:
         msg = (
             "Nothing to do — every canonical result already has a reparsed sibling on HF. "
-            "Pass without --skip-existing to overwrite."
-            if args.skip_existing
+            "Pass --overwrite to clobber them."
+            if not args.overwrite
             else "No canonical results to process. Check --only filter or HF state."
         )
         print(msg)
