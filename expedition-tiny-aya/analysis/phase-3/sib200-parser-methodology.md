@@ -3,7 +3,7 @@
 **Date**: 2026-05-19
 **Author**: Madison (with analysis support from Claude)
 **Linear**: (TBD)
-**Sibling document**: [evaluation-summary.md](evaluation-summary.md) — Phase 2 XNLI label-extraction precedent
+**Sibling document**: [evaluation-summary.md](../evaluation-summary.md) — Phase 2 XNLI label-extraction precedent
 **Data source**: smoke runs at n=20, four conditions × two templates (baseline, cond-2-{es,ur,zh}), Phase-3 pipeline
 
 > **TL;DR**: Phase-3 smoke runs revealed that the SIB-200 extractor in `run_eval_single.py` matched only the seven canonical English category strings. When prompted in native scripts, the model produced topically-correct answers in surface forms the extractor rejected — counting them as parse-failures. A native-aware extractor (three additional rules) closes the gap. For the Urdu-fine-tuned condition (`cond-2-ur`) evaluated on Urdu data with Urdu instructions, this changes the measured accuracy from **0.000** to **1.000**. The model was answering perfectly all along; English-only parsing was discarding every correct response.
@@ -81,7 +81,7 @@ This last point matters: the parser fix is not "tuning the metric to favour our 
 
 ### Reproducibility
 
-All parser changes live in [`scripts/run_eval_single.py`](../evaluation/scripts/run_eval_single.py) in PR #49. An offline re-parser, [`scripts/reparse_results.py`](../evaluation/scripts/reparse_results.py), recomputes accuracy and parse-failure rates against any saved `_results_*.json` without GPU inference, so future extractor changes can be validated against historical runs.
+All parser changes live in [`scripts/run_eval_single.py`](../../evaluation/scripts/run_eval_single.py) in PR #49. An offline re-parser, [`scripts/reparse_results.py`](../../evaluation/scripts/reparse_results.py), recomputes accuracy and parse-failure rates against any saved `_results_*.json` without GPU inference, so future extractor changes can be validated against historical runs.
 
 ---
 

@@ -79,7 +79,7 @@ SIB200_CATEGORIES = (
 # native-language category words observed in the Phase-3 eval outputs:
 # Urdu, Chinese, Spanish, and Arabic (the Urdu-prompted model code-switches
 # to Arabic). Native-language forms are confirmed by native speakers — see
-# analysis/{urdu,chinese,spanish}-surface-forms-review.md.
+# analysis/phase-3/{urdu,chinese,spanish}-surface-forms-review.md.
 #
 # Note: the SIB-200 prompt presents the 7 categories in English regardless of
 # instruction language. Crediting a native-language answer is a deliberate
@@ -108,7 +108,7 @@ SIB200_TERM_TO_CATEGORY = {
     "internet security": "science/technology",
     "interactive design": "science/technology",
     "ai": "science/technology",
-    # --- Urdu (analysis/urdu-surface-forms-review.md) ---
+    # --- Urdu (analysis/phase-3/urdu-surface-forms-review.md) ---
     "سائنس": "science/technology",            # sains - science
     "ٹکنالوجی": "science/technology",  # tiknaloji - technology
     "تکنالوجی": "science/technology",  # taknaloji - technology variant
@@ -129,7 +129,7 @@ SIB200_TERM_TO_CATEGORY = {
     "مسافر": "travel",                       # musafir - traveller
     "صحت": "health",                                   # sehat - health
     "تفریح": "entertainment",                # tafrih - recreation/entertainment
-    # --- Chinese (analysis/chinese-surface-forms-review.md) ---
+    # --- Chinese (analysis/phase-3/chinese-surface-forms-review.md) ---
     "科学": "science/technology",                             # kexue - science
     "技术": "science/technology",                             # jishu - technology
     "公共交通": "travel",                             # gonggong jiaotong - public transport (reviewer decision: travel, not sci/tech)
@@ -139,7 +139,7 @@ SIB200_TERM_TO_CATEGORY = {
     "旅游": "travel",                                         # luyou - tourism/travel
     "娱乐": "entertainment",                                  # yule - entertainment
     "地理": "geography",                                      # dili - geography
-    # --- Spanish (analysis/spanish-surface-forms-review.md) ---
+    # --- Spanish (analysis/phase-3/spanish-surface-forms-review.md) ---
     "ciencia": "science/technology",
     "tecnología": "science/technology",                          # tecnologia
     "tecnologia": "science/technology",                               # accent-stripped variant

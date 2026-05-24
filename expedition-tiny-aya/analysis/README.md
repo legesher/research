@@ -4,6 +4,14 @@
 
 Jupyter notebooks for deep analysis and figure generation.
 
+## Directory layout
+
+- [`phase-3/`](phase-3/) — Phase 3 evaluation analysis (refined-extractor evaluation, decision ledger, surface-form reviews, parser methodology, cond-5 idx ledger). The paper draws from this content.
+- `figures/` — Generated charts referenced in the paper.
+- `notebooks/` — Jupyter notebooks for ad-hoc analysis.
+- `scripts/` — Python scripts that generate the analysis artefacts.
+- Top-level `.md` files (`evaluation-summary.md`, `stack-dataset-non-english-analysis.md`, `urdu-code-leakage-analysis.md`) — Phase 2-era analysis, preserved for historical context.
+
 ## Suggested Notebooks
 
 | Suggested Name | Analysis |

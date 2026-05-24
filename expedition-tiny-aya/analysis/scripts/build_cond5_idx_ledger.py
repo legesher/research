@@ -37,8 +37,8 @@ available (best-effort; blank when the summary lacks them).
 
 Outputs
 -------
-``analysis/cond5-idx-ledger.csv`` — one row per (lang, split, idx)
-``analysis/cond5-idx-ledger.md``  — column docs + per-(lang,split) summary
+``analysis/phase-3/cond5-idx-ledger.csv`` — one row per (lang, split, idx)
+``analysis/phase-3/cond5-idx-ledger.md``  — column docs + per-(lang,split) summary
 """
 
 from __future__ import annotations
@@ -178,7 +178,7 @@ def main() -> int:
 
     rows.sort(key=lambda r: (r["lang"], r["split"], r["idx"]))
 
-    csv_path = ANALYSIS_DIR / "cond5-idx-ledger.csv"
+    csv_path = ANALYSIS_DIR / "phase-3" / "cond5-idx-ledger.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDS)
         writer.writeheader()
@@ -229,7 +229,7 @@ def main() -> int:
         "unavailable, e.g. ur resume rows), `elapsed_seconds`, `input_chars`,",
         "`output_chars`, `file_path`.",
     ]
-    md_path = ANALYSIS_DIR / "cond5-idx-ledger.md"
+    md_path = ANALYSIS_DIR / "phase-3" / "cond5-idx-ledger.md"
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Wrote {md_path}")
     return 0

@@ -41,7 +41,7 @@ from pathlib import Path
 from statistics import mean
 
 # Override via PHASE3_SNAPSHOT_ROOT / PHASE3_OUT_DIR env vars when running
-# outside the default /tmp/phase3_reparse layout. See phase3-refined-evaluation.md §9.
+# outside the default /tmp/phase3_reparse layout. See phase-3/phase3-refined-evaluation.md §9.
 ROOT = Path(
     os.environ.get(
         "PHASE3_SNAPSHOT_ROOT",
