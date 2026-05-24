@@ -227,7 +227,14 @@ def classify_cell(cell_key: str, rows: list[dict]) -> dict:
 # This is the "how many times does the model say X" frequency artifact.
 # ----------------------------------------------------------------------------
 def _first_line(raw_output: str) -> str:
-    """The first line, stripped — exactly what every extractor reads."""
+    """The first line, whitespace-stripped. Used as the aggregation cache
+    key. Note: each live extractor applies its OWN additional normalization
+    on top of this — SIB-200 strips `SIB200_STRIP` (quotes/punctuation),
+    choice extractors uppercase. So two raw_outputs like "travel" and
+    "travel." (or "A" and "a" for choice) get separate cache entries even
+    though they classify identically. The split is intentional: it keeps
+    surface-form variants distinguishable in the frequency table, at the
+    cost of a few extra cache rows."""
     return raw_output.strip().split("\n")[0].strip()
 
 
@@ -236,9 +243,14 @@ def aggregate_surface_forms(
     only_benchmarks: set[str] | None = None,
 ) -> list[dict]:
     """Pool every row across all cells of all given result files and group by
-    (benchmark, first_line). The first line is exactly what the extractors
-    read, so all rows in a group share one prediction + match_via; only the
-    outcome varies (it depends on each row's gold).
+    (benchmark, first_line) — see `_first_line` for the exact cache-key
+    definition. Within a group every row produces the same `pred` +
+    `match_via` (extractors are deterministic on the same input); only the
+    `outcome` varies (it depends on each row's `gold`). Surface-form
+    variants that the extractor would normalize away (e.g. trailing
+    punctuation for SIB-200, casing for choice) appear as separate rows in
+    the table — that's deliberate, so the frequency artifact preserves
+    every distinct emission shape the model produced.
 
     Returns a list of dicts sorted by total count descending, each with:
       benchmark, first_line, total, correct, wrong_label, parse_fail,
@@ -588,6 +600,13 @@ def main() -> None:
 
     if (args.output or args.min_count != 1) and not args.aggregate:
         parser.error("--output and --min-count only apply with --aggregate")
+    if args.aggregate and (
+        args.cell or args.outcome or args.samples or args.group_prefix
+    ):
+        parser.error(
+            "--cell, --outcome, --samples, --group-prefix are per-cell-mode "
+            "flags and do not apply with --aggregate"
+        )
 
     results_paths = [resolve_results_file(p) for p in args.results_files]
 
