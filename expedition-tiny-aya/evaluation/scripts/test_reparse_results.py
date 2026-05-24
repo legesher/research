@@ -239,7 +239,7 @@ class TestReparseFile(unittest.TestCase):
         path.write_text(json.dumps(results))
         return path
 
-    def test_reparse_recovers_lenient_accuracy(self):
+    def test_reparse_recovers_native_script_accuracy(self):
         with tempfile.TemporaryDirectory() as td:
             tmpdir = Path(td)
             fixture = self._write_synthetic_results(tmpdir)
@@ -341,7 +341,9 @@ class TestExtractorsLoadable(unittest.TestCase):
 
 class TestSib200MultiTermHedge(unittest.TestCase):
     """The model sometimes lists two unrelated categories — that's a hedge,
-    not an answer. The lenient scorer must refuse to credit it."""
+    not an answer. Even with the refined extractor's broader scope on
+    native-script and code-switched forms, a multi-category emission must
+    not be credited as a single classification."""
 
     def setUp(self):
         self.sib = reparse_results.extract_sib200_category

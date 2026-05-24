@@ -47,11 +47,8 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
-# Static metadata that callers may need before the extractor source is
-# available — argparse choices, path helpers, etc.
+# Static metadata callers may need at import time (argparse choices, etc.).
 EXTRACTOR_NAMES: tuple[str, ...] = ("belebele", "csqa", "sib200", "xnli")
-
-HERE = Path(__file__).resolve().parent
 
 
 # =============================================================================
@@ -85,10 +82,12 @@ SIB200_CATEGORIES = (
 # analysis/{urdu,chinese,spanish}-surface-forms-review.md.
 #
 # Note: the SIB-200 prompt presents the 7 categories in English regardless of
-# instruction language. A native-language answer is therefore a deliberate
-# *lenient* scoring choice — we credit the model for identifying the topic
-# even though it did not answer in the requested English label. The
-# strict-vs-lenient gap is reported as an instruction-following measure.
+# instruction language. Crediting a native-language answer is a deliberate
+# *scope* extension of this refined extractor — we read the model as having
+# identified the topic, even when it did not answer in the requested English
+# label. The gap between the inference-time extractor's view (English label
+# required) and this refined view (native-script answers admitted) is itself
+# the measure of instruction-following the paper reports.
 SIB200_TERM_TO_CATEGORY = {
     # --- English canonical + aliases ---
     "science/technology": "science/technology",
@@ -384,7 +383,11 @@ def reparse_file(path: Path, only: set[str] | None = None) -> list[dict]:
     consistent with the source."""
     extractors = _load_extractors()
 
-    with path.open() as f:
+    # Phase-3 result JSONs are written as UTF-8 (`raw_output` carries
+    # non-ASCII native-script answers); pin the read encoding explicitly so
+    # platform locale variation (Windows ANSI, non-UTF-8 Linux locales) can't
+    # corrupt the read.
+    with path.open(encoding="utf-8") as f:
         data = json.load(f)
 
     old_summary = data.get("summary", {})

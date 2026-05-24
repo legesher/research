@@ -4,12 +4,13 @@ and upload `_summary_reparsed_{template}.json` siblings next to the originals.
 Each session under `phase3/conditions/<condition>/seed<seed>/` gets:
 
 - inputs:       <prefix>_results_template{1,2}.json     (Kaggle's raw outputs)
-- inputs:       <prefix>_summary_template{1,2}.json     (Kaggle's strict accs)
+- inputs:       <prefix>_summary_template{1,2}.json     (inference-time-extractor accs)
 - new outputs:  <prefix>_summary_reparsed_template{1,2}.json  ← this script
 
 The originals are never touched. The reparsed siblings let any analysis
-downstream pick strict-vs-lenient per-cell deltas straight off HF without
-re-running inference.
+downstream read the refined extractor's view alongside the inference-time
+extractor's view — per-cell deltas pre-computed in `delta_per_cell`, so
+downstream code doesn't have to re-run inference to compare the two.
 
 Workflow:
 
@@ -151,7 +152,8 @@ def list_sessions() -> list[dict]:
         match the folder's seed — usually accidental double-uploads
       - `existing_reparsed` (list[str]): basenames of any
         `_summary_reparsed_*.json` files already present in the folder
-        (used by `--skip-existing`)
+        (used by the default skip-existing behavior — pass `--overwrite`
+        to ignore this list and regenerate every sibling)
     """
     conds = [x["path"] for x in _hf_tree(PHASE3_ROOT) if x["type"] == "directory"]
     sessions: list[dict] = []
@@ -398,8 +400,9 @@ def main() -> None:
                 "block recording when it was generated, against which extractor "
                 "version, and which cells changed.\n\n"
                 "The originals are untouched. Downstream analysis can read "
-                "either or both — strict-vs-lenient deltas are pre-computed "
-                "in `reparse_metadata.delta_per_cell` per file."
+                "either or both — per-cell deltas between the inference-time "
+                "extractor's view and the refined extractor's view are "
+                "pre-computed in `reparse_metadata.delta_per_cell` per file."
             ),
             create_pr=True,
         )
