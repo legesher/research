@@ -8,4 +8,4 @@ matplotlib>=3.8.0
 seaborn>=0.13.0
 pandas>=2.0.0
 numpy>=1.24.0
-scienceplots>=2.1.0  # EMNLP-style typography for phase-3 fig scripts; optional (graceful fallback if missing)
+scienceplots>=2.1.0  # Recommended for EMNLP-style typography on phase-3 figures; the fig scripts have a graceful fallback if absent, but the default analysis env installs it.
