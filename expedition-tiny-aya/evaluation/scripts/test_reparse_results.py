@@ -95,6 +95,7 @@ class TestBuildReparsedSummary(unittest.TestCase):
             {
                 "cell": "template1_sib200_data=ur_instr=ur",
                 "n": 20,
+                "new_correct": 17,
                 "old_acc": 0.0,
                 "new_acc": 0.85,
                 "old_fail": 1.0,
@@ -103,6 +104,7 @@ class TestBuildReparsedSummary(unittest.TestCase):
             {
                 "cell": "template1_xnli_data=en_instr=en",
                 "n": 20,
+                "new_correct": 10,
                 "old_acc": 0.5,
                 "new_acc": 0.5,
                 "old_fail": 0.0,
@@ -192,6 +194,19 @@ class TestBuildReparsedSummary(unittest.TestCase):
         self.assertIn("content_sha256", prov)
         self.assertEqual(len(prov["content_sha256"]), 64)  # sha-256 hex digest
 
+    def test_summary_includes_count_and_correct_per_cell(self):
+        # Paper-grade reporting needs n + correct per cell directly in the
+        # summary, not buried in the full results JSON. Additive keys; doesn't
+        # break readers of the original `_acc` schema.
+        body = reparse_results.build_reparsed_summary(
+            Path("baseline_seednone_results_template1.json"),
+            self._synthetic_rows(),
+        )
+        self.assertEqual(body["summary"]["template1_sib200_data=ur_instr=ur_count"], 20)
+        self.assertEqual(body["summary"]["template1_sib200_data=ur_instr=ur_correct"], 17)
+        self.assertEqual(body["summary"]["template1_xnli_data=en_instr=en_count"], 20)
+        self.assertEqual(body["summary"]["template1_xnli_data=en_instr=en_correct"], 10)
+
 
 class TestReparseFile(unittest.TestCase):
     """End-to-end against a synthetic results JSON. Only exercises one
@@ -233,6 +248,7 @@ class TestReparseFile(unittest.TestCase):
             row = rows[0]
             self.assertEqual(row["cell"], "template1_sib200_data=ur_instr=ur")
             self.assertEqual(row["n"], 2)
+            self.assertEqual(row["new_correct"], 2)  # both rows pred == gold
             self.assertEqual(row["new_acc"], 1.0)  # both correct under v2 extractor
             self.assertEqual(row["new_fail"], 0.0)
             # old_acc / old_fail come from the synthetic summary block

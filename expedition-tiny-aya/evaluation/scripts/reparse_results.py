@@ -417,6 +417,7 @@ def reparse_file(path: Path, only: set[str] | None = None) -> list[dict]:
             {
                 "cell": key,
                 "n": n,
+                "new_correct": new_correct,
                 "old_acc": old_acc,
                 "new_acc": new_correct / n if n else 0.0,
                 "old_fail": old_fail,
@@ -488,20 +489,26 @@ def build_reparsed_summary(input_path: Path, rows: list[dict]) -> dict:
 
     Mirrors the original `_summary_*.json` schema (`summary` + `parse_failure_rates`
     top-level keys) so downstream analysis can read original and reparsed
-    interchangeably. Adds a `reparse_metadata` block recording when, against
-    which extractor version, and what changed.
+    interchangeably, with two additive keys per cell that the original schema
+    omitted: `{cell}_count` (n) and `{cell}_correct` (number of correct
+    predictions). These are paper-grade necessities — without them, mean ± std
+    + n reporting has to reopen the full `_results_*.json`. Adds a
+    `reparse_metadata` block recording when, against which extractor version,
+    and what changed.
 
     Always treats `rows` as a complete recompute — callers should pass rows
     from `reparse_file(path, only=None)`. If you need a partial recompute
     for the diff-table display, run reparse_file twice (once filtered for
     display, once unfiltered for writing) — main() handles this for you."""
-    new_summary: dict[str, float] = {}
+    new_summary: dict[str, float | int] = {}
     new_failure_rates: dict[str, float] = {}
     delta_per_cell: dict[str, dict] = {}
 
     for r in rows:
         cell = r["cell"]
         new_summary[f"{cell}_acc"] = r["new_acc"]
+        new_summary[f"{cell}_count"] = r["n"]
+        new_summary[f"{cell}_correct"] = r["new_correct"]
         new_failure_rates[cell] = r["new_fail"]
         d_acc = r["new_acc"] - (r["old_acc"] or 0)
         d_fail = r["new_fail"] - (r["old_fail"] or 0)
