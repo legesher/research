@@ -362,7 +362,7 @@ def write_surface_form_tsv(rows: list[dict], out_path: Path) -> None:
                 ]
             )
         )
-    out_path.write_text("\n".join(lines) + "\n")
+    out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"\nWrote {len(rows)} surface forms → {out_path}")
 
 
@@ -478,7 +478,7 @@ def run_self_test(results_path: Path) -> int:
         "csqa": lambda t: extract_choice(t, choices="ABCDE"),
         "belebele": lambda t: extract_choice(t, choices="ABCD"),
     }
-    with results_path.open() as f:
+    with results_path.open(encoding="utf-8") as f:
         data = json.load(f)
     mismatches = 0
     checked = 0
@@ -601,7 +601,7 @@ def main() -> None:
     if args.aggregate:
         datasets = []
         for p in results_paths:
-            with p.open() as f:
+            with p.open(encoding="utf-8") as f:
                 datasets.append(json.load(f))
         print(f"=== Aggregating {len(datasets)} file(s) ===")
         rows = aggregate_surface_forms(datasets, only_benchmarks=only)
@@ -612,7 +612,7 @@ def main() -> None:
 
     # --- Default mode: per-cell breakdown, one file at a time.
     for results_path in results_paths:
-        with results_path.open() as f:
+        with results_path.open(encoding="utf-8") as f:
             data = json.load(f)
 
         cell_keys = [
