@@ -17,7 +17,18 @@ Emit:
   vs_baseline_by_condition.tsv        rolled up per condition
   vs_baseline_by_cond_x_bench.tsv     rolled up per (condition, benchmark)
   vs_baseline_by_cond_x_instr.tsv     rolled up per (condition, instr_lang)
-  conclusion_flips.tsv                cells where sign(delta_orig) != sign(delta_rep)
+  conclusion_flips.tsv                cells where (cond − baseline) flips sign between the
+                                       two extractors, with |delta| > 0.01 required on BOTH
+                                       sides. Cells with |delta| ≤ 0.01 on either side are
+                                       in the noise-floor band and excluded. The 0.01
+                                       threshold is below the seed-to-seed reproducibility
+                                       noise observed in Phase-3 baseline (~0.03 std on
+                                       SIB-200 cond-2-X-5k cells); a flip smaller than that
+                                       is noise, not a finding.
+
+Aggregation buffers used:
+  ±1e-6 for win/loss/tie counting in the rollups (float-precision noise floor)
+  ±0.01 for conclusion-flip detection (paper-claim noise floor)
 """
 
 from __future__ import annotations

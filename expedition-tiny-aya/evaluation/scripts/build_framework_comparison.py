@@ -518,54 +518,92 @@ def write_seed_variance(rows: list[dict], out: Path):
 # View D — Template robustness per condition
 # =============================================================================
 def write_template_robustness(rows: list[dict], out: Path):
-    """For each (condition, seed, benchmark, data, instr) cell that ran
-    both templates, the gap |t1_acc − t2_acc|. Aggregated per condition
+    """For each (condition, benchmark, data, instr) cell that ran both
+    templates, the per-cell gap is the mean of |t1_acc − t2_acc| across
+    seeds (one number per cell, not per seed). Aggregated per condition
     and per (condition × benchmark): mean gap, max gap, fraction of cells
     with gap > 0.10 (a brittle-cells count).
 
+    **Aggregation semantics:** `n_cells` counts unique
+    (benchmark, data_lang, instr_lang) cells per condition, NOT (seed × cell)
+    pairs. For multi-seed conditions (cond-1-en-5k, cond-2-X-5k with 3 seeds
+    each), the per-cell gap is the mean across the 3 seeds' per-seed gaps.
+    This makes `frac_brittle` comparable across conditions with different
+    seed counts (e.g., cond-2-ur-5k vs cond-2-ur-20k).
+
     Operationalizes the template-asymmetry structural finding: which
     conditions are robust to prompt-template choice vs which break."""
-    # Pivot per-cell to (t1, t2) pairs
+    from statistics import median
+
+    # Step 1: pivot to (t1, t2) per (condition, seed, benchmark, data, instr).
     pivot: dict[tuple, dict[str, float]] = defaultdict(dict)
     for r in rows:
         key = (r["condition"], r["seed"], r["benchmark"], r["data"], r["instr"])
         pivot[key][f"t{r['template']}"] = r["acc"]
 
-    gaps_by_cond_bench: dict[tuple, list[float]] = defaultdict(list)
-    gaps_by_cond: dict[str, list[float]] = defaultdict(list)
-    for key, t in pivot.items():
+    # Step 2: compute per-seed gap, then collapse seeds → per-cell gap.
+    # per_cell_seed_gaps[(cond, bench, data, instr)] = [gap_seed1, gap_seed2, ...]
+    per_cell_seed_gaps: dict[tuple, list[float]] = defaultdict(list)
+    for (cond, seed, bench, data, instr), t in pivot.items():
         if "t1" in t and "t2" in t:
-            cond, _, bench, _, _ = key
-            g = abs(t["t1"] - t["t2"])
-            gaps_by_cond_bench[(cond, bench)].append(g)
-            gaps_by_cond[cond].append(g)
+            per_cell_seed_gaps[(cond, bench, data, instr)].append(abs(t["t1"] - t["t2"]))
+
+    # Step 3: each cell's gap is the mean of its per-seed gaps.
+    # cell_gaps[(cond, bench)] = list of per-cell gaps for (cond, bench)
+    cell_gaps_by_cond_bench: dict[tuple, list[float]] = defaultdict(list)
+    cell_gaps_by_cond: dict[str, list[float]] = defaultdict(list)
+    cell_seed_counts_by_cond: dict[str, list[int]] = defaultdict(list)
+    for (cond, bench, data, instr), seed_gaps in per_cell_seed_gaps.items():
+        cell_gap = mean(seed_gaps)
+        cell_gaps_by_cond_bench[(cond, bench)].append(cell_gap)
+        cell_gaps_by_cond[cond].append(cell_gap)
+        cell_seed_counts_by_cond[cond].append(len(seed_gaps))
 
     with out.open("w") as f:
         f.write("\t".join([
             "condition", "target_lang", "benchmark", "n_cells",
+            "n_seeds_averaged_per_cell",
             "mean_gap", "median_gap", "max_gap",
             "brittle_cells_gt_0.10", "frac_brittle",
         ]) + "\n")
         # First: per condition row (benchmark="ALL")
-        for cond in sorted(gaps_by_cond.keys()):
-            gs = gaps_by_cond[cond]
+        for cond in sorted(cell_gaps_by_cond.keys()):
+            gs = cell_gaps_by_cond[cond]
+            n_seeds_list = cell_seed_counts_by_cond[cond]
+            # All cells should share the same seed count per condition, but
+            # report a range if it varies (would surface a coverage gap).
+            n_seeds_str = (
+                str(n_seeds_list[0]) if len(set(n_seeds_list)) == 1
+                else f"{min(n_seeds_list)}-{max(n_seeds_list)}"
+            )
             brittle = sum(1 for x in gs if x > 0.10)
             f.write("\t".join([
                 cond, CONDITION_TARGET_LANG.get(cond) or "", "ALL",
-                str(len(gs)), f"{mean(gs):.4f}",
-                f"{sorted(gs)[len(gs)//2]:.4f}",
+                str(len(gs)), n_seeds_str, f"{mean(gs):.4f}",
+                f"{median(gs):.4f}",
                 f"{max(gs):.4f}",
                 str(brittle), f"{brittle / len(gs):.4f}",
             ]) + "\n")
         # Then: per (condition, benchmark) rows
-        for key in sorted(gaps_by_cond_bench.keys()):
+        for key in sorted(cell_gaps_by_cond_bench.keys()):
             cond, bench = key
-            gs = gaps_by_cond_bench[key]
+            gs = cell_gaps_by_cond_bench[key]
+            # Per-(cond, bench) seed count — same logic as above scoped to this bench.
+            # In practice always uniform, but compute defensively.
+            bench_seed_counts = [
+                len(seed_gaps)
+                for (c, b, _, _), seed_gaps in per_cell_seed_gaps.items()
+                if c == cond and b == bench
+            ]
+            n_seeds_str = (
+                str(bench_seed_counts[0]) if len(set(bench_seed_counts)) == 1
+                else f"{min(bench_seed_counts)}-{max(bench_seed_counts)}"
+            )
             brittle = sum(1 for x in gs if x > 0.10)
             f.write("\t".join([
                 cond, CONDITION_TARGET_LANG.get(cond) or "", bench,
-                str(len(gs)), f"{mean(gs):.4f}",
-                f"{sorted(gs)[len(gs)//2]:.4f}",
+                str(len(gs)), n_seeds_str, f"{mean(gs):.4f}",
+                f"{median(gs):.4f}",
                 f"{max(gs):.4f}",
                 str(brittle), f"{brittle / len(gs):.4f}",
             ]) + "\n")
