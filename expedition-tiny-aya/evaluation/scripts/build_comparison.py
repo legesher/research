@@ -1,16 +1,16 @@
-"""Build phase-3 original-vs-reparsed comparison artefacts.
+"""Build phase-3 inference-time-vs-refined comparison artefacts.
 
-Reads every (original, reparsed) summary pair under
+Reads every (inference-time, refined) summary pair under
 ROOT (defaults to /tmp/phase3_reparse/hf_snapshot/phase3/conditions) and emits
 the cells.tsv + rollup TSVs + overall_stats.json into OUT.
 
 To use: either run from a freshly snapshotted layout per
-`expedition-tiny-aya/analysis/phase3-reparse-evaluation.md` §9 (Reproducibility),
+`expedition-tiny-aya/analysis/phase3-refined-evaluation.md` §9 (Reproducibility),
 or override ROOT / OUT below to point at your local mirror. Paths are
 deliberately env-var-overridable so the script survives moves of the snapshot.
 
 Output TSVs are intended to live in
-expedition-tiny-aya/analysis/reparse-tables/.
+expedition-tiny-aya/analysis/refined-tables/.
 """
 
 from __future__ import annotations
@@ -434,7 +434,7 @@ print()
 print("---- HEADLINE STATS ----")
 for k, v in stats.items():
     if k == "gaps":
-        print(f"  gaps: {len(v)} missing reparsed summaries")
+        print(f"  gaps: {len(v)} missing refined summaries")
         continue
     if isinstance(v, float):
         print(f"  {k:30s} {v:+.4f}")

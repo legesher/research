@@ -1,4 +1,4 @@
-# Phase-3 evaluation — original vs. reparsed answer extractor
+# Phase-3 evaluation — inference-time vs. refined answer extractor
 
 **Status:** complete (2026-05-23). All 40 Phase-3 summary files were re-scored against the extended extractor on `eval/sib200-xnli-extractor` (PR #54); 1,536 (condition × seed × template × benchmark × data × instr) cells compared.
 
@@ -6,10 +6,10 @@
 
 **Companion documents:**
 
-- [Reparse decision ledger](reparse-decision-ledger.md) — the auditable methodology (every rule, every native-script surface form, every reject)
+- [Reparse decision ledger](refined-decision-ledger.md) — the auditable methodology (every rule, every native-script surface form, every reject)
 - [SIB-200 parser methodology](sib200-parser-methodology.md) — formal write-up of the multi-term rule
 - [Urdu](urdu-surface-forms-review.md) / [Chinese](chinese-surface-forms-review.md) / [Spanish](spanish-surface-forms-review.md) surface-form reviews
-- [`reparse-tables/`](reparse-tables/) — all the TSVs underpinning this writeup (cells.tsv has every cell)
+- **Analysis tables** — every TSV underpinning this writeup lives on the HF dataset at [`phase3/analysis/`](https://huggingface.co/datasets/legesher/language-decoded-experiments/tree/main/phase3/analysis), split into `refined-tables/` (cells.tsv + framework + rollups) and `surface-form-tables/` (per-benchmark baseline-forms). HF is the canonical source; reproduce locally via the build scripts at `expedition-tiny-aya/evaluation/scripts/build_*.py` + `inspect_failures.py --aggregate`.
 
 ---
 
@@ -21,10 +21,10 @@ The extractor extension recovered **22.6 percentage points of mean parse-failure
 | ----------------------------- | ---------- | ---------- | ---------- | ------ | -------- |
 | Cells (n)                     | 1,536      | 384        | 384        | 384    | 384      |
 | Mean original accuracy        | 0.541      | 0.570      | 0.369      | 0.515  | 0.708    |
-| Mean reparsed accuracy        | 0.556      | 0.621      | 0.380      | 0.515  | 0.708    |
+| Mean refined accuracy        | 0.556      | 0.621      | 0.380      | 0.515  | 0.708    |
 | **Mean Δaccuracy**            | **+0.015** | **+0.051** | **+0.011** | 0.000  | 0.000    |
 | Mean original parse-fail rate | 0.039      | 0.102      | 0.053      | 0.0001 | 0.0001   |
-| Mean reparsed parse-fail rate | 0.016      | 0.036      | 0.028      | 0.0001 | 0.0001   |
+| Mean refined parse-fail rate | 0.016      | 0.036      | 0.028      | 0.0001 | 0.0001   |
 | **Mean Δparse-fail rate**     | **−0.023** | **−0.066** | **−0.025** | 0.000  | 0.000    |
 | Cells improved (Δacc > 0)     | 205        | 138        | 67         | 0      | 0        |
 | Cells regressed (Δacc < 0)    | 92         | 92         | 0          | 0      | 0        |
@@ -40,7 +40,7 @@ The extractor extension recovered **22.6 percentage points of mean parse-failure
 
 ### 2.1 What changed in the extractor
 
-Full per-rule audit lives in [reparse-decision-ledger.md](reparse-decision-ledger.md). Compressed summary:
+Full per-rule audit lives in [refined-decision-ledger.md](refined-decision-ledger.md). Compressed summary:
 
 **SIB-200** — `extract_sib200_category` replaced its single-substring scan with a _count-distinct-categories_ multi-term rule. Each answer is split on punctuation separators (`/`, `,`, `&`, `+`, `;`) and on language-specific conjunctions (`and`, `y`, `e`, `و`, `和`, `与`); each piece is resolved against `SIB200_TERM_TO_CATEGORY` (English canonical labels + sub-topics + native surface forms in Urdu, Chinese, Spanish, Arabic); the answer counts only if all resolved pieces collapse to **exactly one distinct category**. Two-or-more distinct categories → parse-failure (the model hedged). Fallback: word-boundary scan of the 7 English canonical category names. The native term map and the multi-term rule together fix two PR-#49 bugs at the same time — `سیاست/تکنالوجی` (politics/technology) no longer mis-resolves to `science/technology`, and `science/health` is no longer Rule-A-credited as `science/technology`.
 
@@ -57,7 +57,7 @@ Tier 3 is explicitly framed as **lenient semantic mapping** in the ledger — th
 
 ### 2.2 What changed at the data level
 
-This is a _re-scoring_ operation, not a re-inference. `reparse_results.py` reads the stored `raw_output` field from each `_results_*.json` and re-runs the new extractor over it. **No model invocation, no GPU, no fresh tokens.** Every cell in this comparison shares the same underlying model outputs across the original and reparsed paths — only the extractor function changed.
+This is a _re-scoring_ operation, not a re-inference. `reparse_results.py` reads the stored `raw_output` field from each `_results_*.json` and re-runs the new extractor over it. **No model invocation, no GPU, no fresh tokens.** Every cell in this comparison shares the same underlying model outputs across the inference-time and refined paths — only the extractor function changed.
 
 This isolation is what lets us report the deltas as _scorer effects_ rather than confounded model-variance effects.
 
@@ -89,7 +89,7 @@ Within XNLI, **all 67 improvements are unidirectional** — there is not a singl
 
 ### 3.2 By instruction language — multilingual instructions are where the lift lives
 
-| `instr_lang` | n cells | Mean orig acc | Mean reparsed acc | Mean Δacc  | Mean Δpf |
+| `instr_lang` | n cells | Mean orig acc | Mean refined acc | Mean Δacc  | Mean Δpf |
 | ------------ | ------- | ------------- | ----------------- | ---------- | -------- |
 | `en`         | 608     | 0.591         | 0.591             | **−0.000** | +0.000   |
 | `es`         | 288     | 0.528         | 0.539             | **+0.011** | −0.012   |
@@ -150,7 +150,7 @@ Three groupings emerge:
 
 Cond-5's parse-failure recovery (−0.068 ur, −0.087 zh) is the largest of any condition. Put another way: under the original strict-English extractor, cond-5 looked like a _worse_ fine-tuning recipe than cond-1; under the extended extractor, cond-5 reads roughly equal to cond-1 on SIB-200 (and slightly better than baseline on XNLI-zh). **The original measurement was confounded by extractor coverage, not training-data efficacy.** This is exactly the kind of finding that justifies the extractor work.
 
-## 4. Anomalies — where the reparse made cells _look_ worse
+## 4. Anomalies — where the refined-extractor pass made cells _look_ worse
 
 92 of 384 SIB-200 cells regressed in accuracy. Their distribution is highly concentrated:
 
@@ -168,7 +168,7 @@ Cond-5's parse-failure recovery (−0.068 ur, −0.087 zh) is the largest of any
 
 The other smaller regressions (`condition-1-en-*` `science/X` cells on English-instr; cond-2-es / cond-2-zh) are the analogous correction for Rule A's previous over-credit of `science/health` and similar cross-category compounds.
 
-**Anomaly to flag for the paper write-up:** the original `cond-2-ur-5k` SIB-200 accuracy of ~0.67 was inflated. The reparsed ~0.65 is the defensible number. If the original was cited anywhere (slides, draft paper, Linear comments), it should be revised down.
+**Anomaly to flag for the paper write-up:** the original `cond-2-ur-5k` SIB-200 accuracy of ~0.67 was inflated. The refined ~0.65 is the defensible number. If the original was cited anywhere (slides, draft paper, Linear comments), it should be revised down.
 
 ## 5. The parse-failure recovery story — flat-acc, dropped-pf cells
 
@@ -194,13 +194,13 @@ For now, the summary-level Tier-3 measurement we _do_ have from the decision led
 
 **(L1) Truncation confound.** SIB-200 generation runs at `max_new_tokens=10`. Long native-script compounds get clipped mid-token (e.g. `کھیل/سائنس/تکنالوجی` → `کھیل/سائنس/تکنال`). The surviving pieces still trip the multi-category hedge → parse-failure. Some fraction of the residual SIB-200 parse-failure rate is generation-budget-limited, not extractor-limited. Worth a sentence in the paper's limitations: a larger token budget can reduce this.
 
-**(L2) Constant-output finding (cond-2-ur-5k SIB-200).** Per the decision ledger, the Urdu-tuned model emits a near-constant `سائنس/ٹیکنالوجی` regardless of passage topic. Those rows land in `correct` when gold is science/technology and `wrong_label` otherwise. The reparse keeps both visible (no special-casing), but the cell-level accuracy on this condition slightly overstates the model. A `correct_ambiguous` flag in the per-row analysis (planned, not yet emitted) would let us measure this.
+**(L2) Constant-output finding (cond-2-ur-5k SIB-200).** Per the decision ledger, the Urdu-tuned model emits a near-constant `سائنس/ٹیکنالوجی` regardless of passage topic. Those rows land in `correct` when gold is science/technology and `wrong_label` otherwise. The refined extraction keeps both visible (no special-casing), but the cell-level accuracy on this condition slightly overstates the model. A `correct_ambiguous` flag in the per-row analysis (planned, not yet emitted) would let us measure this.
 
 **(L3) `instr=en` regression on `cond-2-*`.** Small but systematic: cond-2-es/zh/ur each lost 1–5 cells on `instr=en` due to Rule-A `science/X` over-credit being removed. The 0.025-pp typical magnitude per cell is below the noise of any single seed; pooling across seeds is the right comparison level.
 
 **(L4) Tier-3 strict-vs-lenient decomposition not available.** §6 above. The `--aggregate` artefact in PR #55 is the path forward.
 
-**(L5) No cross-seed variance reported here.** The cell-level table reports per-(condition,seed,template,benchmark,data,instr) numbers but does not aggregate across seeds with variance bars. For a paper, the cond-1-en-5k × {42, 123, 456} triplet should be reported as mean ± std (or 95% CI) per cell. The TSV in `reparse-tables/cells.tsv` is the canonical input for that analysis.
+**(L5) No cross-seed variance reported here.** The cell-level table reports per-(condition,seed,template,benchmark,data,instr) numbers but does not aggregate across seeds with variance bars. For a paper, the cond-1-en-5k × {42, 123, 456} triplet should be reported as mean ± std (or 95% CI) per cell. [`framework_seed_variance.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/framework_seed_variance.tsv) on HF surfaces this directly (mean, std, min, max, total_count, total_correct per cell); [`cells.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/cells.tsv) is the per-seed raw input.
 
 ## 8. Condition vs baseline — does fine-tuning actually help?
 
@@ -208,7 +208,7 @@ The preceding sections (§1–§7) report the **extractor effect**: how scores m
 
 > For each fine-tuning condition, does the condition's model beat the un-tuned baseline?
 
-Because each condition has _two_ readings (one from each extractor), every condition-vs-baseline comparison appears twice: once under the original-extractor scoring (the numbers that were on the table before this PR) and once under the reparsed-extractor scoring (the numbers we believe). When the two readings agree on sign, the verdict is **stable** — extractor coverage didn't change the answer. When they disagree, the verdict **flipped** — the original-extractor scoring was making the wrong call.
+Because each condition has _two_ readings (one from each extractor), every condition-vs-baseline comparison appears twice: once under the original-extractor scoring (the numbers that were on the table before this PR) and once under the refined-extractor passd-extractor scoring (the numbers we believe). When the two readings agree on sign, the verdict is **stable** — extractor coverage didn't change the answer. When they disagree, the verdict **flipped** — the original-extractor scoring was making the wrong call.
 
 ### 8.1 Three-scenario framing
 
@@ -221,7 +221,7 @@ For each condition C and each cell (template, benchmark, data_lang, instr_lang):
 | **Condition (orig)** | C's accuracy under the strict extractor                    | minus baseline (orig) | "Did fine-tuning help, by the original scorer?"                          |
 | **Condition (rep)**  | C's accuracy under the extended extractor                  | minus baseline (rep)  | "Did fine-tuning help, by the corrected scorer?"                         |
 
-Every comparison is **apples-to-apples within an extractor**: cond_orig is compared to baseline_orig; cond_rep to baseline_rep. We never compare a condition's reparsed score to a baseline's original score.
+Every comparison is **apples-to-apples within an extractor**: cond_orig is compared to baseline_orig; cond_rep to baseline_rep. We never compare a condition's refined score to a baseline's original score.
 
 ### 8.2 Headline — condition mean vs baseline mean, both extractors
 
@@ -238,7 +238,7 @@ Every comparison is **apples-to-apples within an extractor**: cond_orig is compa
 | condition-5-ur-5k  | 64      | 0.505           | 0.483       | **−0.021**   | 0.539          | 0.529      | **−0.009**  | stable: small loss, **halved under rep**             |
 | condition-5-zh-5k  | 64      | 0.553           | 0.488       | **−0.066**   | 0.567          | 0.535      | **−0.032**  | stable: loss, **halved under rep**                   |
 
-> **The mean-Δ aggregate verdict does not flip for any condition.** Every condition that "beat baseline" under the original extractor still beats baseline under the reparsed extractor, and every condition that "lost" still loses. But the **magnitude** changes substantially — most condition-vs-baseline gains shrink by ~50% under the corrected scoring, because the original extractor was systematically over-crediting both sides asymmetrically (fine-tuned models more than baseline on SIB-200, see §8.4).
+> **The mean-Δ aggregate verdict does not flip for any condition.** Every condition that "beat baseline" under the original extractor still beats baseline under the refined extractor, and every condition that "lost" still loses. But the **magnitude** changes substantially — most condition-vs-baseline gains shrink by ~50% under the corrected scoring, because the original extractor was systematically over-crediting both sides asymmetrically (fine-tuned models more than baseline on SIB-200, see §8.4).
 
 ### 8.3 Per (condition × benchmark) — where the conclusion actually flips
 
@@ -289,7 +289,7 @@ Cell-mean Δ (cond − baseline) per benchmark, both extractors. **Bold** rows a
 
 **Four (condition, benchmark) cells flip from "fine-tuning helps" to "fine-tuning hurts"** on SIB-200 under the corrected extractor: `cond-2-es-5k`, `cond-2-es-20k`, `cond-2-zh-20k`, `cond-3-zh-5k`. One cell flips the other direction (cond-5-zh-5k XNLI) but the magnitude is small (±0.01) — likely noise, not signal.
 
-### 8.4 Why does cond-2 SIB-200 "win" under the original extractor and "lose" under the reparsed one?
+### 8.4 Why does cond-2 SIB-200 "win" under the original extractor and "lose" under the refined-extractor passd one?
 
 The flip is a mechanical consequence of the PR-#49 bugs the extractor extension fixed. The original `extract_sib200_category` had two over-credit patterns: Rule A (`science/<anything>` → science/technology) and the `سیاست/تکنالوجی → science/technology` mapping. **Fine-tuned models hit these patterns more than the baseline.** A target-language-tuned model that has learned to emit short topic-prefix tokens (`science/`, `سیاست/`) collects more lucky credit from these bugs than the baseline does (which emits longer English prose). Under the corrected extractor, those over-credits go away for both sides — but they were disproportionately benefiting the fine-tuned models, so the cond-vs-baseline delta shrinks (or flips negative).
 
@@ -316,7 +316,7 @@ Cond-5 (Aya-translated training data) was the latest cycle's most ambitious trai
 
 Three things to note:
 
-1. **The headline cond-5-zh-5k SIB-200 "regression" of −0.245 was largely an extractor artefact.** Under the reparsed scoring it's −0.128 — still a regression, but the magnitude _halves_. The original extractor was hiding cond-5-zh-5k's native-script answers as parse-failures while crediting baseline's lucky `science/X` patterns; the corrected extractor reads both sides honestly.
+1. **The headline cond-5-zh-5k SIB-200 "regression" of −0.245 was largely an extractor artefact.** Under the refined scoring it's −0.128 — still a regression, but the magnitude _halves_. The original extractor was hiding cond-5-zh-5k's native-script answers as parse-failures while crediting baseline's lucky `science/X` patterns; the corrected extractor reads both sides honestly.
 2. **The X-CSQA regression is real and not extractor-confounded.** Both cond-5-ur (−0.045) and cond-5-zh (−0.020) lose on X-CSQA by identical amounts under both extractors. That's a model effect: the Aya-translated training mix degrades commonsense QA. Worth investigating whether the translation step lost reasoning fidelity.
 3. **Cond-5 still loses against baseline on the mean** — but the story is "doesn't help, modestly hurts" rather than "broke the model." The original extractor was telling the stronger story; the corrected extractor tells the moderate one.
 
@@ -324,7 +324,7 @@ Three things to note:
 
 Average Δ (cond − baseline) by the instruction language of the prompt:
 
-| Condition          | instr=en        | instr=es        | instr=zh        | instr=ur        | (uses original / reparsed) |
+| Condition          | instr=en        | instr=es        | instr=zh        | instr=ur        | (uses inference-time / refined) |
 | ------------------ | --------------- | --------------- | --------------- | --------------- | -------------------------- |
 | condition-1-en-20k | +0.000 / +0.000 | +0.005 / +0.004 | −0.020 / −0.011 | +0.020 / +0.012 | orig / rep                 |
 | condition-1-en-5k  | +0.004 / +0.004 | +0.001 / −0.000 | −0.000 / +0.005 | +0.011 / +0.005 | orig / rep                 |
@@ -337,13 +337,13 @@ Average Δ (cond − baseline) by the instruction language of the prompt:
 | condition-5-ur-5k  | −0.020 / −0.010 | —               | —               | −0.021 / −0.007 | orig / rep                 |
 | condition-5-zh-5k  | −0.060 / −0.030 | —               | −0.073 / −0.034 | —               | orig / rep                 |
 
-(`cond_x_instr` rollup in [reparse-tables/vs_baseline_by_cond_x_instr.tsv](reparse-tables/vs_baseline_by_cond_x_instr.tsv); per-cell rows in [vs_baseline_cells.tsv](reparse-tables/vs_baseline_cells.tsv).)
+(`cond_x_instr` rollup in [vs_baseline_by_cond_x_instr.tsv](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/vs_baseline_by_cond_x_instr.tsv); per-cell rows in [vs_baseline_cells.tsv](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/vs_baseline_cells.tsv).)
 
-The two readings agree on **direction** everywhere except cond-2-es-5k/20k `instr=es` (which flips from small win to small loss — same SIB-200 mechanism as §8.4) and cond-1-en-* `instr=zh` (small magnitude, likely noise). The interesting non-flip pattern is cond-2-ur-5k `instr=ur`: the original-extractor reading said +0.108 (huge gain from target-language tuning); the reparsed reading says +0.023 (modest gain). A ~4× deflation that does *not\* flip sign — the gain is real, just much smaller than the original numbers suggested.
+The two readings agree on **direction** everywhere except cond-2-es-5k/20k `instr=es` (which flips from small win to small loss — same SIB-200 mechanism as §8.4) and cond-1-en-* `instr=zh` (small magnitude, likely noise). The interesting non-flip pattern is cond-2-ur-5k `instr=ur`: the original-extractor reading said +0.108 (huge gain from target-language tuning); the refined reading says +0.023 (modest gain). A ~4× deflation that does *not\* flip sign — the gain is real, just much smaller than the original numbers suggested.
 
 ### 8.7 Conclusion-flip catalogue
 
-[`reparse-tables/conclusion_flips.tsv`](reparse-tables/conclusion_flips.tsv) lists every cell whose sign(Δ vs baseline) changed between the original and reparsed scorings (using a ±0.01 buffer to ignore noise-floor cells). **43 cells flip** out of 1,408 condition-vs-baseline comparisons (3.1%). The flips are highly concentrated:
+[`conclusion_flips.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/conclusion_flips.tsv) lists every cell whose sign(Δ vs baseline) changed between the original and refined scorings (using a ±0.01 buffer to ignore noise-floor cells). **48 cells flip** out of 1,536 condition-vs-baseline comparisons (3.1%) post HF PR #34 + #35 (the count was 43/1408 in the pre-PR-#56 build with coverage gaps; the new full-coverage build is 48/1536). The flips are highly concentrated:
 
 - **34 of 43 flips are SIB-200** — the benchmark whose extractor changed the most.
 - **All 43 flips are on `instr` ≠ `en`** — English-instruction cells are stable.
@@ -359,16 +359,16 @@ If a paper plot needs to flag which (condition, benchmark) cells are "extractor-
 | "What did our original results look like before the extractor extension?" | **Original**                                                                    | For provenance / reproducibility / before-after comparisons. |
 | "How does extractor coverage affect our conclusions?"                     | **Both**, side-by-side                                                          | This document, §8.3 and §8.4.                                |
 | Per-row error analysis                                                    | **Reparsed**                                                                    | The original extractor over-counts parse-failures.           |
-| Aggregating across cells with cross-seed std                              | **Reparsed**, per [vs_baseline_cells.tsv](reparse-tables/vs_baseline_cells.tsv) | Same reason as the headline.                                 |
+| Aggregating across cells with cross-seed std                              | **Reparsed**, per [vs_baseline_cells.tsv][vbc]                                  | Same reason as the headline.                                 |
 
-**Never mix scorings within a single comparison.** A condition's reparsed score against an original-extractor baseline would manufacture an apparent gain (or loss) entirely from the extractor delta, not from any condition effect.
+**Never mix scorings within a single comparison.** A condition's refined score against an original-extractor baseline would manufacture an apparent gain (or loss) entirely from the extractor delta, not from any condition effect.
 
 ## 9. Where the numbers come from
 
 - **Raw model outputs:** `legesher/language-decoded-experiments` on HuggingFace, `phase3/conditions/<condition>/seed<N>/<condition>_seed<N>_results_<template>.json`. 42 files (21 sessions × 2 templates), ~52 MB each, ~2 GB total.
 - **Inference-time-extractor summaries:** sibling `_summary_<template>.json` files in the same paths. Produced at evaluation time by the inference-time extractor (`evaluate.ipynb` cell 3, scoped to canonical English labels). Frozen historical record.
-- **Refined-extractor summaries:** sibling `_summary_reparsed_<template>.json` files. Produced by `reparse_results.py` at commit `c7e2277` on `main` (PR #54 squash) — the merged, self-contained scorer. Uploaded to the HF dataset via HF PR #34 (merged 2026-05-24). Every reparsed summary's `extractor_provenance.content_sha256` matches `reparse_results.py` at that commit; reviewers reproducing the paper verify this hash against their checkout.
-- **Comparison artefacts:** [`reparse-tables/`](reparse-tables/):
+- **Refined-extractor summaries:** sibling `_summary_reparsed_<template>.json` files. Produced by `reparse_results.py` at commit `c7e2277` on `main` (PR #54 squash) — the merged, self-contained scorer. Uploaded to the HF dataset via HF PR #34 (merged 2026-05-24). Every refined summary's `extractor_provenance.content_sha256` matches `reparse_results.py` at that commit; reviewers reproducing the paper verify this hash against their checkout.
+- **Comparison artefacts:** [`refined-tables/`](refined-tables/):
   - `cells.tsv` — every cell, one row, all deltas (inference-time-extractor view vs refined-extractor view)
   - `summary_by_benchmark.tsv`, `summary_by_instr_lang.tsv`, `summary_by_data_lang.tsv`, `summary_by_condition.tsv`, `summary_by_template.tsv` — single-axis rollups
   - `summary_bench_x_instr.tsv`, `summary_cond_x_bench.tsv` — two-axis crosstabs
@@ -383,31 +383,38 @@ If a paper plot needs to flag which (condition, benchmark) cells are "extractor-
 ### Reproducibility
 
 ```bash
-# 1. Snapshot the summary files from HF (≈50 MB — no raw _results_*.json needed
-#    since HF now hosts the reparsed summaries directly).
+# 1. Snapshot the summary files from HF (≈50 MB — no raw _results_*.json
+#    needed; HF hosts the refined-extractor summaries directly).
 python -c "from huggingface_hub import snapshot_download; \
     snapshot_download(repo_id='legesher/language-decoded-experiments', \
                       repo_type='dataset', local_dir='/tmp/phase3_reparse/hf_snapshot', \
                       allow_patterns=['phase3/conditions/**/*_summary_template*.json', \
                                      'phase3/conditions/**/*_summary_reparsed_template*.json'])"
 
-# 2. Build the comparison artefacts. PHASE3_OUT_DIR points at where the
-#    TSVs should be written; defaults to /tmp/phase3_reparse/ but the
-#    intended destination is expedition-tiny-aya/analysis/reparse-tables/.
-PHASE3_OUT_DIR="expedition-tiny-aya/analysis/reparse-tables" \
+# 2. Build the analysis TSVs to a local /tmp directory. They are NOT
+#    committed to GitHub — the canonical location is HF (step 3).
+mkdir -p /tmp/phase3_analysis_output
+PHASE3_OUT_DIR="/tmp/phase3_analysis_output" \
 python expedition-tiny-aya/evaluation/scripts/build_comparison.py
-PHASE3_OUT_DIR="expedition-tiny-aya/analysis/reparse-tables" \
+PHASE3_OUT_DIR="/tmp/phase3_analysis_output" \
 python expedition-tiny-aya/evaluation/scripts/build_vs_baseline.py
-PHASE3_OUT_DIR="expedition-tiny-aya/analysis/reparse-tables" \
+PHASE3_OUT_DIR="/tmp/phase3_analysis_output" \
 python expedition-tiny-aya/evaluation/scripts/build_framework_comparison.py
+
+# 3. (Optional) Upload the TSVs to HF as a discussion PR. Only do this if
+#    you have WRITE access to the dataset and want the canonical tables
+#    to reflect the version of the build scripts you just ran.
+python expedition-tiny-aya/evaluation/scripts/upload_analysis_tables.py
 ```
 
-To re-run the refined extractor against the raw `_results_*.json` files yourself (e.g., to verify the published reparsed summaries reproduce), see the `--write-reparsed-summary` mode in `reparse_results.py`. That's the path used by `upload_reparsed_summaries.py` — see HF PR #34 for the run that produced the canonical reparsed summaries on the dataset.
+To re-run the refined extractor against the raw `_results_*.json` files yourself (e.g., to verify the published refined summaries reproduce), see the `--write-reparsed-summary` mode in `reparse_results.py`. That's the path used by `upload_reparsed_summaries.py` — see HF PR #34 for the run that produced the canonical refined summaries on the dataset.
 
 ### Coverage
 
-**Full coverage.** All 21 (condition × seed) sessions on HF have reparsed siblings as of HF PR #34 (merged 2026-05-24). This includes `condition-2-ur-20k/seed42` and `condition-5-es-5k/seed42` which were gaps in the initial pre-merge reparse pass.
+**Full coverage.** All 21 (condition × seed) sessions on HF have refined siblings as of HF PR #34 (merged 2026-05-24). This includes `condition-2-ur-20k/seed42` and `condition-5-es-5k/seed42` which were gaps in the initial pre-merge re-scoring pass.
 
 ---
 
 _Last regenerated against HF main, post HF PR #34 (2026-05-24)._
+
+[vbc]: https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/vs_baseline_cells.tsv

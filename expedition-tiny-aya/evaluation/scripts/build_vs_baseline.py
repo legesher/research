@@ -2,9 +2,9 @@
 
 For each (template, benchmark, data, instr) cell that a condition ran:
   baseline_orig  : the baseline model's accuracy under the original extractor
-  baseline_rep   : the baseline model's accuracy under the reparsed extractor
+  baseline_rep   : the baseline model's accuracy under the refined extractor
   cond_orig      : the condition's accuracy under the original extractor (per seed)
-  cond_rep       : the condition's accuracy under the reparsed extractor (per seed)
+  cond_rep       : the condition's accuracy under the refined extractor (per seed)
 
 Then compute, per (condition, seed, cell):
   delta_orig = cond_orig - baseline_orig
@@ -30,7 +30,7 @@ from pathlib import Path
 from statistics import mean
 
 # Override via PHASE3_SNAPSHOT_ROOT / PHASE3_OUT_DIR env vars when running
-# outside the default /tmp/phase3_reparse layout. See phase3-reparse-evaluation.md §9.
+# outside the default /tmp/phase3_reparse layout. See phase3-refined-evaluation.md §9.
 ROOT = Path(
     os.environ.get(
         "PHASE3_SNAPSHOT_ROOT",

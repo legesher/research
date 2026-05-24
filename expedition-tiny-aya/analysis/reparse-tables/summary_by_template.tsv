@@ -1,3 +1,0 @@
-template	n_cells	mean_orig_acc	mean_repar_acc	mean_delta_acc	median_delta_acc	n_improved	n_regressed	n_flat	mean_orig_pf	mean_repar_pf	mean_delta_pf	median_delta_pf	min_delta_acc	max_delta_acc	min_delta_pf	max_delta_pf
-1	832	0.5554	0.5646	+0.0092	+0.0000	68	78	686	0.0212	0.0105	-0.0107	+0.0000	-0.1422	+0.3578	-0.5735	+0.4265
-2	832	0.5238	0.5442	+0.0204	+0.0000	147	28	657	0.0539	0.0224	-0.0315	+0.0000	-0.1225	+0.5147	-0.7598	+0.3088

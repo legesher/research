@@ -32,14 +32,14 @@ talk about (paper-prep-callouts items 7-11).
 Inputs:
   Reads HF-snapshot summary files from $PHASE3_SNAPSHOT_ROOT (default
   `/tmp/phase3_reparse/hf_snapshot/phase3/conditions`). Uses ONLY the
-  reparsed-extractor numbers (the paper-grade view); the original-
+  refined-extractor numbers (the paper-grade view); the original-
   extractor numbers are excluded here on purpose — for original-vs-refined
   comparison use `build_comparison.py` instead.
 
 Outputs:
   Written into $PHASE3_OUT_DIR (default `/tmp/phase3_reparse`); the
   intended final destination is
-  `expedition-tiny-aya/analysis/reparse-tables/`.
+  `expedition-tiny-aya/analysis/refined-tables/`.
 """
 
 from __future__ import annotations

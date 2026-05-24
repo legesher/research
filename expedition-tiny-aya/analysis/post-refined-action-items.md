@@ -1,13 +1,13 @@
-# Post-reparse action items — Phase-3
+# Refined-extractor action items — Phase-3
 
 **Originally captured 2026-05-23. Status updated 2026-05-24** after PR #54
-landed + HF PR #34 published the full-coverage reparsed dataset.
+landed + HF PR #34 published the full-coverage refined dataset.
 
 Items surfaced during a deep critical pass on the extractor extension +
-full-suite reparse. The reparse pipeline + refined extractor cover **WHAT
-the model said** much better than the inference-time extractor did. The
-items below are about making the next-round reparse reproducible,
-auditable, and paper-grade.
+full-suite re-scoring against the refined extractor. The refined extractor
+covers **WHAT the model said** much better than the inference-time
+extractor did. The items below are about making the next-round
+re-scoring reproducible, auditable, and paper-grade.
 
 **Status:**
 
@@ -15,10 +15,10 @@ auditable, and paper-grade.
 - ⏳ **A.2 pending** — filename-seed-vs-parent-dir guard in `reparse_results.py`.
 - ✅ **B done** — obsoleted by PR #54's redirect; extractors are inline in `reparse_results.py`, no AST loader to be confused by a stale `run_eval_single.py`.
 - ✅ **C done** — `upload_reparsed_summaries.py` flipped to skip-existing default in PR #54.
-- ✅ **D done** — `{key}_count` and `{key}_correct` written to reparsed summaries in PR #54. (Per PR #54's redirect, these land in `build_reparsed_summary` rather than `evaluate.ipynb` cell 3 — the notebook stays frozen for Phase-3 reproducibility.)
+- ✅ **D done** — `{key}_count` and `{key}_correct` written to refined summaries in PR #54. (Per PR #54's redirect, these land in `build_reparsed_summary` rather than `evaluate.ipynb` cell 3 — the notebook stays frozen for Phase-3 reproducibility.)
 - ⏳ **E pending** — cond-5 dataset card banner on `legesher/language-decoded-experiments`.
 - ⏳ **F pending** — `correct_via_constant_pct` analysis artefact.
-- ⏳ **G in progress** — conclusion-flip audit; the canonical flip list is now in `analysis/reparse-tables/conclusion_flips.tsv` (regenerated against HF main post HF PR #34, 48 flips).
+- ⏳ **G in progress** — conclusion-flip audit; the canonical flip list is now in `analysis/refined-tables/conclusion_flips.tsv` (regenerated against HF main post HF PR #34, 48 flips).
 - ⏳ **H pending** — parse-fail floor verification samples.
 - ⏳ **I pending** — cond-5-ur-5k +0.515 acc lift sanity sample.
 
@@ -119,8 +119,8 @@ numbers must not be cited standalone without a warning.
   cond-5 SIB-200 accuracy by 20–35pp because the strict extractor refused
   native-script answers. Cite `_summary_reparsed_*.json` for paper-grade
   numbers."
-- Cross-link to [`reparse-decision-ledger.md`][ledger] and
-  [`phase3-reparse-evaluation.md`][writeup].
+- Cross-link to [`refined-decision-ledger.md`][ledger] and
+  [`phase3-refined-evaluation.md`][writeup].
 
 ---
 
@@ -130,13 +130,13 @@ numbers must not be cited standalone without a warning.
 near-constant `سائنس/ٹیکنالوجی` (science/technology) regardless of passage.
 Some of its "correct" rows are just that constant landing on gold by
 chance — meaning the cell accuracy slightly overstates the model even
-under the reparsed extractor. The ledger flagged a planned per-row
+under the refined extractor. The ledger flagged a planned per-row
 `correct_ambiguous` flag, never landed.
 
 **Fix.** Cheap as a separate analysis artifact rather than baking into the
 summary writer:
 
-- `analysis/correct-via-constant-rates.tsv` next to the reparse tables.
+- `analysis/correct-via-constant-rates.tsv` next to the refined-extractor pass tables.
 - Computed from `_results_*.json` + a known-constant-output detector
   (look for the top-1 surface form per cell; if it's ≥80% of outputs and
   also the gold for some rows, flag those as `correct_via_constant`).
@@ -223,14 +223,14 @@ off.
 4. **Add filename-seed guard to `reparse_results.py`**. → satisfies A.2.
 5. **Flip upload-script default to `--skip-existing`** + add `--overwrite`
    / `--fail-on-existing`. → satisfies C.
-6. **Run full-suite reparse + upload** with the new defaults.
-7. **Dataset card refresh** — banners for E + G, "re-read against reparsed
+6. **Run full-suite re-scoring + upload** against the refined extractor with the new defaults.
+7. **Dataset card refresh** — banners for E + G, "re-read against refined
    siblings" callout.
 8. **Item H + I verification samples** + the `correct_via_constant_pct`
    artifact (F).
 
 [upload]: ../evaluation/scripts/upload_reparsed_summaries.py
 [eval]: ../evaluation/scripts/evaluate.ipynb
-[ledger]: reparse-decision-ledger.md
-[writeup]: phase3-reparse-evaluation.md
-[flips]: reparse-tables/conclusion_flips.tsv
+[ledger]: refined-decision-ledger.md
+[writeup]: phase3-refined-evaluation.md
+[flips]: refined-tables/conclusion_flips.tsv
