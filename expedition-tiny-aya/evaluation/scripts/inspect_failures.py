@@ -9,33 +9,37 @@ two axes so you can see the real breakdown:
     wrong_label   extractor returned a label, but the wrong one
     parse_fail    extractor returned None — the output wasn't readable at all
 
-  Axis 2 — match_via (how much work the extractor did to land a prediction):
+  Axis 2 — match_via (which extractor branch produced the prediction):
     SIB-200:
-      exact        first line IS the canonical category, verbatim
-      normalized   needed case-fold and/or quote/punctuation stripping
-      substring    canonical category embedded in a longer first line
-      alias        matched a known alias (e.g. "sport" -> "sports")
-      rule_a       matched the lenient "science/<X>" prefix rule
-      rule_b       matched a native-script equivalent (Urdu/Chinese/Spanish)
-      rule_c       matched a bare subcategory token (template-2 strips prefix)
-      none         parse failure
+      single          all answer pieces resolved to exactly one category
+                      (canonical, alias, native-script, or sci/tech sub-topic)
+      multi_category  pieces straddled 2+ categories — model hedged, pred=None
+      fallback        no pieces resolved, but a canonical English category name
+                      was embedded in the first line ("the answer is travel")
+      none            parse failure
     XNLI:
-      exact / english_substring / native_exact / native_substring / none
+      tier1_english     verbatim English label, word-boundary match
+      tier1_native      native-script label word (zh/es/ur)
+      tier2_cjk_glued   English label glued to a CJK frame ("假设是entailment")
+      tier3_paraphrase  native-prose paraphrase of the relationship
+      none              parse failure (incl. Tier 2 with a negation marker)
     X-CSQA / Belebele:
-      bare_letter / letter_in_text / answer_prefix / none
+      bare_letter | letter_in_text | answer_prefix | none
 
   Plus a `multiline` flag — did the model emit content past the first line?
 
-Why this matters: a cell at 70% accuracy made entirely of `correct/exact`
-rows is a clean result. The same 70% made of `correct/rule_b` rows means the
-model only gets credit because of the native-script rescue — a very different
-story for the paper. And a 30% parse-fail cell is a parser-extension lead,
-not a model failure.
+Why this matters: a cell at 70% accuracy made entirely of `correct/single`
+rows is a clean result. The same 70% made of `correct/tier3_paraphrase` rows
+means the model only gets credit because of the prose-paraphrase rescue — a
+very different story for the paper. And a 30% parse-fail cell is a
+parser-extension lead, not a model failure.
 
-The tool re-implements the extractors' staged matching with instrumentation
-so it can report *which* stage produced each prediction. A self-test asserts
-the instrumented classifier always agrees with the live extractor on the
-prediction itself (run with `--self-test`).
+The tool calls the live extractor (imported from `reparse_results.py` — the
+paper-grade refined Phase-3 scorer on main) for `pred`, so the prediction is
+faithful by construction. The `match_via` stage label is derived by re-using
+the extractor's own constants/helpers. A self-test asserts the instrumented
+classifier always agrees with the live extractor on the prediction itself
+(run with `--self-test`).
 
 Usage:
     # Whole file — per-cell breakdown tables:
@@ -57,125 +61,41 @@ Usage:
     python inspect_failures.py \\
         phase3/conditions/baseline/seednone/baseline_seednone_results_template1.json
 
-Reads `run_eval_single.py` from next to this script (or /kaggle/working/) for
-the extractor constants. Pure read-only — never writes or uploads anything.
+Pure read-only — never writes or uploads anything (except the optional
+--output TSV in aggregate mode).
 """
 
 from __future__ import annotations
 
 import argparse
-import ast
 import json
-import re as _re
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
+
+from reparse_results import (
+    EXTRACTOR_NAMES,
+    NATIVE_LABEL_MAP,
+    SIB200_STRIP,
+    SIB200_TERM_TO_CATEGORY,
+    XNLI_LABEL_RES,
+    XNLI_LABELS,
+    XNLI_TIER2_NEGATION,
+    _sib200_split,
+    benchmark_from_key,
+    extract_choice,
+    extract_sib200_category,
+    extract_xnli_label,
+)
 
 HF_REPO_ID = "legesher/language-decoded-experiments"
 HF_REPO_TYPE = "dataset"
 
-# ----------------------------------------------------------------------------
-# Extractor source — AST-load constants + functions from run_eval_single.py
-# without triggering its heavy top-level imports (torch, unsloth, ...).
-# ----------------------------------------------------------------------------
-HERE = Path(__file__).resolve().parent
-
-_WANTED = {
-    # SIB-200 — constants + helper used by extract_sib200_category
-    "SIB200_CATEGORIES",
-    "SIB200_TERM_TO_CATEGORY",
-    "SIB200_CONJUNCTIONS",
-    "SIB200_STRIP",
-    "SIB200_CANONICAL_RES",
-    "_sib200_split",
-    # XNLI — constants used by extract_xnli_label
-    "XNLI_LABELS",
-    "XNLI_LABEL_RES",
-    "NATIVE_LABEL_MAP",
-    "XNLI_TIER2_NEGATION",
-    "XNLI_PARAPHRASE_RES",
-    # the extractor functions themselves
-    "extract_sib200_category",
-    "extract_xnli_label",
-    "extract_choice",
-}
-
-
-def _find_extractor_source() -> Path | None:
-    """Locate the extractor source. Order:
-
-    1. `run_eval_single.py` next to this script. A deliberate manual extract
-       wins — useful when you want to test against a specific extractor
-       version (e.g., a different branch's). Staleness is the user's
-       responsibility when they go this route.
-    2. `/kaggle/working/run_eval_single.py` — the Kaggle launcher writes the
-       .py here and there is no notebook at HERE.
-    3. `evaluate.ipynb` next to this script — fallback when no .py exists.
-       This is the staleness fix: a fresh checkout (no gitignored .py) now
-       reads the extractor straight from the version-controlled notebook,
-       so you can't accidentally use a stale extract from another branch.
-    """
-    for candidate in (
-        HERE / "run_eval_single.py",
-        Path("/kaggle/working/run_eval_single.py"),
-        HERE / "evaluate.ipynb",
-    ):
-        if candidate.exists():
-            return candidate
-    return None
-
-
-def _read_extractor_source(path: Path) -> str:
-    """Return the Python source for the extractors.
-
-    For a `.py` file, that's just the file contents. For an `.ipynb`, we
-    JSON-parse the notebook, find the `%%writefile run_eval_single.py`
-    cell, and return its body (minus the magic line). Reading the source
-    from the notebook directly makes it impossible to go stale relative
-    to the branch you're on — the notebook is version-controlled, the
-    extracted file is gitignored."""
-    if path.suffix == ".ipynb":
-        nb = json.loads(path.read_text())
-        for cell in nb.get("cells", []):
-            src = "".join(cell.get("source", []))
-            first = src.split("\n", 1)[0]
-            if first.startswith("%%writefile") and "run_eval_single.py" in first:
-                return src.split("\n", 1)[1]
-        raise SystemExit(f"No `%%writefile run_eval_single.py` cell found in {path}")
-    return path.read_text()
-
-
-def load_extractor_namespace() -> dict:
-    """Exec just the extractor functions + their helper constants into an
-    isolated namespace and return it. Raises SystemExit with a clear message
-    if neither `evaluate.ipynb` nor `run_eval_single.py` can be found."""
-    src = _find_extractor_source()
-    if src is None:
-        raise SystemExit(
-            "Couldn't find the extractor source. Expected `evaluate.ipynb` or "
-            "`run_eval_single.py` next to this file, or `run_eval_single.py` "
-            "at /kaggle/working/."
-        )
-    tree = ast.parse(_read_extractor_source(src))
-    subset: list[ast.stmt] = []
-    for node in tree.body:
-        if (
-            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name in _WANTED
-        ):
-            subset.append(node)
-        elif isinstance(node, ast.Assign) and any(
-            isinstance(t, ast.Name) and t.id in _WANTED for t in node.targets
-        ):
-            subset.append(node)
-    ns: dict = {"re": _re}
-    exec(compile(ast.Module(body=subset, type_ignores=[]), str(src), "exec"), ns)
-    return ns
-
 
 # ----------------------------------------------------------------------------
-# Classifiers — each calls the LIVE extractor for `pred` (so prediction is
-# faithful by construction, no mirror to drift), then derives a coarse
-# `match_via` by re-using the extractor's own helpers/constants.
+# Classifiers — each calls the LIVE extractor (imported from reparse_results)
+# for `pred` so the prediction is faithful by construction, then derives a
+# coarse `match_via` by re-using the extractor's own helpers/constants.
 #
 # match_via vocabulary:
 #   SIB-200:  single | multi_category | fallback | none
@@ -183,13 +103,13 @@ def load_extractor_namespace() -> dict:
 #             | none
 #   choice:   bare_letter | letter_in_text | answer_prefix | none
 # ----------------------------------------------------------------------------
-def classify_sib200(raw_output: str, ns: dict) -> tuple[str | None, str]:
+def classify_sib200(raw_output: str) -> tuple[str | None, str]:
     """`pred` from the live extractor; `match_via` derived from how many
     distinct categories the answer's pieces resolve to."""
-    pred = ns["extract_sib200_category"](raw_output)
-    first_line = raw_output.strip().split("\n")[0].strip().strip(ns["SIB200_STRIP"])
-    pieces = ns["_sib200_split"](first_line) if first_line else []
-    cats = {ns["SIB200_TERM_TO_CATEGORY"].get(p.lower()) for p in pieces}
+    pred = extract_sib200_category(raw_output)
+    first_line = raw_output.strip().split("\n")[0].strip().strip(SIB200_STRIP)
+    pieces = _sib200_split(first_line) if first_line else []
+    cats = {SIB200_TERM_TO_CATEGORY.get(p.lower()) for p in pieces}
     cats.discard(None)
     if len(cats) >= 2:
         return pred, "multi_category"  # hedge — pred is None
@@ -200,68 +120,57 @@ def classify_sib200(raw_output: str, ns: dict) -> tuple[str | None, str]:
     return pred, "none"
 
 
-def classify_xnli(raw_output: str, ns: dict) -> tuple[str | None, str]:
+def classify_xnli(raw_output: str) -> tuple[str | None, str]:
     """`pred` from the live extractor; `match_via` is which tier produced it."""
-    pred = ns["extract_xnli_label"](raw_output)
+    pred = extract_xnli_label(raw_output)
     if pred is None:
         return None, "none"
     first_line = raw_output.strip().split("\n")[0].strip()
     fll = first_line.lower()
-    if any(r.search(fll) for r in ns["XNLI_LABEL_RES"].values()):
+    if any(r.search(fll) for r in XNLI_LABEL_RES.values()):
         return pred, "tier1_english"
-    if any(native.lower() in fll for native in ns["NATIVE_LABEL_MAP"]):
+    if any(native.lower() in fll for native in NATIVE_LABEL_MAP):
         return pred, "tier1_native"
-    negated = any(neg in first_line for neg in ns["XNLI_TIER2_NEGATION"])
-    if not negated and any(label in fll for label in ns["XNLI_LABELS"]):
+    negated = any(neg in first_line for neg in XNLI_TIER2_NEGATION)
+    if not negated and any(label in fll for label in XNLI_LABELS):
         return pred, "tier2_cjk_glued"
     return pred, "tier3_paraphrase"
 
 
-def classify_choice(raw_output: str, ns: dict, choices: str) -> tuple[str | None, str]:
+def classify_choice(raw_output: str, choices: str) -> tuple[str | None, str]:
     """`pred` from the live extractor; `match_via` is the letter-match stage."""
-    pred = ns["extract_choice"](raw_output, choices=choices)
+    pred = extract_choice(raw_output, choices=choices)
     if pred is None:
         return None, "none"
     first_line = raw_output.strip().upper().split("\n")[0].strip()
     if first_line == pred:
         return pred, "bare_letter"
-    if _re.search(rf"\b{_re.escape(pred)}\b", first_line):
+    if re.search(rf"\b{re.escape(pred)}\b", first_line):
         return pred, "letter_in_text"
     return pred, "answer_prefix"
 
 
-# Benchmark → classifier callable with a uniform (raw_output, ns) signature.
+# Benchmark → classifier callable with a uniform (raw_output,) signature.
 def _classifier_for(benchmark: str):
     if benchmark == "sib200":
         return classify_sib200
     if benchmark == "xnli":
         return classify_xnli
     if benchmark == "csqa":
-        return lambda raw, ns: classify_choice(raw, ns, "ABCDE")
+        return lambda raw: classify_choice(raw, "ABCDE")
     if benchmark == "belebele":
-        return lambda raw, ns: classify_choice(raw, ns, "ABCD")
+        return lambda raw: classify_choice(raw, "ABCD")
     raise ValueError(f"Unknown benchmark {benchmark!r}")
-
-
-BENCHMARKS = ("belebele", "csqa", "sib200", "xnli")
-
-
-def benchmark_from_key(cell_key: str) -> str:
-    """`template1_sib200_data=ur_instr=ur` → `sib200`."""
-    for bench in BENCHMARKS:
-        if f"_{bench}_" in cell_key:
-            return bench
-    raise ValueError(f"Couldn't infer benchmark from {cell_key!r}")
 
 
 # ----------------------------------------------------------------------------
 # Row classification
 # ----------------------------------------------------------------------------
-def classify_row(benchmark: str, raw_output: str, gold: str, ns: dict) -> dict:
+def classify_row(benchmark: str, raw_output: str, gold: str) -> dict:
     """Classify one row on both axes. Returns a dict with keys:
     outcome, match_via, multiline, pred, gold."""
     classifier = _classifier_for(benchmark)
-    pred, match_via = classifier(raw_output, ns)
+    pred, match_via = classifier(raw_output)
     if pred is None:
         outcome = "parse_fail"
     elif pred == gold:
@@ -278,13 +187,13 @@ def classify_row(benchmark: str, raw_output: str, gold: str, ns: dict) -> dict:
     }
 
 
-def classify_cell(cell_key: str, rows: list[dict], ns: dict) -> dict:
+def classify_cell(cell_key: str, rows: list[dict]) -> dict:
     """Classify every row in one cell. Returns aggregate counts + the
     classified rows (for sample printing)."""
     benchmark = benchmark_from_key(cell_key)
     classified = []
     for row in rows:
-        c = classify_row(benchmark, row["raw_output"], row["gold"], ns)
+        c = classify_row(benchmark, row["raw_output"], row["gold"])
         c["raw_output"] = row["raw_output"]
         classified.append(c)
 
@@ -324,7 +233,6 @@ def _first_line(raw_output: str) -> str:
 
 def aggregate_surface_forms(
     datasets: list[dict],
-    ns: dict,
     only_benchmarks: set[str] | None = None,
 ) -> list[dict]:
     """Pool every row across all cells of all given result files and group by
@@ -355,7 +263,7 @@ def aggregate_surface_forms(
                 fl = _first_line(raw)
                 cache_key = (bench, fl)
                 if cache_key not in classify_cache:
-                    classify_cache[cache_key] = classifier(raw, ns)
+                    classify_cache[cache_key] = classifier(raw)
                 pred, match_via = classify_cache[cache_key]
 
                 gold = row["gold"]
@@ -546,11 +454,11 @@ def resolve_results_file(path_arg: str) -> Path:
         )
     try:
         from huggingface_hub import hf_hub_download
-    except ImportError:
+    except ImportError as e:
         raise SystemExit(
             "huggingface_hub not installed — can't download from HF. Either "
             "install it or pass a local file path."
-        )
+        ) from e
     print(f"Downloading {path_arg} from {HF_REPO_ID}...")
     return Path(
         hf_hub_download(repo_id=HF_REPO_ID, filename=path_arg, repo_type=HF_REPO_TYPE)
@@ -561,14 +469,14 @@ def resolve_results_file(path_arg: str) -> Path:
 # Self-test — confirm the instrumented classifiers agree with the live
 # extractors on the prediction itself (not just the stage label).
 # ----------------------------------------------------------------------------
-def run_self_test(results_path: Path, ns: dict) -> int:
+def run_self_test(results_path: Path) -> int:
     """Cross-check every row: classify_*'s pred must equal the live extractor's
     pred. Returns the number of mismatches (0 = pass)."""
     extractors = {
-        "sib200": ns["extract_sib200_category"],
-        "xnli": ns["extract_xnli_label"],
-        "csqa": lambda t: ns["extract_choice"](t, choices="ABCDE"),
-        "belebele": lambda t: ns["extract_choice"](t, choices="ABCD"),
+        "sib200": extract_sib200_category,
+        "xnli": extract_xnli_label,
+        "csqa": lambda t: extract_choice(t, choices="ABCDE"),
+        "belebele": lambda t: extract_choice(t, choices="ABCD"),
     }
     with results_path.open() as f:
         data = json.load(f)
@@ -584,7 +492,7 @@ def run_self_test(results_path: Path, ns: dict) -> int:
         live = extractors[bench]
         for row in rows:
             raw = row["raw_output"]
-            instrumented_pred, _ = classifier(raw, ns)
+            instrumented_pred, _ = classifier(raw)
             live_pred = live(raw)
             checked += 1
             if instrumented_pred != live_pred:
@@ -623,7 +531,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--benchmark",
-        choices=sorted(BENCHMARKS),
+        choices=sorted(EXTRACTOR_NAMES),
         default=None,
         help="Only inspect cells for this benchmark (default: all).",
     )
@@ -678,11 +586,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    ns = load_extractor_namespace()
+    if (args.output or args.min_count != 1) and not args.aggregate:
+        parser.error("--output and --min-count only apply with --aggregate")
+
     results_paths = [resolve_results_file(p) for p in args.results_files]
 
     if args.self_test:
-        total_mismatches = sum(run_self_test(p, ns) for p in results_paths)
+        total_mismatches = sum(run_self_test(p) for p in results_paths)
         raise SystemExit(0 if total_mismatches == 0 else 1)
 
     only = {args.benchmark} if args.benchmark else None
@@ -694,7 +604,7 @@ def main() -> None:
             with p.open() as f:
                 datasets.append(json.load(f))
         print(f"=== Aggregating {len(datasets)} file(s) ===")
-        rows = aggregate_surface_forms(datasets, ns, only_benchmarks=only)
+        rows = aggregate_surface_forms(datasets, only_benchmarks=only)
         print_surface_form_table(rows, min_count=args.min_count)
         if args.output:
             write_surface_form_tsv(rows, args.output)
@@ -727,7 +637,7 @@ def main() -> None:
         print(f"Inspecting {len(cell_keys)} cell(s)")
 
         for cell_key in sorted(cell_keys):
-            report = classify_cell(cell_key, data[cell_key], ns)
+            report = classify_cell(cell_key, data[cell_key])
             if args.outcome:
                 report["classified_rows"] = [
                     c for c in report["classified_rows"] if c["outcome"] == args.outcome

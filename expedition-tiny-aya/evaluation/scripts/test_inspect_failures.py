@@ -4,9 +4,8 @@ Stdlib-only (unittest). Run from this directory:
 
     python -m unittest test_inspect_failures.py -v
 
-The classifiers call the live extractors (from run_eval_single.py) for the
-prediction, so classifier-dependent tests are skipped when that file is not
-present next to this one. Pure-helper tests always run.
+The classifiers import the live extractors from `reparse_results.py` (the
+paper-grade refined Phase-3 scorer on main), so all tests run unconditionally.
 """
 
 from __future__ import annotations
@@ -17,12 +16,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import inspect_failures  # noqa: E402
-
-HAS_SOURCE = inspect_failures._find_extractor_source() is not None
+import reparse_results  # noqa: E402
 
 
 class TestBenchmarkFromKey(unittest.TestCase):
-    """Pure string parsing — no extractor source needed."""
+    """Pure string parsing — re-exported from reparse_results."""
 
     def test_known(self):
         cases = {
@@ -51,16 +49,11 @@ class TestOnelineHelper(unittest.TestCase):
         self.assertEqual(inspect_failures._oneline("  travel  "), "travel")
 
 
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifySib200(unittest.TestCase):
     """match_via vocabulary: single | multi_category | fallback | none."""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
     def c(self, raw):
-        return inspect_failures.classify_sib200(raw, self.ns)
+        return inspect_failures.classify_sib200(raw)
 
     def test_single_english(self):
         self.assertEqual(self.c("politics"), ("politics", "single"))
@@ -94,17 +87,12 @@ class TestClassifySib200(unittest.TestCase):
         self.assertEqual(self.c("absolutely unparseable"), (None, "none"))
 
 
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifyXnli(unittest.TestCase):
     """match_via: tier1_english | tier1_native | tier2_cjk_glued |
     tier3_paraphrase | none."""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
     def c(self, raw):
-        return inspect_failures.classify_xnli(raw, self.ns)
+        return inspect_failures.classify_xnli(raw)
 
     def test_tier1_english(self):
         self.assertEqual(self.c("entailment"), ("entailment", "tier1_english"))
@@ -139,96 +127,77 @@ class TestClassifyXnli(unittest.TestCase):
         self.assertEqual(self.c("1. 2. 3."), (None, "none"))
 
 
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifyChoice(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
     def test_bare_letter(self):
         self.assertEqual(
-            inspect_failures.classify_choice("A", self.ns, "ABCDE"),
+            inspect_failures.classify_choice("A", "ABCDE"),
             ("A", "bare_letter"),
         )
 
     def test_letter_in_text(self):
         self.assertEqual(
-            inspect_failures.classify_choice("The answer is C.", self.ns, "ABCDE"),
+            inspect_failures.classify_choice("The answer is C.", "ABCDE"),
             ("C", "letter_in_text"),
         )
 
     def test_answer_prefix(self):
         # "ANSWERD" — no standalone letter, the ANSWER: branch fires
         self.assertEqual(
-            inspect_failures.classify_choice("ANSWERD", self.ns, "ABCD"),
+            inspect_failures.classify_choice("ANSWERD", "ABCD"),
             ("D", "answer_prefix"),
         )
 
     def test_none(self):
         self.assertEqual(
-            inspect_failures.classify_choice("hello", self.ns, "ABCDE"), (None, "none")
+            inspect_failures.classify_choice("hello", "ABCDE"), (None, "none")
         )
 
     def test_belebele_excludes_e(self):
         self.assertEqual(
-            inspect_failures.classify_choice("E", self.ns, "ABCD"), (None, "none")
+            inspect_failures.classify_choice("E", "ABCD"), (None, "none")
         )
 
 
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifyRow(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
     def test_correct(self):
         row = inspect_failures.classify_row(
-            "sib200", "science/technology", "science/technology", self.ns
+            "sib200", "science/technology", "science/technology"
         )
         self.assertEqual(row["outcome"], "correct")
         self.assertFalse(row["multiline"])
 
     def test_wrong_label(self):
-        row = inspect_failures.classify_row(
-            "sib200", "travel", "science/technology", self.ns
-        )
+        row = inspect_failures.classify_row("sib200", "travel", "science/technology")
         self.assertEqual(row["outcome"], "wrong_label")
         self.assertEqual(row["pred"], "travel")
 
     def test_parse_fail(self):
         row = inspect_failures.classify_row(
-            "sib200", "completely unparseable text", "science/technology", self.ns
+            "sib200", "completely unparseable text", "science/technology"
         )
         self.assertEqual(row["outcome"], "parse_fail")
         self.assertEqual(row["match_via"], "none")
 
     def test_parse_fail_multi_category(self):
         # A cross-category hedge is a parse-failure, tagged multi_category
-        row = inspect_failures.classify_row(
-            "sib200", "سیاست/تکنالوجی", "politics", self.ns
-        )
+        row = inspect_failures.classify_row("sib200", "سیاست/تکنالوجی", "politics")
         self.assertEqual(row["outcome"], "parse_fail")
         self.assertEqual(row["match_via"], "multi_category")
 
     def test_multiline_flag(self):
         row = inspect_failures.classify_row(
-            "sib200", "travel\nextra explanation line", "travel", self.ns
+            "sib200", "travel\nextra explanation line", "travel"
         )
         self.assertTrue(row["multiline"])
         self.assertEqual(row["outcome"], "correct")
 
     def test_correct_via_native_term(self):
-        row = inspect_failures.classify_row("sib200", "سیاست", "politics", self.ns)
+        row = inspect_failures.classify_row("sib200", "سیاست", "politics")
         self.assertEqual(row["outcome"], "correct")
         self.assertEqual(row["match_via"], "single")
 
 
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestClassifyCell(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
     def test_aggregation(self):
         rows = [
             {"raw_output": "science/technology", "gold": "science/technology"},
@@ -237,7 +206,7 @@ class TestClassifyCell(unittest.TestCase):
             {"raw_output": "سیاست/تکنالوجی", "gold": "politics"},
         ]
         report = inspect_failures.classify_cell(
-            "template1_sib200_data=ur_instr=ur", rows, self.ns
+            "template1_sib200_data=ur_instr=ur", rows
         )
         self.assertEqual(report["n"], 4)
         self.assertEqual(report["benchmark"], "sib200")
@@ -249,12 +218,7 @@ class TestClassifyCell(unittest.TestCase):
         self.assertEqual(report["bucket_counts"][("parse_fail", "multi_category")], 1)
 
 
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestAggregateSurfaceForms(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
     def _fake_dataset(self):
         return {
             "summary": {},
@@ -268,13 +232,13 @@ class TestAggregateSurfaceForms(unittest.TestCase):
         }
 
     def test_groups_identical_first_lines(self):
-        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
+        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()])
         by_form = {r["first_line"]: r for r in rows}
         self.assertEqual(by_form["سیاست"]["total"], 3)
         self.assertEqual(by_form["travel"]["total"], 1)
 
     def test_outcome_split_within_a_form(self):
-        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
+        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()])
         siyasat = next(r for r in rows if r["first_line"] == "سیاست")
         # سیاست now resolves to politics → correct once, wrong twice
         self.assertEqual(siyasat["pred"], "politics")
@@ -283,45 +247,40 @@ class TestAggregateSurfaceForms(unittest.TestCase):
         self.assertEqual(siyasat["parse_fail"], 0)
 
     def test_sorted_by_total_descending(self):
-        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()], self.ns)
+        rows = inspect_failures.aggregate_surface_forms([self._fake_dataset()])
         totals = [r["total"] for r in rows]
         self.assertEqual(totals, sorted(totals, reverse=True))
 
     def test_pools_across_multiple_datasets(self):
         rows = inspect_failures.aggregate_surface_forms(
-            [self._fake_dataset(), self._fake_dataset()], self.ns
+            [self._fake_dataset(), self._fake_dataset()]
         )
         siyasat = next(r for r in rows if r["first_line"] == "سیاست")
         self.assertEqual(siyasat["total"], 6)
 
     def test_benchmark_filter(self):
         rows = inspect_failures.aggregate_surface_forms(
-            [self._fake_dataset()], self.ns, only_benchmarks={"xnli"}
+            [self._fake_dataset()], only_benchmarks={"xnli"}
         )
         self.assertEqual(rows, [])
 
 
-@unittest.skipUnless(HAS_SOURCE, "run_eval_single.py not next to test file")
 class TestInstrumentedMatchesLive(unittest.TestCase):
     """The strongest guarantee: the instrumented classifier's prediction must
     equal the live extractor's prediction on a battery of inputs covering
     every tier/branch and every supported language.
 
-    inspect_failures.py only earns trust if `classify_*(raw, ...)[0]` agrees
-    with `extract_*(raw, ...)` on every input. Disagreement means the
-    instrumented classifier has drifted from the extractor it's meant to
-    mirror, and any per-row analysis it produces is suspect.
+    inspect_failures.py only earns trust if `classify_*(raw)[0]` agrees with
+    `extract_*(raw)` on every input. Disagreement means the instrumented
+    classifier has drifted from the extractor it's meant to mirror, and any
+    per-row analysis it produces is suspect.
 
     Asserts AGREEMENT, not correctness — whatever the live extractor returns,
     the classifier must return the same. Correctness lives in the extractor.
     """
 
-    @classmethod
-    def setUpClass(cls):
-        cls.ns = inspect_failures.load_extractor_namespace()
-
     def test_sib200_agreement(self):
-        live = self.ns["extract_sib200_category"]
+        live = reparse_results.extract_sib200_category
         cases = [
             # English canonical / normalized / embedded (fallback)
             "science/technology",
@@ -385,11 +344,11 @@ class TestInstrumentedMatchesLive(unittest.TestCase):
         ]
         for raw in cases:
             with self.subTest(raw=raw):
-                instrumented, _ = inspect_failures.classify_sib200(raw, self.ns)
+                instrumented, _ = inspect_failures.classify_sib200(raw)
                 self.assertEqual(instrumented, live(raw))
 
     def test_xnli_agreement(self):
-        live = self.ns["extract_xnli_label"]
+        live = reparse_results.extract_xnli_label
         cases = [
             # Tier 1a — verbatim English labels
             "entailment",
@@ -440,11 +399,11 @@ class TestInstrumentedMatchesLive(unittest.TestCase):
         ]
         for raw in cases:
             with self.subTest(raw=raw):
-                instrumented, _ = inspect_failures.classify_xnli(raw, self.ns)
+                instrumented, _ = inspect_failures.classify_xnli(raw)
                 self.assertEqual(instrumented, live(raw))
 
     def test_choice_agreement(self):
-        live = self.ns["extract_choice"]
+        live = reparse_results.extract_choice
         cases = [
             "A",
             "B",
@@ -463,9 +422,7 @@ class TestInstrumentedMatchesLive(unittest.TestCase):
         for raw in cases:
             for choices in ("ABCDE", "ABCD"):
                 with self.subTest(raw=raw, choices=choices):
-                    instrumented, _ = inspect_failures.classify_choice(
-                        raw, self.ns, choices
-                    )
+                    instrumented, _ = inspect_failures.classify_choice(raw, choices)
                     self.assertEqual(instrumented, live(raw, choices=choices))
 
 
