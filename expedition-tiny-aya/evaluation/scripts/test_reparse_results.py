@@ -415,7 +415,7 @@ class TestSib200ReviewerDecisions(unittest.TestCase):
         self.sib = reparse_results.extract_sib200_category
 
     def test_chinese_public_transport_is_travel(self):
-        # analysis/chinese-surface-forms-review.md Section C:
+        # analysis/phase-3/chinese-surface-forms-review.md Section C:
         # 公共交通 ("public transportation") classified as travel, not sci/tech.
         self.assertEqual(self.sib("公共交通"), "travel")
 
@@ -430,7 +430,7 @@ class TestSib200ReviewerDecisions(unittest.TestCase):
 
     def test_arabic_code_switch(self):
         # Urdu-prompted model code-switches to Arabic — covered in
-        # urdu-surface-forms-review.md Section D.
+        # phase-3/urdu-surface-forms-review.md Section D.
         self.assertEqual(self.sib("السياسة"), "politics")
         self.assertEqual(self.sib("التكنولوجيا"), "science/technology")
 
