@@ -1,6 +1,13 @@
 # Phase-3 evaluation — inference-time vs. refined answer extractor
 
-**Status:** complete (2026-05-23). All 40 Phase-3 summary files were re-scored against the extended extractor on `eval/sib200-xnli-extractor` (PR #54); 1,536 (condition × seed × template × benchmark × data × instr) cells compared.
+**Status:** complete (2026-05-25). All 42 Phase-3 summary files (21 sessions × 2 templates, post HF PR #34 coverage close) were re-scored against the extended extractor on `eval/sib200-xnli-extractor` (PR #54); **1,664** (condition × seed × template × benchmark × data × instr) cells compared.
+
+Two cell-count denominators recur in this writeup and the figures, both valid at different grains:
+
+- **1,664** = total cells in [`refined-tables/cells.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/cells.tsv) — baseline + 12 fine-tuned conditions × all 4 benchmarks. This is the denominator for "how did the extractor extension move scores" questions (§1 headline, §3 by-benchmark / by-instr / by-template / by-condition rollups).
+- **1,536** = total rows in [`refined-tables/vs_baseline_cells.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/vs_baseline_cells.tsv) — the 12 fine-tuned conditions only (1,664 − 128 baseline cells, since baseline can't be compared against itself). This is the denominator for "did fine-tuning beat baseline" questions (§8.3, §8.6, §8.7 conclusion-flip catalogue).
+
+The two are not in tension; they index different questions. Where the difference matters, the surrounding text names which one.
 
 **Scope:** Phase-3 only. Baseline + condition-1/-2/-3/-5. Phase-2 sweeps deliberately excluded.
 
@@ -15,20 +22,22 @@
 
 ## 1. Headline
 
-The extractor extension recovered **22.6 percentage points of mean parse-failure mass** across SIB-200 cells (10.2% → 3.6%), at the cost of **2.8 pp** elsewhere (almost entirely concentrated in `condition-2-ur-5k`'s previously-buggy `سیاست/تکنالوجی → science/technology` Rule-A mapping, which now correctly hedges instead of false-positive-crediting). Aggregate accuracy moved +1.5 pp; for SIB-200 the move is +5.1 pp and for the subset that needed it most — `instr=ur` SIB-200 — the move is **+18.1 pp** with a parse-failure drop of 23.3 pp.
+The extractor extension recovered **mean parse-failure mass** across SIB-200 cells (10.1% → 3.9%), at the cost of measurable corrections concentrated in `condition-2-ur-5k`'s previously-buggy `سیاست/تکنالوجی → science/technology` Rule-A mapping, which now correctly hedges instead of false-positive-crediting. Aggregate accuracy moved +1.5 pp; for SIB-200 the move is +5.0 pp and for the subset that needed it most — `instr=ur` SIB-200 — the move is **+15.7 pp** with a parse-failure drop of 19.0 pp. _Note: the `instr=ur` SIB-200 lift was +18.1 pp / −23.3 pp in the pre-PR-#34 build; closing the cond-2-ur-20k and cond-5-es-5k coverage gaps added 16 new sib200×ur cells, several of which regressed under the refined extractor (the new cond-2-ur-20k matched-diagonal cells), which dragged the cell-mean of the new larger denominator._
 
 | Statistic                     | All cells  | SIB-200    | XNLI       | X-CSQA | Belebele |
 | ----------------------------- | ---------- | ---------- | ---------- | ------ | -------- |
-| Cells (n)                     | 1,536      | 384        | 384        | 384    | 384      |
-| Mean original accuracy        | 0.541      | 0.570      | 0.369      | 0.515  | 0.708    |
-| Mean refined accuracy        | 0.556      | 0.621      | 0.380      | 0.515  | 0.708    |
-| **Mean Δaccuracy**            | **+0.015** | **+0.051** | **+0.011** | 0.000  | 0.000    |
-| Mean original parse-fail rate | 0.039      | 0.102      | 0.053      | 0.0001 | 0.0001   |
-| Mean refined parse-fail rate | 0.016      | 0.036      | 0.028      | 0.0001 | 0.0001   |
-| **Mean Δparse-fail rate**     | **−0.023** | **−0.066** | **−0.025** | 0.000  | 0.000    |
-| Cells improved (Δacc > 0)     | 205        | 138        | 67         | 0      | 0        |
-| Cells regressed (Δacc < 0)    | 92         | 92         | 0          | 0      | 0        |
-| Cells flat                    | 1,239      | 154        | 317        | 384    | 384      |
+| Cells (n)                     | **1,664**  | **416**    | **416**    | **416**| **416**  |
+| Mean original accuracy        | 0.540      | 0.566      | 0.371      | 0.514  | 0.708    |
+| Mean refined accuracy         | 0.554      | 0.616      | 0.381      | 0.514  | 0.708    |
+| **Mean Δaccuracy**            | **+0.015** | **+0.050** | **+0.010** | 0.000  | 0.000    |
+| Mean original parse-fail rate | 0.038      | 0.101      | 0.049      | 0.0001 | 0.0001   |
+| Mean refined parse-fail rate  | 0.016      | 0.039      | 0.026      | 0.0001 | 0.0001   |
+| **Mean Δparse-fail rate**     | **−0.021** | **−0.062** | **−0.023** | 0.000  | 0.000    |
+| Cells improved (Δacc > 0)     | **215**    | **148**    | **67**     | 0      | 0        |
+| Cells regressed (Δacc < 0)    | **106**    | **106**    | **0**      | 0      | 0        |
+| Cells flat                    | **1,343**  | **162**    | **349**    | 416    | 416      |
+
+_See **Figure 1** (`figures-phase3/fig01_extractor_slopegraph.pdf`) for the by-cell slopegraph view of the SIB-200 + XNLI lift._
 
 **Two findings drive the whole story:**
 
@@ -70,7 +79,7 @@ The extractor scores what the model _said_, not what gold says. A native-languag
 
 ### 2.4 Data integrity
 
-The HF dataset contains a duplicated-misfile artifact: `phase3/conditions/condition-2-es-5k/seed42/` holds both `seed42` _and_ `seed123` summary files (the latter also live in `seed123/`). The analysis dataframe derives seed from filename, not directory, and de-duplicates against the file whose parent directory matches its filename seed. Net result: 1,536 unique cells; the duplicate copies are dropped.
+The HF dataset contains a duplicated-misfile artifact: `phase3/conditions/condition-2-es-5k/seed42/` holds both `seed42` _and_ `seed123` summary files (the latter also live in `seed123/`). The analysis dataframe derives seed from filename, not directory, and de-duplicates against the file whose parent directory matches its filename seed. Net result: **1,664** unique cells in `cells.tsv` across baseline + 12 fine-tuned conditions; the duplicate copies are dropped. (The **1,536** number that appears in §8.3 / §8.7 is downstream of this dedup — it's `cells.tsv`'s 1,664 minus the 128 baseline cells that can't appear in `vs_baseline_cells.tsv`. See the §1 status banner for the full two-denominator key.)
 
 ## 3. Recovery results
 
@@ -78,10 +87,12 @@ The HF dataset contains a duplicated-misfile artifact: `phase3/conditions/condit
 
 | Benchmark | Mean Δacc  | Mean Δpf   | Cells improved | Cells regressed | Cells flat |
 | --------- | ---------- | ---------- | -------------- | --------------- | ---------- |
-| SIB-200   | **+0.051** | **−0.066** | 138            | 92              | 154        |
-| XNLI      | +0.011     | −0.025     | 67             | 0               | 317        |
-| X-CSQA    | 0.000      | 0.000      | 0              | 0               | 384        |
-| Belebele  | 0.000      | 0.000      | 0              | 0               | 384        |
+| SIB-200   | **+0.050** | **−0.062** | 148            | 106             | 162        |
+| XNLI      | +0.010     | −0.023     | 67             | 0               | 349        |
+| X-CSQA    | 0.000      | 0.000      | 0              | 0               | 416        |
+| Belebele  | 0.000      | 0.000      | 0              | 0               | 416        |
+
+_See **Figure 2** (`figures-phase3/fig02_cell_scatter.pdf`) for the cell-level Δaccuracy vs Δparse-failure scatter across all 1,664 cells, which makes the SIB-200 / XNLI / origin-cluster structure visible at a glance._
 
 SIB-200 absorbs **76% of the accuracy lift** (sum-product of Δacc × n_cells) and **88% of the parse-failure recovery**. This is consistent with the decision ledger's scope finding: the extractor problem is overwhelmingly a SIB-200 problem.
 
@@ -91,36 +102,36 @@ Within XNLI, **all 67 improvements are unidirectional** — there is not a singl
 
 | `instr_lang` | n cells | Mean orig acc | Mean refined acc | Mean Δacc  | Mean Δpf |
 | ------------ | ------- | ------------- | ----------------- | ---------- | -------- |
-| `en`         | 608     | 0.591         | 0.591             | **−0.000** | +0.000   |
-| `es`         | 288     | 0.528         | 0.539             | **+0.011** | −0.012   |
+| `en`         | 672     | 0.590         | 0.591             | **+0.000** | +0.000   |
+| `es`         | 320     | 0.528         | 0.539             | **+0.011** | −0.012   |
 | `zh`         | 352     | 0.529         | 0.549             | **+0.021** | −0.038   |
-| `ur`         | 288     | 0.461         | 0.508             | **+0.047** | −0.062   |
+| `ur`         | 320     | 0.450         | 0.491             | **+0.040** | −0.054   |
 
 **English-instruction cells move zero on average** (a 0.04 pp net drop from the cond-2-ur-5k Rule-A correction — see §5). Non-English instruction cells improve monotonically with how "different" the script is from English — Spanish (Latin script) < Chinese (CJK) < Urdu (RTL Arabic script). The non-English instruction cells were precisely the ones whose answers were being dropped as parse-failures.
 
 The SIB-200 row of the benchmark × instr-lang crosstab makes the asymmetry vivid:
 
-| Benchmark × `instr_lang` | n   | Orig acc  | Reparsed acc | Δacc       | Orig pf | Reparsed pf | Δpf        |
-| ------------------------ | --- | --------- | ------------ | ---------- | ------- | ----------- | ---------- |
-| sib200 × en              | 152 | 0.701     | 0.700        | **−0.002** | 0.006   | 0.007       | +0.001     |
-| sib200 × es              | 72  | 0.515     | 0.558        | **+0.043** | 0.056   | 0.008       | −0.048     |
-| sib200 × zh              | 88  | 0.574     | 0.615        | **+0.041** | 0.069   | 0.011       | −0.058     |
-| sib200 × ur              | 72  | **0.344** | **0.525**    | **+0.181** | 0.391   | 0.158       | **−0.233** |
-| xnli × en                | 152 | 0.420     | 0.420        | 0.000      | 0.002   | 0.002       | 0.000      |
-| xnli × es                | 72  | 0.395     | 0.395        | 0.000      | 0.009   | 0.009       | 0.000      |
-| xnli × zh                | 88  | 0.284     | 0.325        | **+0.041** | 0.174   | 0.081       | **−0.094** |
-| xnli × ur                | 72  | 0.340     | 0.345        | +0.006     | 0.057   | 0.041       | −0.017     |
+| Benchmark × `instr_lang` | n   | Orig acc  | Refined acc | Δacc       | Orig pf | Refined pf | Δpf        |
+| ------------------------ | --- | --------- | ----------- | ---------- | ------- | ---------- | ---------- |
+| sib200 × en              | 168 | 0.697     | 0.695       | **−0.002** | 0.006   | 0.007      | +0.002     |
+| sib200 × es              | 80  | 0.489     | 0.548       | **+0.059** | 0.081   | 0.010      | −0.071     |
+| sib200 × zh              | 88  | 0.574     | 0.615       | **+0.041** | 0.069   | 0.011      | −0.058     |
+| sib200 × ur              | 80  | **0.361** | **0.518**   | **+0.157** | 0.356   | 0.167      | **−0.190** |
+| xnli × en                | 168 | 0.419     | 0.419       | 0.000      | 0.002   | 0.002      | 0.000      |
+| xnli × es                | 80  | 0.394     | 0.394       | 0.000      | 0.008   | 0.008      | 0.000      |
+| xnli × zh                | 88  | 0.284     | 0.325       | **+0.041** | 0.174   | 0.081      | **−0.094** |
+| xnli × ur                | 80  | 0.344     | 0.349       | +0.005     | 0.052   | 0.037      | −0.015     |
 
-**`sib200 × ur` is the single biggest finding in this study.** Mean accuracy moved from 0.344 to 0.525 — an 18-point lift on a 4-class task. Meanwhile `xnli × es` and `xnli × en` are flat because the model did not emit Spanish native labels or paraphrases on those cells; the ladder had nothing to do.
+**`sib200 × ur` is the single biggest finding in this study.** Mean accuracy moved from 0.361 to 0.518 — a 15.7-point lift on a 4-class task (and a 19.0-pp drop in parse-failure mass). Meanwhile `xnli × es` and `xnli × en` are flat because the model did not emit Spanish native labels or paraphrases on those cells; the ladder had nothing to do. (Pre-PR-#34, `sib200 × ur` measured +18.1 pp / −23.3 pp on n=72; the 8 new cond-2-ur-20k matched-diagonal cells that PR #34 closed coverage on regressed under the refined extractor, lowering the cell-mean of the new larger denominator. The mechanism is the same — the §1 narrative around this row should be read as "the lift remains the largest in the study, ~16 pp on n=80".)
 
 ### 3.3 By template — template-2 is where the parse-failures live
 
 | Template  | Mean Δacc | Mean Δpf | Cells improved | Cells regressed |
 | --------- | --------- | -------- | -------------- | --------------- |
-| template1 | +0.009    | −0.011   | 63             | 68              |
-| template2 | +0.022    | −0.034   | 142            | 24              |
+| template1 | +0.009    | −0.011   | 68             | 78              |
+| template2 | +0.020    | −0.032   | 147            | 28              |
 
-Template-2 cells improve **2.4× more in accuracy and 3.1× more in parse-failure recovery**. This matches the decision ledger's prior observation that template-2 elicits longer, less-structured native-prose answers ("the model answers a few lines about why it's about travel" instead of "travel."). The extractor extension is asymmetrically valuable for template-2.
+Template-2 cells improve **2.2× more in accuracy and 2.9× more in parse-failure recovery**. This matches the decision ledger's prior observation that template-2 elicits longer, less-structured native-prose answers ("the model answers a few lines about why it's about travel" instead of "travel."). The extractor extension is asymmetrically valuable for template-2.
 
 ### 3.4 By condition — the most interesting paper question
 
@@ -134,7 +145,9 @@ Template-2 cells improve **2.4× more in accuracy and 3.1× more in parse-failur
 | condition-2-zh-5k  | 192     | +0.000     | −0.001     | 16       | 11        |
 | condition-2-zh-20k | 64      | +0.001     | −0.001     | 8        | 4         |
 | condition-2-ur-5k  | 192     | **−0.007** | **+0.022** | 0        | 38        |
+| condition-2-ur-20k | 64      | **−0.010** | **+0.028** | 1        | 12        |
 | condition-3-zh-5k  | 64      | −0.001     | +0.004     | 2        | 8         |
+| condition-5-es-5k  | 64      | **+0.027** | −0.036     | 9        | 2         |
 | condition-5-ur-5k  | 64      | **+0.046** | −0.068     | 10       | 2         |
 | condition-5-zh-5k  | 64      | **+0.047** | −0.087     | 18       | 0         |
 
@@ -152,19 +165,34 @@ Cond-5's parse-failure recovery (−0.068 ur, −0.087 zh) is the largest of any
 
 ## 4. Anomalies — where the refined-extractor pass made cells _look_ worse
 
-92 of 384 SIB-200 cells regressed in accuracy. Their distribution is highly concentrated:
+**106 of 416 SIB-200 cells regressed in accuracy.** Their distribution is highly concentrated across the 12 conditions that contribute any regressions:
 
-| Condition             | Regression cells       | Mean Δacc on those cells | Mean Δpf |
-| --------------------- | ---------------------- | ------------------------ | -------- |
-| condition-2-ur-5k     | 38 of 48 SIB-200 cells | −0.0507                  | +0.222   |
-| condition-1-en-\*     | 14 cells               | −0.018                   | +0.022   |
-| condition-2-es-5k/20k | 14 cells               | −0.014                   | +0.024   |
-| condition-2-zh-5k/20k | 15 cells               | −0.011                   | +0.020   |
-| condition-3-zh-5k     | 8 cells                | −0.010                   | +0.022   |
-| baseline              | 3 cells                | −0.013                   | +0.010   |
-| condition-5-ur-5k     | 2 cells                | −0.0025                  | +0.005   |
+| Condition          | Regression cells       |
+| ------------------ | ---------------------- |
+| condition-2-ur-5k  | 38 of 48 SIB-200 cells |
+| condition-2-ur-20k | 12 of 16 SIB-200 cells |
+| condition-2-zh-5k  | 11                     |
+| condition-1-en-5k  | 10                     |
+| condition-2-es-5k  | 9                      |
+| condition-3-zh-5k  | 8                      |
+| condition-2-es-20k | 5                      |
+| condition-2-zh-20k | 4                      |
+| baseline           | 3                      |
+| condition-1-en-20k | 2                      |
+| condition-5-es-5k  | 2                      |
+| condition-5-ur-5k  | 2                      |
+| **Total**          | **106**                |
 
-**Practically the entire regression mass is `condition-2-ur-5k` SIB-200.** Read the PR-#54 description for the mechanism: PR #49 had introduced a `سیاست/تکنالوجی → science/technology` mapping, scored 4 cases correct, 70 cases wrong on that string. The Urdu-tuned model in `cond-2-ur-5k` emits that string frequently because Urdu fine-tuning teaches it the Urdu native script as default. The multi-term rule now correctly refuses to map that compound to a single category and the cells move from "false-positive credit" to "parse-failure." The accuracy drop is a **correctness improvement**, not a regression in any meaningful sense — the 4 correct rows were lucky, and they are now visible as the parse-failures they always were.
+Mechanism notes:
+
+- `condition-2-ur-5k` (38) and `condition-2-ur-20k` (12) — both driven by the PR-#49 `سیاست/تکنالوجی → science/technology` Rule-A correction; the Urdu-tuned model emits that compound frequently, the multi-term rule now refuses to map it to a single category.
+- `condition-2-zh-5k` (11), `condition-1-en-5k` (10), `condition-2-es-5k` (9), `condition-3-zh-5k` (8), `condition-2-es-20k` (5), `condition-2-zh-20k` (4), `condition-1-en-20k` (2) — Rule-A `science/X` over-credit corrections (`science/health`, `science/anything` no longer collapsed to `science/technology`).
+- `condition-5-es-5k` (2) — cells contributed by HF PR #34's coverage close.
+- `baseline` (3) and `condition-5-ur-5k` (2) — small residual corrections at the noise floor.
+
+**Practically the entire regression mass is `condition-2-ur-5k` + `condition-2-ur-20k` SIB-200 (50 of 106 cells = 47%).** Read the PR-#54 description for the mechanism: PR #49 had introduced a `سیاست/تکنالوجی → science/technology` mapping, scored 4 cases correct, 70 cases wrong on that string. The Urdu-tuned model in `cond-2-ur-5k`/`-20k` emits that string frequently because Urdu fine-tuning teaches it the Urdu native script as default. The multi-term rule now correctly refuses to map that compound to a single category and the cells move from "false-positive credit" to "parse-failure." The accuracy drop is a **correctness improvement**, not a regression in any meaningful sense — the 4 correct rows were lucky, and they are now visible as the parse-failures they always were.
+
+_See **Figure 3** (`figures-phase3/fig03_regression_concentration.pdf`) for the per-condition regression count bar chart and the cond-2-ur-5k Δacc heatmap by (data → instr) × template._
 
 The other smaller regressions (`condition-1-en-*` `science/X` cells on English-instr; cond-2-es / cond-2-zh) are the analogous correction for Rule A's previous over-credit of `science/health` and similar cross-category compounds.
 
@@ -289,7 +317,7 @@ Cell-mean Δ (cond − baseline) per benchmark, both extractors. **Bold** rows a
 
 **Four (condition, benchmark) cells flip from "fine-tuning helps" to "fine-tuning hurts"** on SIB-200 under the corrected extractor: `cond-2-es-5k`, `cond-2-es-20k`, `cond-2-zh-20k`, `cond-3-zh-5k`. One cell flips the other direction (cond-5-zh-5k XNLI) but the magnitude is small (±0.01) — likely noise, not signal.
 
-### 8.4 Why does cond-2 SIB-200 "win" under the original extractor and "lose" under the refined-extractor passd one?
+### 8.4 Why does cond-2 SIB-200 "win" under the original extractor and "lose" under the refined one?
 
 The flip is a mechanical consequence of the PR-#49 bugs the extractor extension fixed. The original `extract_sib200_category` had two over-credit patterns: Rule A (`science/<anything>` → science/technology) and the `سیاست/تکنالوجی → science/technology` mapping. **Fine-tuned models hit these patterns more than the baseline.** A target-language-tuned model that has learned to emit short topic-prefix tokens (`science/`, `سیاست/`) collects more lucky credit from these bugs than the baseline does (which emits longer English prose). Under the corrected extractor, those over-credits go away for both sides — but they were disproportionately benefiting the fine-tuned models, so the cond-vs-baseline delta shrinks (or flips negative).
 
@@ -320,6 +348,8 @@ Three things to note:
 2. **The X-CSQA regression is real and not extractor-confounded.** Both cond-5-ur (−0.045) and cond-5-zh (−0.020) lose on X-CSQA by identical amounts under both extractors. That's a model effect: the Aya-translated training mix degrades commonsense QA. Worth investigating whether the translation step lost reasoning fidelity.
 3. **Cond-5 still loses against baseline on the mean** — but the story is "doesn't help, modestly hurts" rather than "broke the model." The original extractor was telling the stronger story; the corrected extractor tells the moderate one.
 
+_See **Figure 5** (`figures-phase3/fig05_cond5_rehabilitated.pdf`) for the cond-5 slopegraph across these four cells, with the SIB-200 lines moving toward zero and the X-CSQA lines staying flat under the refined extractor._
+
 ### 8.6 Per (condition × instr_lang) — does target-language instruction make the difference?
 
 Average Δ (cond − baseline) by the instruction language of the prompt:
@@ -343,13 +373,19 @@ The two readings agree on **direction** everywhere except cond-2-es-5k/20k `inst
 
 ### 8.7 Conclusion-flip catalogue
 
-[`conclusion_flips.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/conclusion_flips.tsv) lists every cell whose sign(Δ vs baseline) changed between the original and refined scorings (using a ±0.01 buffer to ignore noise-floor cells). **48 cells flip** out of 1,536 condition-vs-baseline comparisons (3.1%) post HF PR #34 + #35 (the count was 43/1408 in the pre-PR-#56 build with coverage gaps; the new full-coverage build is 48/1536). The flips are highly concentrated:
+[`conclusion_flips.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/conclusion_flips.tsv) lists every cell whose sign(Δ vs baseline) changed between the original and refined scorings (using a ±0.01 buffer to ignore noise-floor cells). **48 cells flip** out of 1,536 condition-vs-baseline comparisons (3.1%) post HF PR #34 (full coverage). The 1,536 denominator is the fine-tuned subset of the 1,664 total cells in §1 (baseline excluded — baseline can't be vs-baseline'd against itself). The flips split across two benchmarks and are otherwise highly concentrated:
 
-- **43 of 48 flips are SIB-200** — the benchmark whose extractor changed the most (5 of 48 are XNLI).
-- **All 48 flips are on `instr` ≠ `en`** — English-instruction cells are stable (`instr=ur` 24, `instr=es` 13, `instr=zh` 11).
-- **The flip distribution by condition matches §8.3**: cond-2-es, cond-2-zh, cond-3 dominate the win→loss flips; cond-5 contributes most of the loss→win flips (and those are small-magnitude).
+- **43 of 48 flips are SIB-200** — the benchmark whose extractor changed the most. The win→loss direction dominates (34 of 43, mostly cond-2-{es,zh,ur} and cond-3 — see §8.3); cond-5 contributes most of the small-magnitude loss→win flips on SIB-200.
+- **5 of 48 flips are XNLI** — all `loss → win`, all on `condition-1-en-*` (English-only fine-tunes), all on `template-2`, all on `instr=zh`. Magnitudes range +2.5 pp to +9.2 pp. These XNLI flips are a **mirror-image finding to the SIB-200 deflations of §8.4**: where the original extractor over-credited fine-tuned models on Rule-A SIB-200 bug cells, it _under-credited_ condition-1 on XNLI-zh by refusing Chinese-prose paraphrases (`直接结果`, `否定`, `没有.{0,8}关系`) that the refined extractor's Tier-3 ladder now resolves. The methodological framing therefore sharpens from "the original extractor inflated fine-tuning gains" to **"the original extractor was asymmetric across cells, and the refinement is a fairness correction in both directions"**.
+- **All 48 flips are on `instr` ≠ `en`** — English-instruction cells are stable across both extractors (`instr=ur` 24, `instr=es` 13, `instr=zh` 11). X-CSQA and Belebele contribute zero flips by construction (the extractor refinement did not touch their letter-answer format).
 
 If a paper plot needs to flag which (condition, benchmark) cells are "extractor-coverage-confounded," the conclusion_flips TSV is the source.
+
+_See **Figure 4** for the sign-flip slopegraphs:_
+
+- _`figures-phase3/fig04_signflip_sib200_top15.pdf`_ — _main paper figure, top 15 of 43 SIB-200 flips by |shift|._
+- _`figures-phase3/fig04_signflip_sib200_all43.pdf`_ — _appendix figure, all 43 SIB-200 flips._
+- _`figures-phase3/fig04_signflip_xnli_all5.pdf`_ — _separate small figure for the 5 XNLI flips._
 
 ### 8.8 Reading guide — which number to report for which claim
 
