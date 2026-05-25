@@ -7,7 +7,7 @@ If a Phase 3 SIB-200 (or X-CSQA / XNLI / Belebele / MGSM) number disagrees acros
 Phase 3 was scored twice:
 
 1. **Inference-time extractor** — frozen inside [`evaluation/scripts/evaluate.ipynb`](../evaluation/scripts/evaluate.ipynb) cell 3, run during each evaluation pass. Strict; doesn't accept native-script answers (e.g., it refused `سائنس` / `科学` / `ciencia` when gold was `science`).
-2. **Refined post-hoc extractor** — [`evaluation/scripts/reparse_results.py`](../evaluation/scripts/reparse_results.py), sha256-pinned (`_extractor_provenance.content_sha256` is embedded in every reparsed summary). Adds native-label / multi-term-hedge / CJK-glued / native-prose tiers; re-scores existing `_results_*.json` files.
+2. **Refined post-hoc extractor** — [`evaluation/scripts/reparse_results.py`](../evaluation/scripts/reparse_results.py), sha256-pinned (`reparse_metadata.extractor_provenance.content_sha256` is embedded in every reparsed summary). Adds native-label / multi-term-hedge / CJK-glued / native-prose tiers; re-scores existing `_results_*.json` files.
 
 Both extractors run over the same model outputs. They differ only in **what counts as a correct answer**. The notebook stays frozen for Phase 3 reproducibility; the refined extractor is the canonical scorer for paper claims. See [`phase-3/phase3-refined-evaluation.md`](phase-3/phase3-refined-evaluation.md) §2–§3 for the recipe and [`phase-3/refined-decision-ledger.md`](phase-3/refined-decision-ledger.md) for what each tier accepts.
 

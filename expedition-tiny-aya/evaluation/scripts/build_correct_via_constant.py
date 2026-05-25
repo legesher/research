@@ -99,13 +99,17 @@ def list_phase3_results_files(api: HfApi, conditions_filter: set[str] | None) ->
 
 
 def parse_filename_metadata(remote_path: str) -> tuple[str, str]:
-    """`phase3/conditions/<cond>/seed<N>/...results_template<T>.json` → (condition, seed)."""
+    """`phase3/conditions/<cond>/seed<N>/...results_template<T>.json` → (condition, seed).
+
+    Seed is normalized to drop the `seed` prefix (e.g. `seed42` → `42`,
+    `seednone` → `none`) so this TSV's `seed` column joins cleanly with the
+    other Phase-3 analysis tables (cells.tsv, conclusion_flips.tsv, etc.)
+    which use the bare-number convention. Source is parent dir, not filename,
+    because there are known stray seed-mismatched files on HF."""
     parts = remote_path.split("/")
     condition = parts[2]
-    # seed comes from the parent dir, which is authoritative
-    # (don't trust filename — there are known stray seed-mismatched files)
-    seed_dir = parts[3]
-    return condition, seed_dir
+    seed = parts[3].removeprefix("seed")
+    return condition, seed
 
 
 _RAW_OUTPUT_TRIM_RE = re.compile(r"\s+")
