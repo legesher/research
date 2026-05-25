@@ -5,7 +5,7 @@ and `build_vs_baseline.py` (condition-vs-baseline rollups). This script
 operationalizes the *paper's* comparison framework so the results section
 can be built directly from the emitted TSVs.
 
-The framework has three axes (see memory: feedback-comparison-framework):
+The framework has three axes (see [`analysis/phase-3/phase3-refined-evaluation.md`](../../analysis/phase-3/phase3-refined-evaluation.md) §§3–5 and §8 for the paper-side narrative the TSVs feed):
 
   Axis 1 — Within-condition template comparison.
            For each (condition, seed, benchmark, data_lang, instr_lang),
@@ -49,7 +49,7 @@ import os
 import re
 from collections import defaultdict
 from pathlib import Path
-from statistics import mean
+from statistics import mean, median
 
 ROOT = Path(
     os.environ.get(
@@ -102,7 +102,7 @@ CONDITION_DATA_VOLUME = {
 
 
 def load(p):
-    return json.loads(p.read_text())
+    return json.loads(p.read_text(encoding="utf-8"))
 
 
 def gather() -> list[dict]:
@@ -649,7 +649,7 @@ def write_benchmark_breakdown(rows: list[dict], out: Path):
                 cond, CONDITION_TARGET_LANG.get(cond) or "", bench, md,
                 str(len(deltas)),
                 f"{mean(deltas):+.4f}",
-                f"{sorted(deltas)[len(deltas)//2]:+.4f}",
+                f"{median(deltas):+.4f}",
                 f"{min(deltas):+.4f}",
                 f"{max(deltas):+.4f}",
             ]) + "\n")
@@ -695,7 +695,7 @@ def write_parse_failure_recovery(rows: list[dict], out: Path):
                 cond, CONDITION_TARGET_LANG.get(cond) or "", bench,
                 str(len(recs)),
                 f"{mean(recs):+.4f}",
-                f"{sorted(recs)[len(recs)//2]:+.4f}",
+                f"{median(recs):+.4f}",
                 f"{max(recs):+.4f}",
                 str(high),
             ]) + "\n")

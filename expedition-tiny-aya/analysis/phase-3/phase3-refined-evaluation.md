@@ -208,7 +208,7 @@ The preceding sections (§1–§7) report the **extractor effect**: how scores m
 
 > For each fine-tuning condition, does the condition's model beat the un-tuned baseline?
 
-Because each condition has _two_ readings (one from each extractor), every condition-vs-baseline comparison appears twice: once under the original-extractor scoring (the numbers that were on the table before this PR) and once under the refined-extractor passd-extractor scoring (the numbers we believe). When the two readings agree on sign, the verdict is **stable** — extractor coverage didn't change the answer. When they disagree, the verdict **flipped** — the original-extractor scoring was making the wrong call.
+Because each condition has _two_ readings (one from each extractor), every condition-vs-baseline comparison appears twice: once under the original-extractor scoring (the numbers that were on the table before this PR) and once under the refined-extractor scoring (the numbers we believe). When the two readings agree on sign, the verdict is **stable** — extractor coverage didn't change the answer. When they disagree, the verdict **flipped** — the original-extractor scoring was making the wrong call.
 
 ### 8.1 Three-scenario framing
 
@@ -345,8 +345,8 @@ The two readings agree on **direction** everywhere except cond-2-es-5k/20k `inst
 
 [`conclusion_flips.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/conclusion_flips.tsv) lists every cell whose sign(Δ vs baseline) changed between the original and refined scorings (using a ±0.01 buffer to ignore noise-floor cells). **48 cells flip** out of 1,536 condition-vs-baseline comparisons (3.1%) post HF PR #34 + #35 (the count was 43/1408 in the pre-PR-#56 build with coverage gaps; the new full-coverage build is 48/1536). The flips are highly concentrated:
 
-- **34 of 43 flips are SIB-200** — the benchmark whose extractor changed the most.
-- **All 43 flips are on `instr` ≠ `en`** — English-instruction cells are stable.
+- **43 of 48 flips are SIB-200** — the benchmark whose extractor changed the most (5 of 48 are XNLI).
+- **All 48 flips are on `instr` ≠ `en`** — English-instruction cells are stable (`instr=ur` 24, `instr=es` 13, `instr=zh` 11).
 - **The flip distribution by condition matches §8.3**: cond-2-es, cond-2-zh, cond-3 dominate the win→loss flips; cond-5 contributes most of the loss→win flips (and those are small-magnitude).
 
 If a paper plot needs to flag which (condition, benchmark) cells are "extractor-coverage-confounded," the conclusion_flips TSV is the source.

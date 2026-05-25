@@ -1,4 +1,4 @@
-# Reparse Decision Ledger — Phase-3 SIB-200 / XNLI / X-CSQA / Belebele
+# Refined Decision Ledger — Phase-3 SIB-200 / XNLI / X-CSQA / Belebele
 
 **Purpose (for the paper):** a complete, auditable record of every decision
 we made when re-scoring the Phase-3 evaluation outputs. For each benchmark

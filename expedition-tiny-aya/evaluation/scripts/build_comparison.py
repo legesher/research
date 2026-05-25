@@ -37,7 +37,7 @@ CELL_RE = re.compile(
 
 
 def load_summary(path: Path):
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -134,112 +134,7 @@ def iter_cells():
             )
 
 
-cells = []
-gaps = []
-for row in iter_cells():
-    if row[-1]:
-        gaps.append({"condition": row[0], "seed": row[1], "template": row[2]})
-    else:
-        cells.append(
-            {
-                "condition": row[0],
-                "seed": row[1],
-                "template": row[2],
-                "benchmark": row[3],
-                "data": row[4],
-                "instr": row[5],
-                "n": row[6],
-                "orig_acc": row[7],
-                "repar_acc": row[8],
-                "orig_pf": row[9],
-                "repar_pf": row[10],
-                "delta_acc": (
-                    (row[8] - row[7])
-                    if (row[7] is not None and row[8] is not None)
-                    else None
-                ),
-                "delta_pf": (
-                    (row[10] - row[9])
-                    if (row[9] is not None and row[10] is not None)
-                    else None
-                ),
-            }
-        )
 
-print(f"Cells: {len(cells)}    Gaps: {len(gaps)}")
-
-# ---- write cells.tsv ----
-cells_path = OUT / "cells.tsv"
-with cells_path.open("w") as f:
-    headers = [
-        "condition",
-        "seed",
-        "template",
-        "benchmark",
-        "data",
-        "instr",
-        "n",
-        "orig_acc",
-        "repar_acc",
-        "delta_acc",
-        "orig_pf",
-        "repar_pf",
-        "delta_pf",
-    ]
-    f.write("\t".join(headers) + "\n")
-    for c in sorted(
-        cells,
-        key=lambda r: (
-            r["condition"],
-            r["seed"],
-            r["template"],
-            r["benchmark"],
-            r["data"],
-            r["instr"],
-        ),
-    ):
-        f.write(
-            "\t".join(
-                [
-                    c["condition"],
-                    c["seed"],
-                    c["template"],
-                    c["benchmark"],
-                    c["data"],
-                    c["instr"],
-                    str(c["n"]),
-                    f"{c['orig_acc']:.4f}",
-                    f"{c['repar_acc']:.4f}",
-                    f"{c['delta_acc']:+.4f}",
-                    f"{c['orig_pf']:.4f}",
-                    f"{c['repar_pf']:.4f}",
-                    f"{c['delta_pf']:+.4f}",
-                ]
-            )
-            + "\n"
-        )
-print(f"Wrote {cells_path}")
-
-
-# ---- headline stats ----
-deltas_acc = [c["delta_acc"] for c in cells]
-deltas_pf = [c["delta_pf"] for c in cells]
-improved = [c for c in cells if c["delta_acc"] > 1e-6]
-regressed = [c for c in cells if c["delta_acc"] < -1e-6]
-flat = [c for c in cells if abs(c["delta_acc"]) <= 1e-6]
-pf_improved = [c for c in cells if c["delta_pf"] < -1e-6]  # pf going down is good
-pf_worsened = [c for c in cells if c["delta_pf"] > 1e-6]
-
-# Cells where acc flat but pf dropped
-flat_acc_pf_drop = [
-    c for c in cells if abs(c["delta_acc"]) <= 1e-6 and c["delta_pf"] < -1e-6
-]
-flat_acc_pf_drop_5 = [
-    c for c in cells if abs(c["delta_acc"]) <= 1e-6 and c["delta_pf"] < -0.05
-]
-
-
-# ----- by benchmark -----
 def group_stats(rows, key):
     g = defaultdict(list)
     for r in rows:
@@ -267,6 +162,7 @@ def group_stats(rows, key):
             "mean_repar_pf": mean(x["repar_pf"] for x in v),
         }
     return out
+
 
 
 def write_tsv(path: Path, group_rows: dict, key_label: str):
@@ -320,61 +216,6 @@ def write_tsv(path: Path, group_rows: dict, key_label: str):
     print(f"Wrote {path}")
 
 
-write_tsv(
-    OUT / "summary_by_benchmark.tsv", group_stats(cells, "benchmark"), "benchmark"
-)
-write_tsv(OUT / "summary_by_instr_lang.tsv", group_stats(cells, "instr"), "instr_lang")
-write_tsv(OUT / "summary_by_data_lang.tsv", group_stats(cells, "data"), "data_lang")
-write_tsv(
-    OUT / "summary_by_condition.tsv", group_stats(cells, "condition"), "condition"
-)
-write_tsv(OUT / "summary_by_template.tsv", group_stats(cells, "template"), "template")
-
-# Also cross-cuts that matter
-# benchmark x instr_lang
-g = defaultdict(list)
-for r in cells:
-    g[(r["benchmark"], r["instr"])].append(r)
-with (OUT / "summary_bench_x_instr.tsv").open("w") as f:
-    f.write(
-        "benchmark\tinstr\tn_cells\tmean_orig_acc\tmean_repar_acc\tmean_delta_acc\tmean_orig_pf\tmean_repar_pf\tmean_delta_pf\n"
-    )
-    for k in sorted(g.keys()):
-        v = g[k]
-        f.write(
-            f"{k[0]}\t{k[1]}\t{len(v)}\t"
-            f"{mean(x['orig_acc'] for x in v):.4f}\t{mean(x['repar_acc'] for x in v):.4f}\t"
-            f"{mean(x['delta_acc'] for x in v):+.4f}\t"
-            f"{mean(x['orig_pf'] for x in v):.4f}\t{mean(x['repar_pf'] for x in v):.4f}\t"
-            f"{mean(x['delta_pf'] for x in v):+.4f}\n"
-        )
-print("Wrote summary_bench_x_instr.tsv")
-
-# condition x benchmark
-g2 = defaultdict(list)
-for r in cells:
-    g2[(r["condition"], r["benchmark"])].append(r)
-with (OUT / "summary_cond_x_bench.tsv").open("w") as f:
-    f.write(
-        "condition\tbenchmark\tn_cells\tmean_orig_acc\tmean_repar_acc\tmean_delta_acc\tmean_orig_pf\tmean_repar_pf\tmean_delta_pf\n"
-    )
-    for k in sorted(g2.keys()):
-        v = g2[k]
-        f.write(
-            f"{k[0]}\t{k[1]}\t{len(v)}\t"
-            f"{mean(x['orig_acc'] for x in v):.4f}\t{mean(x['repar_acc'] for x in v):.4f}\t"
-            f"{mean(x['delta_acc'] for x in v):+.4f}\t"
-            f"{mean(x['orig_pf'] for x in v):.4f}\t{mean(x['repar_pf'] for x in v):.4f}\t"
-            f"{mean(x['delta_pf'] for x in v):+.4f}\n"
-        )
-print("Wrote summary_cond_x_bench.tsv")
-
-# Top movers
-top_up = sorted(cells, key=lambda r: -r["delta_acc"])[:25]
-top_down = sorted(cells, key=lambda r: r["delta_acc"])[:25]
-top_pf_drop = sorted(cells, key=lambda r: r["delta_pf"])[:25]
-top_pf_rise = sorted(cells, key=lambda r: -r["delta_pf"])[:15]
-
 
 def fmt_cell(c):
     return (
@@ -385,58 +226,229 @@ def fmt_cell(c):
     )
 
 
-print()
-print("---- TOP ACC IMPROVEMENTS (top 25) ----")
-for c in top_up:
-    print(fmt_cell(c))
-print()
-print("---- TOP ACC REGRESSIONS (top 25) ----")
-for c in top_down:
-    print(fmt_cell(c))
-print()
-print("---- TOP PARSE-FAILURE DROPS (top 25) ----")
-for c in top_pf_drop:
-    print(fmt_cell(c))
-print()
-print("---- TOP PARSE-FAILURE RISES (top 15) ----")
-for c in top_pf_rise:
-    print(fmt_cell(c))
 
 
-# Headline stats
-stats = {
-    "n_cells": len(cells),
-    "n_improved_acc": len(improved),
-    "n_regressed_acc": len(regressed),
-    "n_flat_acc": len(flat),
-    "n_pf_improved": len(pf_improved),
-    "n_pf_worsened": len(pf_worsened),
-    "n_flat_acc_pf_drop": len(flat_acc_pf_drop),
-    "n_flat_acc_pf_drop_>5pct": len(flat_acc_pf_drop_5),
-    "mean_delta_acc": mean(deltas_acc),
-    "median_delta_acc": median(deltas_acc),
-    "mean_delta_pf": mean(deltas_pf),
-    "median_delta_pf": median(deltas_pf),
-    "mean_orig_acc": mean(c["orig_acc"] for c in cells),
-    "mean_repar_acc": mean(c["repar_acc"] for c in cells),
-    "mean_orig_pf": mean(c["orig_pf"] for c in cells),
-    "mean_repar_pf": mean(c["repar_pf"] for c in cells),
-    "max_delta_acc": max(deltas_acc),
-    "min_delta_acc": min(deltas_acc),
-    "max_delta_pf_drop": min(deltas_pf),
-    "max_delta_pf_rise": max(deltas_pf),
-    "gaps": gaps,
-}
-with (OUT / "overall_stats.json").open("w") as f:
-    json.dump(stats, f, indent=2)
+def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
 
-print()
-print("---- HEADLINE STATS ----")
-for k, v in stats.items():
-    if k == "gaps":
-        print(f"  gaps: {len(v)} missing refined summaries")
-        continue
-    if isinstance(v, float):
-        print(f"  {k:30s} {v:+.4f}")
-    else:
-        print(f"  {k:30s} {v}")
+    cells = []
+    gaps = []
+    for row in iter_cells():
+        if row[-1]:
+            gaps.append({"condition": row[0], "seed": row[1], "template": row[2]})
+        else:
+            cells.append(
+                {
+                    "condition": row[0],
+                    "seed": row[1],
+                    "template": row[2],
+                    "benchmark": row[3],
+                    "data": row[4],
+                    "instr": row[5],
+                    "n": row[6],
+                    "orig_acc": row[7],
+                    "repar_acc": row[8],
+                    "orig_pf": row[9],
+                    "repar_pf": row[10],
+                    "delta_acc": (
+                        (row[8] - row[7])
+                        if (row[7] is not None and row[8] is not None)
+                        else None
+                    ),
+                    "delta_pf": (
+                        (row[10] - row[9])
+                        if (row[9] is not None and row[10] is not None)
+                        else None
+                    ),
+                }
+            )
+
+    print(f"Cells: {len(cells)}    Gaps: {len(gaps)}")
+
+    # ---- write cells.tsv ----
+    cells_path = OUT / "cells.tsv"
+    with cells_path.open("w") as f:
+        headers = [
+            "condition",
+            "seed",
+            "template",
+            "benchmark",
+            "data",
+            "instr",
+            "n",
+            "orig_acc",
+            "repar_acc",
+            "delta_acc",
+            "orig_pf",
+            "repar_pf",
+            "delta_pf",
+        ]
+        f.write("\t".join(headers) + "\n")
+        for c in sorted(
+            cells,
+            key=lambda r: (
+                r["condition"],
+                r["seed"],
+                r["template"],
+                r["benchmark"],
+                r["data"],
+                r["instr"],
+            ),
+        ):
+            f.write(
+                "\t".join(
+                    [
+                        c["condition"],
+                        c["seed"],
+                        c["template"],
+                        c["benchmark"],
+                        c["data"],
+                        c["instr"],
+                        str(c["n"]),
+                        f"{c['orig_acc']:.4f}",
+                        f"{c['repar_acc']:.4f}",
+                        f"{c['delta_acc']:+.4f}",
+                        f"{c['orig_pf']:.4f}",
+                        f"{c['repar_pf']:.4f}",
+                        f"{c['delta_pf']:+.4f}",
+                    ]
+                )
+                + "\n"
+            )
+    print(f"Wrote {cells_path}")
+
+
+    # ---- headline stats ----
+    deltas_acc = [c["delta_acc"] for c in cells]
+    deltas_pf = [c["delta_pf"] for c in cells]
+    improved = [c for c in cells if c["delta_acc"] > 1e-6]
+    regressed = [c for c in cells if c["delta_acc"] < -1e-6]
+    flat = [c for c in cells if abs(c["delta_acc"]) <= 1e-6]
+    pf_improved = [c for c in cells if c["delta_pf"] < -1e-6]  # pf going down is good
+    pf_worsened = [c for c in cells if c["delta_pf"] > 1e-6]
+
+    # Cells where acc flat but pf dropped
+    flat_acc_pf_drop = [
+        c for c in cells if abs(c["delta_acc"]) <= 1e-6 and c["delta_pf"] < -1e-6
+    ]
+    flat_acc_pf_drop_5 = [
+        c for c in cells if abs(c["delta_acc"]) <= 1e-6 and c["delta_pf"] < -0.05
+    ]
+
+
+    # ----- by benchmark -----
+    write_tsv(
+        OUT / "summary_by_benchmark.tsv", group_stats(cells, "benchmark"), "benchmark"
+    )
+    write_tsv(OUT / "summary_by_instr_lang.tsv", group_stats(cells, "instr"), "instr_lang")
+    write_tsv(OUT / "summary_by_data_lang.tsv", group_stats(cells, "data"), "data_lang")
+    write_tsv(
+        OUT / "summary_by_condition.tsv", group_stats(cells, "condition"), "condition"
+    )
+    write_tsv(OUT / "summary_by_template.tsv", group_stats(cells, "template"), "template")
+
+    # Also cross-cuts that matter
+    # benchmark x instr_lang
+    g = defaultdict(list)
+    for r in cells:
+        g[(r["benchmark"], r["instr"])].append(r)
+    with (OUT / "summary_bench_x_instr.tsv").open("w") as f:
+        f.write(
+            "benchmark\tinstr\tn_cells\tmean_orig_acc\tmean_repar_acc\tmean_delta_acc\tmean_orig_pf\tmean_repar_pf\tmean_delta_pf\n"
+        )
+        for k in sorted(g.keys()):
+            v = g[k]
+            f.write(
+                f"{k[0]}\t{k[1]}\t{len(v)}\t"
+                f"{mean(x['orig_acc'] for x in v):.4f}\t{mean(x['repar_acc'] for x in v):.4f}\t"
+                f"{mean(x['delta_acc'] for x in v):+.4f}\t"
+                f"{mean(x['orig_pf'] for x in v):.4f}\t{mean(x['repar_pf'] for x in v):.4f}\t"
+                f"{mean(x['delta_pf'] for x in v):+.4f}\n"
+            )
+    print("Wrote summary_bench_x_instr.tsv")
+
+    # condition x benchmark
+    g2 = defaultdict(list)
+    for r in cells:
+        g2[(r["condition"], r["benchmark"])].append(r)
+    with (OUT / "summary_cond_x_bench.tsv").open("w") as f:
+        f.write(
+            "condition\tbenchmark\tn_cells\tmean_orig_acc\tmean_repar_acc\tmean_delta_acc\tmean_orig_pf\tmean_repar_pf\tmean_delta_pf\n"
+        )
+        for k in sorted(g2.keys()):
+            v = g2[k]
+            f.write(
+                f"{k[0]}\t{k[1]}\t{len(v)}\t"
+                f"{mean(x['orig_acc'] for x in v):.4f}\t{mean(x['repar_acc'] for x in v):.4f}\t"
+                f"{mean(x['delta_acc'] for x in v):+.4f}\t"
+                f"{mean(x['orig_pf'] for x in v):.4f}\t{mean(x['repar_pf'] for x in v):.4f}\t"
+                f"{mean(x['delta_pf'] for x in v):+.4f}\n"
+            )
+    print("Wrote summary_cond_x_bench.tsv")
+
+    # Top movers
+    top_up = sorted(cells, key=lambda r: -r["delta_acc"])[:25]
+    top_down = sorted(cells, key=lambda r: r["delta_acc"])[:25]
+    top_pf_drop = sorted(cells, key=lambda r: r["delta_pf"])[:25]
+    top_pf_rise = sorted(cells, key=lambda r: -r["delta_pf"])[:15]
+
+
+    print()
+    print("---- TOP ACC IMPROVEMENTS (top 25) ----")
+    for c in top_up:
+        print(fmt_cell(c))
+    print()
+    print("---- TOP ACC REGRESSIONS (top 25) ----")
+    for c in top_down:
+        print(fmt_cell(c))
+    print()
+    print("---- TOP PARSE-FAILURE DROPS (top 25) ----")
+    for c in top_pf_drop:
+        print(fmt_cell(c))
+    print()
+    print("---- TOP PARSE-FAILURE RISES (top 15) ----")
+    for c in top_pf_rise:
+        print(fmt_cell(c))
+
+
+    # Headline stats
+    stats = {
+        "n_cells": len(cells),
+        "n_improved_acc": len(improved),
+        "n_regressed_acc": len(regressed),
+        "n_flat_acc": len(flat),
+        "n_pf_improved": len(pf_improved),
+        "n_pf_worsened": len(pf_worsened),
+        "n_flat_acc_pf_drop": len(flat_acc_pf_drop),
+        "n_flat_acc_pf_drop_>5pct": len(flat_acc_pf_drop_5),
+        "mean_delta_acc": mean(deltas_acc),
+        "median_delta_acc": median(deltas_acc),
+        "mean_delta_pf": mean(deltas_pf),
+        "median_delta_pf": median(deltas_pf),
+        "mean_orig_acc": mean(c["orig_acc"] for c in cells),
+        "mean_repar_acc": mean(c["repar_acc"] for c in cells),
+        "mean_orig_pf": mean(c["orig_pf"] for c in cells),
+        "mean_repar_pf": mean(c["repar_pf"] for c in cells),
+        "max_delta_acc": max(deltas_acc),
+        "min_delta_acc": min(deltas_acc),
+        "max_delta_pf_drop": min(deltas_pf),
+        "max_delta_pf_rise": max(deltas_pf),
+        "gaps": gaps,
+    }
+    with (OUT / "overall_stats.json").open("w") as f:
+        json.dump(stats, f, indent=2)
+
+    print()
+    print("---- HEADLINE STATS ----")
+    for k, v in stats.items():
+        if k == "gaps":
+            print(f"  gaps: {len(v)} missing refined summaries")
+            continue
+        if isinstance(v, float):
+            print(f"  {k:30s} {v:+.4f}")
+        else:
+            print(f"  {k:30s} {v}")
+
+
+if __name__ == "__main__":
+    main()

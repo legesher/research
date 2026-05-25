@@ -112,7 +112,7 @@ def main() -> None:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print the plan and exit. No network calls beyond auth check.",
+        help="Print the plan and exit. No network calls.",
     )
     parser.add_argument(
         "--commit-message",

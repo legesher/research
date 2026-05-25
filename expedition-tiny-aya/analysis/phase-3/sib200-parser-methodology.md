@@ -7,6 +7,8 @@
 **Data source**: smoke runs at n=20, four conditions × two templates (baseline, cond-2-{es,ur,zh}), Phase-3 pipeline
 
 > **TL;DR**: Phase-3 smoke runs revealed that the SIB-200 extractor in `run_eval_single.py` matched only the seven canonical English category strings. When prompted in native scripts, the model produced topically-correct answers in surface forms the extractor rejected — counting them as parse-failures. A native-aware extractor (three additional rules) closes the gap. For the Urdu-fine-tuned condition (`cond-2-ur`) evaluated on Urdu data with Urdu instructions, this changes the measured accuracy from **0.000** to **1.000**. The model was answering perfectly all along; English-only parsing was discarding every correct response.
+>
+> **Terminology note.** This document uses _strict_ (English-only) and _lenient_ (native-aware) as descriptive labels for the extractor's _behavior_ — these are paper-prose terms about what each extractor counts as a valid answer. They map one-to-one to the implementations the rest of the Phase-3 writeup calls **inference-time extractor** (= strict; frozen in [`evaluation/scripts/evaluate.ipynb`](../../evaluation/scripts/evaluate.ipynb) cell 3) and **refined extractor** (= lenient; in [`evaluation/scripts/reparse_results.py`](../../evaluation/scripts/reparse_results.py), sha256-pinned). Use the descriptive terms when explaining the _property_ (e.g. paper methodology); use the implementation names when pointing at code.
 
 ---
 
