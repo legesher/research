@@ -31,7 +31,7 @@ The raw-output metric is the stronger evidence of "model isn't reading the passa
 | condition-5-ur-5k   | 0.4933                | 0.4035               | 0.4057                               | 0.3201                              |
 | **condition-5-zh-5k** | **0.6391** (highest) | 0.5058               | 0.4833                               | 0.3281                              |
 
-Rollup is **seed-collapsed**: per-(template, data, instr) cell, mean across seeds; then mean across cells per condition. This avoids the seed-vs-cell aggregation conflation bug class flagged in [`phase-3/aggregation-bug-audit.md`](phase-3/aggregation-bug-audit.md) — see [`build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py) where the per-row TSV is at full grain (one row per seed × template × cell), so any rollup must collapse seeds first.
+Rollup is **seed-collapsed**: per-(template, data, instr) cell, mean across seeds; then mean across cells per condition. This avoids the seed-vs-cell aggregation conflation bug class — pivots on `(condition, seed, template, benchmark, data, instr)` that label their observation count as `n_cells` will inflate multi-seed conditions, since the actual unique-cell count is `total / (n_seeds × n_templates)`. The TSV emitted by [`build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py) is at full per-row grain (one row per seed × template × cell), so any rollup over it must collapse seeds first.
 
 ## Critical reversal — cond-2-ur-5k is the *least* constant-output condition
 
@@ -73,7 +73,7 @@ For paper claims, a per-cell flag at `top_raw_share >= 0.5` AND `correct_via_con
 
 ## Pointers
 
-- [`correct-via-constant-rates.tsv`](correct-via-constant-rates.tsv) — full per-cell table
+- [`correct-via-constant-rates.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/correct-via-constant-rates.tsv) — full per-cell table (on HF)
 - [`evaluation/scripts/build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py) — build script
 - [`refined-verification-spot-checks.md`](refined-verification-spot-checks.md) — I's cond-5-ur-5k spot-check (which surfaced the cond-5 constant-output pattern)
 - [`phase-3/post-refined-action-items.md`](phase-3/post-refined-action-items.md) — item F (this finding shifts the framing)
