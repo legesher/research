@@ -2,6 +2,13 @@
 
 **Status:** complete (2026-05-25). All 42 Phase-3 summary files (21 sessions × 2 templates, post HF PR #34 coverage close) were re-scored against the extended extractor on `eval/sib200-xnli-extractor` (PR #54); **1,664** (condition × seed × template × benchmark × data × instr) cells compared.
 
+Two cell-count denominators recur in this writeup and the figures, both valid at different grains:
+
+- **1,664** = total cells in [`refined-tables/cells.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/cells.tsv) — baseline + 12 fine-tuned conditions × all 4 benchmarks. This is the denominator for "how did the extractor extension move scores" questions (§1 headline, §3 by-benchmark / by-instr / by-template / by-condition rollups).
+- **1,536** = total rows in [`refined-tables/vs_baseline_cells.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/vs_baseline_cells.tsv) — the 12 fine-tuned conditions only (1,664 − 128 baseline cells, since baseline can't be compared against itself). This is the denominator for "did fine-tuning beat baseline" questions (§8.3, §8.6, §8.7 conclusion-flip catalogue).
+
+The two are not in tension; they index different questions. Where the difference matters, the surrounding text names which one.
+
 **Scope:** Phase-3 only. Baseline + condition-1/-2/-3/-5. Phase-2 sweeps deliberately excluded.
 
 **Companion documents:**
@@ -72,7 +79,7 @@ The extractor scores what the model _said_, not what gold says. A native-languag
 
 ### 2.4 Data integrity
 
-The HF dataset contains a duplicated-misfile artifact: `phase3/conditions/condition-2-es-5k/seed42/` holds both `seed42` _and_ `seed123` summary files (the latter also live in `seed123/`). The analysis dataframe derives seed from filename, not directory, and de-duplicates against the file whose parent directory matches its filename seed. Net result: 1,536 unique cells; the duplicate copies are dropped.
+The HF dataset contains a duplicated-misfile artifact: `phase3/conditions/condition-2-es-5k/seed42/` holds both `seed42` _and_ `seed123` summary files (the latter also live in `seed123/`). The analysis dataframe derives seed from filename, not directory, and de-duplicates against the file whose parent directory matches its filename seed. Net result: **1,664** unique cells in `cells.tsv` across baseline + 12 fine-tuned conditions; the duplicate copies are dropped. (The **1,536** number that appears in §8.3 / §8.7 is downstream of this dedup — it's `cells.tsv`'s 1,664 minus the 128 baseline cells that can't appear in `vs_baseline_cells.tsv`. See the §1 status banner for the full two-denominator key.)
 
 ## 3. Recovery results
 
@@ -366,7 +373,7 @@ The two readings agree on **direction** everywhere except cond-2-es-5k/20k `inst
 
 ### 8.7 Conclusion-flip catalogue
 
-[`conclusion_flips.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/conclusion_flips.tsv) lists every cell whose sign(Δ vs baseline) changed between the original and refined scorings (using a ±0.01 buffer to ignore noise-floor cells). **48 cells flip** out of 1,536 condition-vs-baseline comparisons (3.1%) post HF PR #34 (full coverage). The flips split across two benchmarks and are otherwise highly concentrated:
+[`conclusion_flips.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/conclusion_flips.tsv) lists every cell whose sign(Δ vs baseline) changed between the original and refined scorings (using a ±0.01 buffer to ignore noise-floor cells). **48 cells flip** out of 1,536 condition-vs-baseline comparisons (3.1%) post HF PR #34 (full coverage). The 1,536 denominator is the fine-tuned subset of the 1,664 total cells in §1 (baseline excluded — baseline can't be vs-baseline'd against itself). The flips split across two benchmarks and are otherwise highly concentrated:
 
 - **43 of 48 flips are SIB-200** — the benchmark whose extractor changed the most. The win→loss direction dominates (34 of 43, mostly cond-2-{es,zh,ur} and cond-3 — see §8.3); cond-5 contributes most of the small-magnitude loss→win flips on SIB-200.
 - **5 of 48 flips are XNLI** — all `loss → win`, all on `condition-1-en-*` (English-only fine-tunes), all on `template-2`, all on `instr=zh`. Magnitudes range +2.5 pp to +9.2 pp. These XNLI flips are a **mirror-image finding to the SIB-200 deflations of §8.4**: where the original extractor over-credited fine-tuned models on Rule-A SIB-200 bug cells, it _under-credited_ condition-1 on XNLI-zh by refusing Chinese-prose paraphrases (`直接结果`, `否定`, `没有.{0,8}关系`) that the refined extractor's Tier-3 ladder now resolves. The methodological framing therefore sharpens from "the original extractor inflated fine-tuning gains" to **"the original extractor was asymmetric across cells, and the refinement is a fairness correction in both directions"**.
