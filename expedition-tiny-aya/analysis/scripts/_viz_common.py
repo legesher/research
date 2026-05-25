@@ -50,6 +50,17 @@ COLOR_FLIP_W2L = OKABE_ITO["vermillion"]     # win -> loss (the four §8.3 flips
 COLOR_FLIP_L2W = OKABE_ITO["blue"]           # loss -> win (rare, marginal)
 COLOR_DEFLATED = OKABE_ITO["orange"]         # same sign, smaller magnitude
 
+
+def _transition_color_map() -> dict[str, str]:
+    return {
+        TRANSITION_FLIP_W2L: COLOR_FLIP_W2L,
+        TRANSITION_FLIP_L2W: COLOR_FLIP_L2W,
+        TRANSITION_DEFLATED: COLOR_DEFLATED,
+        TRANSITION_POSITIVE: COLOR_POSITIVE,
+        TRANSITION_NEGATIVE: COLOR_NEGATIVE,
+        TRANSITION_NEUTRAL: COLOR_NEUTRAL,
+    }
+
 # ─── Ordering / labels ───────────────────────────────────────────────────────
 
 # Resource-tier language order (high -> low). Used everywhere a language axis
@@ -138,25 +149,57 @@ def diverging_norm(values: Iterable[float], quantile: float = 0.95) -> TwoSlopeN
     return TwoSlopeNorm(vcenter=0.0, vmin=-abs_q, vmax=+abs_q)
 
 
+# Symbolic transition tags (used to drive both `sign_color` and downstream
+# `is_flip` / counting logic). The set below is the canonical authority for
+# "did this cell sign-flip" — `FLIP_COLORS` (hex strings) is unsafe to use
+# for this because `COLOR_NEGATIVE` and `COLOR_FLIP_W2L` both resolve to the
+# same vermillion hex, so a set-of-hexes membership test conflates
+# stable-negative lines with win→loss flips.
+TRANSITION_FLIP_W2L = "flip_w2l"
+TRANSITION_FLIP_L2W = "flip_l2w"
+TRANSITION_DEFLATED = "deflated"
+TRANSITION_POSITIVE = "positive"
+TRANSITION_NEGATIVE = "negative"
+TRANSITION_NEUTRAL = "neutral"
+FLIP_TRANSITIONS = {TRANSITION_FLIP_W2L, TRANSITION_FLIP_L2W}
+
+_TRANSITION_COLOR: dict[str, str] = _transition_color_map()
+
+
+def sign_transition(delta_orig: float, delta_rep: float, noise_floor: float = 0.005) -> str:
+    """Classify a (delta_orig, delta_rep) pair as a transition tag.
+
+    Returns one of `flip_w2l`, `flip_l2w`, `deflated`, `positive`, `negative`,
+    `neutral`. Noise floor of 0.5pp keeps near-zero cells from being
+    misclassified as flips.
+
+    Use this — not `sign_color` — when you need to test for "is this a flip"
+    (e.g. counting in print summaries). See `FLIP_TRANSITIONS`.
+    """
+    if abs(delta_orig) < noise_floor and abs(delta_rep) < noise_floor:
+        return TRANSITION_NEUTRAL
+    if delta_orig > 0 and delta_rep < 0:
+        return TRANSITION_FLIP_W2L
+    if delta_orig < 0 and delta_rep > 0:
+        return TRANSITION_FLIP_L2W
+    if (delta_orig > 0) == (delta_rep > 0):
+        if abs(delta_rep) < abs(delta_orig):
+            return TRANSITION_DEFLATED
+        return TRANSITION_POSITIVE if delta_rep > 0 else TRANSITION_NEGATIVE
+    return TRANSITION_NEUTRAL
+
+
 def sign_color(delta_orig: float, delta_rep: float, noise_floor: float = 0.005) -> str:
     """Color a line/marker by the orig→rep transition.
 
-    Used by slopegraphs to make sign-flips visually distinct from sign-stable
-    deflations. Noise floor of 0.5pp keeps near-zero cells from being
-    misclassified as flips.
+    Thin wrapper over `sign_transition` for callers that only need the hex
+    string. Note that `COLOR_NEGATIVE` and `COLOR_FLIP_W2L` happen to share
+    the same vermillion hex by design (both express "bad for the condition");
+    visual distinction between them in plots is carried by line weight /
+    marker, not hue. Callers needing to filter for flips should use
+    `sign_transition` + `FLIP_TRANSITIONS`, NOT a color-hex membership test.
     """
-    if abs(delta_orig) < noise_floor and abs(delta_rep) < noise_floor:
-        return COLOR_NEUTRAL
-    if delta_orig > 0 and delta_rep < 0:
-        return COLOR_FLIP_W2L
-    if delta_orig < 0 and delta_rep > 0:
-        return COLOR_FLIP_L2W
-    if (delta_orig > 0) == (delta_rep > 0):
-        # Same sign; deflation if |rep| < |orig|, growth otherwise.
-        return COLOR_DEFLATED if abs(delta_rep) < abs(delta_orig) else (
-            COLOR_POSITIVE if delta_rep > 0 else COLOR_NEGATIVE
-        )
-    return COLOR_NEUTRAL
+    return _TRANSITION_COLOR[sign_transition(delta_orig, delta_rep, noise_floor)]
 
 
 # ─── IO ──────────────────────────────────────────────────────────────────────

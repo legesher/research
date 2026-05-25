@@ -28,17 +28,18 @@ from _viz_common import (
     COLOR_NEUTRAL,
     COLOR_POSITIVE,
     CONDITION_LABEL,
+    FLIP_TRANSITIONS,
     LANG_ORDER,
     WIDTH_DOUBLE,
     load_table,
     save_figure,
     setup_style,
     sign_color,
+    sign_transition,
 )
 
 PANELS = [("sib200", "(a) SIB-200"), ("xnli", "(b) XNLI")]
 X_LEFT, X_RIGHT = 0.0, 1.0
-FLIP_COLORS = {COLOR_FLIP_W2L, COLOR_FLIP_L2W}
 
 
 def aggregate(df: pd.DataFrame) -> pd.DataFrame:
@@ -51,8 +52,14 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     # Convert to percentage points for readability on the y-axis.
     agg["delta_orig"] *= 100.0
     agg["delta_rep"] *= 100.0
+    # `transition` is the canonical authority for what kind of line this is.
+    # `color` is just the display hex; do NOT filter `is_flip` from the hex
+    # because COLOR_NEGATIVE and COLOR_FLIP_W2L share the same vermillion.
+    agg["transition"] = agg.apply(
+        lambda r: sign_transition(r.delta_orig / 100.0, r.delta_rep / 100.0), axis=1
+    )
     agg["color"] = agg.apply(lambda r: sign_color(r.delta_orig / 100.0, r.delta_rep / 100.0), axis=1)
-    agg["is_flip"] = agg["color"].isin(FLIP_COLORS)
+    agg["is_flip"] = agg["transition"].isin(FLIP_TRANSITIONS)
     # Stable language ordering for any later iteration / labeling.
     agg["instr"] = pd.Categorical(agg["instr"], categories=LANG_ORDER, ordered=True)
     return agg.sort_values(["benchmark", "instr", "condition"]).reset_index(drop=True)
