@@ -1,6 +1,6 @@
 # Constant-output bias on Phase-3 SIB-200 — findings
 
-Companion to [`correct-via-constant-rates.tsv`](correct-via-constant-rates.tsv) (built by [`evaluation/scripts/build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py)) — action item F from [`phase-3/post-refined-action-items.md`](phase-3/post-refined-action-items.md). Run 2026-05-25 against HF main.
+Companion to [`correct-via-constant-rates.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/correct-via-constant-rates.tsv) (on HF; built by [`evaluation/scripts/build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py)) — action item F from [`phase-3/post-refined-action-items.md`](phase-3/post-refined-action-items.md). Run 2026-05-25 against HF main.
 
 The TSV holds 416 rows (one per condition × seed × template × data_lang × instr_lang SIB-200 cell, 42 input files). Two parallel metrics:
 

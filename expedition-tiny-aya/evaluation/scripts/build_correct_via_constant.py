@@ -294,12 +294,14 @@ def main() -> int:
     )
     parser.add_argument(
         "--output",
-        default=str(
-            Path(__file__).resolve().parents[2]
-            / "analysis"
-            / "correct-via-constant-rates.tsv"
+        default="/tmp/phase3_correct_via_constant/correct-via-constant-rates.tsv",
+        help=(
+            "TSV output path. Default: /tmp/phase3_correct_via_constant/. The "
+            "TSV is published to HF at "
+            "phase3/analysis/refined-tables/correct-via-constant-rates.tsv "
+            "(HF is canonical); re-run this script and upload via "
+            "upload_analysis_tables.py to refresh."
         ),
-        help="TSV output path.",
     )
     args = parser.parse_args()
 
