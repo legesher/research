@@ -1,6 +1,6 @@
 # Phase-3 figure captions (EMNLP submission)
 
-Source-of-truth captions for the five Phase-3 figures. These lift directly into the paper LaTeX `\caption{}` blocks. Each section pairs a paper-grade caption (2–5 sentences, complete on its own) with an accessibility alt-text line.
+Source-of-truth captions for the five Phase-3 figures. Each section pairs a paper-grade caption (2–5 sentences, complete on its own) with an accessibility alt-text line. Captions are authored in Markdown for in-repo readability; before pasting into the paper LaTeX `\caption{}` blocks, convert the Markdown inline formatting (backticks → `\texttt{}`, `**bold**` → `\textbf{}`, `_italics_` → `\emph{}`) — the prose itself ports verbatim.
 
 All figures share these conventions: two-column ACL/EMNLP width (~3.15 in single, ~6.30 in double), Times serif body via `scienceplots` `science` style, Okabe-Ito colorblind-safe categorical palette, RdBu_r diverging with `TwoSlopeNorm` at p95 (no long-tail saturation), language order on every axis is **resource-tier descending: en → es → zh → ur**, ISO codes only on tick labels (native script reserved for captions and side tables). All figures are emitted as both PDF (paper) and PNG (preview/blog).
 

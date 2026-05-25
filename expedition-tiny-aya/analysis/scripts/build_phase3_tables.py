@@ -180,6 +180,14 @@ def cond_english_grid(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
 # ─── Sign-flip detection (Type 3) ───────────────────────────────────────────
 
 
+# Same noise-floor threshold as `build_vs_baseline.py`'s conclusion_flips
+# detection — below seed-to-seed reproducibility noise (~0.03 std on SIB-200
+# cond-2-X-5k cells). Keeps Type-3 table bolding consistent with the canonical
+# `conclusion_flips.tsv` semantics, so a cell bolded here is one that also
+# appears in the flip catalogue (modulo aggregation grain).
+_FLIP_BUFFER = 0.01
+
+
 def signflip_mask(df: pd.DataFrame, benchmark: str) -> pd.DataFrame:
     sub = df[df.benchmark == benchmark]
     agg = (
@@ -192,7 +200,9 @@ def signflip_mask(df: pd.DataFrame, benchmark: str) -> pd.DataFrame:
         o, r = row["delta_orig"], row["delta_rep"]
         if pd.isna(o) or pd.isna(r):
             return False
-        return (o > 0 > r) or (o < 0 < r)
+        return (o > _FLIP_BUFFER and r < -_FLIP_BUFFER) or (
+            o < -_FLIP_BUFFER and r > _FLIP_BUFFER
+        )
 
     agg["flip"] = agg.apply(flip, axis=1)
     return agg.set_index(["condition", "instr"])["flip"].unstack("instr")
