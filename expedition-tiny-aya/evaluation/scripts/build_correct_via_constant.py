@@ -75,7 +75,6 @@ PHASE3_PREFIX = "phase3/conditions"
 CELL_KEY_RE = re.compile(
     r"^template(?P<template>\d+)_sib200_data=(?P<data>[a-z]+)_instr=(?P<instr>[a-z]+)$"
 )
-RESULTS_FILENAME_RE = re.compile(r"_seed(?P<seed>[^_]+)_results_template(?P<template>\d+)\.json$")
 
 
 def list_phase3_results_files(api: HfApi, conditions_filter: set[str] | None) -> list[str]:
