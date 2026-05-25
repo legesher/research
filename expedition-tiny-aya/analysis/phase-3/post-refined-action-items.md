@@ -1,7 +1,13 @@
 # Refined-extractor action items — Phase-3
 
 **Originally captured 2026-05-23. Status updated 2026-05-24** after PR #54
-landed + HF PR #34 published the full-coverage refined dataset.
+landed + HF discussion PR #34 (on `legesher/language-decoded-experiments`)
+published the full-coverage refined dataset.
+
+> _Throughout this document, **"HF discussion PR #N"** refers to a
+> Hugging Face dataset/model discussion PR on `legesher/...` —
+> distinct from the GitHub PR #N on `legesher/research`, which often
+> exists at the same number and carries unrelated data-pipeline work._
 
 Items surfaced during a deep critical pass on the extractor extension +
 full-suite re-scoring against the refined extractor. The refined extractor
@@ -11,14 +17,14 @@ re-scoring reproducible, auditable, and paper-grade.
 
 **Status (updated 2026-05-25 post-PR-#58 / -#59 merges):**
 
-- ✅ **A.1 done** — HF PR #33 deleted stray seed-123 files from `condition-2-es-5k/seed42/`.
+- ✅ **A.1 done** — HF discussion PR #33 deleted stray seed-123 files from `condition-2-es-5k/seed42/`.
 - ⏳ **A.2 pending** — filename-seed-vs-parent-dir guard in `reparse_results.py`. (Not paper-blocking; the upload pipeline already skips stray files at upload time via `_classify_session_files` in `upload_reparsed_summaries.py`.)
 - ✅ **B done** — obsoleted by PR #54's redirect; extractors are inline in `reparse_results.py`, no AST loader to be confused by a stale `run_eval_single.py`.
 - ✅ **C done** — `upload_reparsed_summaries.py` flipped to skip-existing default in PR #54.
 - ✅ **D done** — `{key}_count` and `{key}_correct` written to refined summaries in PR #54. (Per PR #54's redirect, these land in `build_reparsed_summary` rather than `evaluate.ipynb` cell 3 — the notebook stays frozen for Phase-3 reproducibility.)
 - ✅ **E done** — cond-5 banner content authored on `legesher/language-decoded-experiments` (HF discussion PR #39) + `legesher/language-decoded-lora` (HF discussion PR #9). Banner prose final; the HF discussion PRs are open at the user's discretion to merge — not paper-blocking.
-- ✅ **F done** — `build_correct_via_constant.py` in `evaluation/scripts/` + `correct-via-constant-findings.md` (PR #58); `correct-via-constant-rates.tsv` on HF at `phase3/analysis/refined-tables/` (HF PR #41 + #42 seed-format fix). **Finding REVERSED the original framing**: cond-2-ur-5k is the *least* constant-output condition by raw-output share (mean ≈ 0.30); cond-5-zh-5k and cond-5-es-5k are the most (~0.50+). The paper-prose caveat should name cond-5-{zh,es}, not cond-2-ur-5k.
-- ✅ **G done** — `WHEN_REPORTED_NUMBERS_CHANGE.md` at top-level `analysis/` (PR #58) reconciles original vs refined extractor numbers + authoritative-source table for paper-prep. Companion conclusion-flip catalogue at `analysis/refined-tables/conclusion_flips.tsv` on HF (48 flips, regenerated against HF main post HF PR #34).
+- ✅ **F done** — `build_correct_via_constant.py` in `evaluation/scripts/` + `correct-via-constant-findings.md` (PR #58); `correct-via-constant-rates.tsv` on HF at `phase3/analysis/refined-tables/` (HF discussion PR #41 + #42 seed-format fix). **Finding REVERSED the original framing**: cond-2-ur-5k is the *least* constant-output condition by raw-output share (mean ≈ 0.30); cond-5-zh-5k and cond-5-es-5k are the most (~0.50+). The paper-prose caveat should name cond-5-{zh,es}, not cond-2-ur-5k.
+- ✅ **G done** — `WHEN_REPORTED_NUMBERS_CHANGE.md` at top-level `analysis/` (PR #58) reconciles original vs refined extractor numbers + authoritative-source table for paper-prep. Companion conclusion-flip catalogue at `analysis/refined-tables/conclusion_flips.tsv` on HF (48 flips, regenerated against HF main post HF discussion PR #34).
 - ✅ **H done** — parse-fail floor verification log in `refined-verification-spot-checks.md` (PR #58). X-CSQA / Belebele parse-fails are genuine model outputs (Urdu phrases, empty strings); not tokenizer artifacts.
 - ✅ **I done** — cond-5-ur-5k template2 SIB-200 `instr=ur` spot-check in `refined-verification-spot-checks.md` (PR #58). Recovery is genuine native-Urdu matches (`سائنس`, `سیاست`, `سفر`, `کھیل`); strict extractor was refusing valid Urdu answers. Also surfaced the cond-5 constant-output observation that drove F's reversal.
 

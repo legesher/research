@@ -49,7 +49,7 @@ condition), but threshold-counts and cross-condition counts are not.
 2. **Paper-grade hygiene** — rename `n_cells` → `n_observations` (or apply the same collapse) in `write_benchmark_breakdown` and `write_cross_language_impact`. Numbers don't change but the column label currently lies.
 3. **Validation tables** — `build_comparison.py` and `build_vs_baseline.py` rollups aren't paper-cited per `paper-prep-callouts`, but if any supplement or methodology section quotes them, the win/loss/flip counts need the same treatment. Easy to defer to a follow-up if scope is tight.
 
-For #1, the HF refresh pattern is the same as PR #38: regenerate the affected TSV via `build_framework_comparison.py` against current HF main, upload only that one TSV via `huggingface_hub.create_commit(..., create_pr=True)`. Approximately 5 minutes end-to-end. For #2 the data files don't change (only the column header / docstring), so no HF refresh needed — column rename can land on GitHub alone, with the next regenerate cycle picking it up.
+For #1, the HF refresh pattern is the same as [HF discussion PR #38](https://huggingface.co/datasets/legesher/language-decoded-experiments/discussions/38): regenerate the affected TSV via `build_framework_comparison.py` against current HF main, upload only that one TSV via `huggingface_hub.create_commit(..., create_pr=True)`. Approximately 5 minutes end-to-end. For #2 the data files don't change (only the column header / docstring), so no HF refresh needed — column rename can land on GitHub alone, with the next regenerate cycle picking it up.
 
 ## Cross-references
 
