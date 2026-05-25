@@ -20,7 +20,7 @@ Conventions:
     * Language order:     en → es → zh → ur (resource-tier descending)
     * Benchmark order:    SIB-200, XNLI, X-CSQA, Belebele
     * Conditions:         13 rows starting with italicised Baseline
-    * Numbers:            percentages (1 decimal); Δs with sign and unicode minus
+    * Numbers:            percentages (1 decimal); Δs with sign and LaTeX math-mode minus ``$-$``
 """
 from __future__ import annotations
 
@@ -66,12 +66,14 @@ CONDITIONS: list[tuple[str, str]] = [
     ("condition-5-zh-5k", r"Cond 5 (zh, 5k)"),
 ]
 
-OUT_FILE = Path(
-    "/Users/madiedgar/GitHub/LEGESHER-INC/research-doc-updates"
-    "/expedition-tiny-aya/analysis/phase-3/tables.tex"
-)
+# Repo-relative — this script lives at expedition-tiny-aya/analysis/scripts/,
+# tables.tex lands at expedition-tiny-aya/analysis/phase-3/.
+_SCRIPT_DIR = Path(__file__).resolve().parent
+OUT_FILE = _SCRIPT_DIR.parent / "phase-3" / "tables.tex"
 
-MINUS = "−"
+# LaTeX math-mode minus. pdfLaTeX warns/fails on the Unicode minus
+# U+2212; ``$-$`` renders consistently across pdfLaTeX, XeLaTeX, and LuaLaTeX.
+MINUS = "$-$"
 
 # ─── IO ─────────────────────────────────────────────────────────────────────
 
@@ -104,7 +106,12 @@ def fmt_pct(x: float) -> str:
 def fmt_delta(x: float) -> str:
     if pd.isna(x):
         return "--"
-    pp = x * 100.0
+    # Round before sign-branching so a value that rounds to 0.0 but carries a
+    # negative IEEE-754 sign (e.g. x = -1e-5 → pp = -0.001 → rounds to 0.0)
+    # doesn't emit "$-$0.0". Reassigning to a positive 0.0 strips the sign bit.
+    pp = round(x * 100.0, 1)
+    if pp == 0:
+        pp = 0.0
     if pp >= 0:
         return f"+{pp:.1f}"
     return f"{MINUS}{abs(pp):.1f}"
