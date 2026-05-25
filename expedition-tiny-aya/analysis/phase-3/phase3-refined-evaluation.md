@@ -294,6 +294,10 @@ Cell-mean Δ (cond − baseline) per benchmark, both extractors. **Bold** rows a
 | condition-2-ur-5k      | belebele   | 48  | +0.042     | +0.042     | —                                      |
 | condition-2-ur-5k      | csqa       | 48  | +0.005     | +0.005     | —                                      |
 | condition-2-ur-5k      | xnli       | 48  | +0.031     | +0.028     | —                                      |
+| **condition-2-ur-20k** | **sib200** | 16  | **+0.139** | **−0.030** | **WIN → LOSS** _(largest \|shift\|)_   |
+| condition-2-ur-20k     | belebele   | 16  | +0.020     | +0.020     | —                                      |
+| condition-2-ur-20k     | csqa       | 16  | −0.001     | −0.001     | —                                      |
+| condition-2-ur-20k     | xnli       | 16  | +0.038     | +0.034     | —                                      |
 | **condition-2-zh-20k** | **sib200** | 16  | **+0.017** | **−0.007** | **WIN → LOSS**                         |
 | condition-2-zh-20k     | belebele   | 16  | +0.014     | +0.014     | —                                      |
 | condition-2-zh-20k     | csqa       | 16  | +0.011     | +0.011     | —                                      |
@@ -306,6 +310,10 @@ Cell-mean Δ (cond − baseline) per benchmark, both extractors. **Bold** rows a
 | condition-3-zh-5k      | belebele   | 16  | +0.012     | +0.012     | —                                      |
 | condition-3-zh-5k      | csqa       | 16  | +0.010     | +0.010     | —                                      |
 | condition-3-zh-5k      | xnli       | 16  | +0.055     | +0.030     | —                                      |
+| condition-5-es-5k      | sib200     | 16  | −0.186     | −0.120     | — _(stays negative, partly recovered)_ |
+| condition-5-es-5k      | belebele   | 16  | +0.007     | +0.007     | —                                      |
+| condition-5-es-5k      | csqa       | 16  | −0.015     | −0.015     | —                                      |
+| condition-5-es-5k      | xnli       | 16  | −0.006     | −0.006     | —                                      |
 | condition-5-ur-5k      | sib200     | 16  | −0.066     | −0.013     | — _(stays negative, smaller loss)_     |
 | condition-5-ur-5k      | csqa       | 16  | −0.045     | −0.045     | —                                      |
 | condition-5-ur-5k      | belebele   | 16  | +0.019     | +0.019     | —                                      |
@@ -315,7 +323,7 @@ Cell-mean Δ (cond − baseline) per benchmark, both extractors. **Bold** rows a
 | condition-5-zh-5k      | belebele   | 16  | +0.018     | +0.018     | —                                      |
 | **condition-5-zh-5k**  | **xnli**   | 16  | **−0.016** | **+0.003** | **LOSS → WIN** _(marginal)_            |
 
-**Four (condition, benchmark) cells flip from "fine-tuning helps" to "fine-tuning hurts"** on SIB-200 under the corrected extractor: `cond-2-es-5k`, `cond-2-es-20k`, `cond-2-zh-20k`, `cond-3-zh-5k`. One cell flips the other direction (cond-5-zh-5k XNLI) but the magnitude is small (±0.01) — likely noise, not signal.
+**Five (condition, benchmark) cells flip from "fine-tuning helps" to "fine-tuning hurts"** on SIB-200 under the corrected extractor: `cond-2-es-5k`, `cond-2-es-20k`, `cond-2-ur-20k`, `cond-2-zh-20k`, `cond-3-zh-5k`. The `cond-2-ur-20k` flip is the largest in absolute magnitude (Δorig +0.139 → Δrep −0.030), driven by the same PR-#49 Rule-A correction (§8.4) that drove the cond-2-ur-5k deflation; the `cond-2-zh-20k` flip is the smallest (|Δrep| = 0.007, below the ±0.01 noise floor used by `conclusion_flips.tsv` — kept here in the strict-sign view but a reader citing the per-cell catalogue should know it's borderline). One cell flips the other direction (cond-5-zh-5k XNLI) but the magnitude is small (±0.01) — likely noise, not signal.
 
 ### 8.4 Why does cond-2 SIB-200 "win" under the original extractor and "lose" under the refined one?
 
