@@ -445,7 +445,7 @@ def write_type2_native_delta(df: pd.DataFrame) -> str:
             r"Cond 2-ur-5k \textsc{Belebele} ur shows $+4.1$\,pp here vs "
             r"$+5.9$\,pp in Type-4 (same sign, smaller magnitude). The "
             r"$n_s$ column carries the same seed-count meaning as in "
-            r"Type-1/2/4.}"
+            r"Type-1/2/4."
         ),
         cell_formatter=fmt_delta,
         skip_baseline=True,

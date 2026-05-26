@@ -113,10 +113,20 @@ def compute_row(cond: str, benchmark: str, data: str, instr: str,
         t2, p2, welch_df = float("nan"), float("nan"), float("nan")
 
     # (3) Binomial proportion z-test pooled across seeds × templates
+    #
+    # n_correct is derived directly from cond_obs.sum() × n_per_example
+    # rather than from (mean × total), which would round-trip through an
+    # intermediate division. The two forms are algebraically identical, but
+    # the .sum()-then-multiply path skips a float division (cond_obs.sum() /
+    # len(cond_obs)) and the subsequent re-multiplication, avoiding FP error
+    # that could nudge counts by 1 near threshold p-values. Each entry in
+    # cond_obs is already an accuracy proportion (correct / n_per_example
+    # for one (seed, template) cell), so cond_obs.sum() × n_per_example
+    # gives the integer total successes across all observations.
     n_cond_total = n_per_example * len(cond_obs)
     n_base_total = n_per_example * len(base_obs)
-    n_cond_correct = int(round(cond_mean * n_cond_total))
-    n_base_correct = int(round(base_mean * n_base_total))
+    n_cond_correct = int(round(float(cond_obs.sum()) * n_per_example))
+    n_base_correct = int(round(float(base_obs.sum()) * n_per_example))
     p_pool = (n_cond_correct + n_base_correct) / (n_cond_total + n_base_total)
     se = np.sqrt(p_pool * (1 - p_pool) * (1 / n_cond_total + 1 / n_base_total))
     if se > 0:

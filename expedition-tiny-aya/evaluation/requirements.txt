@@ -2,7 +2,7 @@ torch>=2.0.0
 transformers>=4.40.0
 datasets>=2.14.0
 huggingface_hub>=0.20.0
-pandas>=2.0.0
+pandas>=2.1.0  # 2.1 needed for groupby().apply(include_groups=False) in build_significance.py
 numpy>=1.24.0
 scipy>=1.10.0  # build_significance.py — t-tests + proportion z-test
 sentencepiece>=0.1.99
