@@ -1,12 +1,22 @@
 """Build Phase-3 LaTeX result tables (EMNLP submission).
 
-Generates 14 booktabs-formatted tables into a single
+Generates booktabs-formatted tables into a single
 ``expedition-tiny-aya/analysis/phase-3/tables.tex`` file:
 
 * Type 1 — refined-extractor accuracy, one per benchmark   (4 tables)
 * Type 2 — native- vs English-prompt refined accuracy       (2 tables)
 * Type 3 — orig vs refined side-by-side, one per benchmark (4 tables)
 * Type 4 — Δ-vs-baseline (refined), one per benchmark      (4 tables)
+
+Plus tables tied to specific paper sections in §4 (added later, in
+paper-section order rather than table-type order — see each writer's
+docstring for which section it serves):
+
+* §4.1  Baseline-accuracy headroom              (1 table)
+* §4.3  Per-language matched-language ladder    (3 tables — es / zh / ur)
+* §4.4  Cond-2 vs Cond-5 head-to-head           (1 table)
+* §4.6  Cross-lingual transfer (instr=en cells) (1 table)
+* §4.7  Mirror sign-flip catalogue              (1 table, two sub-tables)
 
 Data source:
     HuggingFace dataset ``legesher/language-decoded-experiments``,
@@ -456,6 +466,416 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
     return "\n".join(lines)
 
 
+# ─── §4.1 Baseline headroom (Type 5) ────────────────────────────────────────
+
+
+def write_table_baseline_headroom(df: pd.DataFrame) -> str:
+    """4 benchmarks × 4 instr-langs + row mean. Baseline accuracy per cell.
+
+    Picks baseline_rep (same across all condition rows for the same
+    (benchmark, data, instr, template), so dedupe before averaging). Aggregates
+    across template + data_lang within each (benchmark, instr) pair.
+
+    Paper section: §4.1 (motivates the low-resource-language framing).
+    """
+    grid = baseline_grid(df, "baseline_rep")  # benchmark × instr
+    lines: list[str] = [
+        r"\begin{table}[t]",
+        r"  \centering",
+        r"  \small",
+        r"  \begin{tabular}{l" + "r" * (len(LANG_ORDER) + 1) + r"}",
+        r"    \toprule",
+        "    Benchmark & " + " & ".join(f"instr={l}" for l in LANG_ORDER) + r" & mean \\",
+        r"    \midrule",
+    ]
+    for b in BENCH_ORDER:
+        cells = [fmt_pct(grid.loc[b, l] if l in grid.columns else float("nan"))
+                 for l in LANG_ORDER]
+        row_mean = grid.loc[b, LANG_ORDER].mean()
+        cells.append(fmt_pct(row_mean))
+        lines.append(f"    \\textsc{{{BENCH_LABEL[b]}}} & " + " & ".join(cells) + r" \\")
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        r"  \caption{Baseline accuracy of Tiny Aya by benchmark and instruction "
+        r"language, under refined extractor. The lowest-resource language "
+        r"(Urdu) has the lowest baseline across every benchmark, providing the "
+        r"largest representational headroom for fine-tuning to fill.}",
+        r"  \label{tab:baseline-headroom}",
+        r"\end{table}",
+    ]
+    return "\n".join(lines)
+
+
+# ─── §4.3 Matched-language ladder (Type 6) ─────────────────────────────────
+
+
+_MATCHED_LADDER_CONDS_BASE: list[tuple[str, str]] = [
+    ("baseline", r"\textit{Baseline}"),
+    ("condition-1-en-5k", "Cond 1 (en, 5k)"),
+    ("condition-1-en-20k", "Cond 1 (en, 20k)"),
+]
+
+
+def _matched_ladder_conditions(lang: str) -> list[tuple[str, str]]:
+    rows = list(_MATCHED_LADDER_CONDS_BASE)
+    rows.append((f"condition-2-{lang}-5k", f"Cond 2 ({lang}, 5k)"))
+    rows.append((f"condition-2-{lang}-20k", f"Cond 2 ({lang}, 20k)"))
+    if lang == "zh":
+        rows.append(("condition-3-zh-5k", "Cond 3 (zh, 5k)"))
+    rows.append((f"condition-5-{lang}-5k", f"Cond 5 ({lang}, 5k)"))
+    return rows
+
+
+def _matched_per_seed_stats(
+    df: pd.DataFrame, condition: str, benchmark: str, lang: str
+) -> tuple[float, float, int]:
+    """For (cond, benchmark, data=lang, instr=lang), compute (mean, std, n_seeds)
+    of per-seed accuracies, where each seed's value is averaged across templates."""
+    sub = df[
+        (df.condition == condition) & (df.benchmark == benchmark)
+        & (df.data == lang) & (df.instr == lang)
+    ]
+    per_seed = sub.groupby("seed")["cond_rep"].mean()
+    n = len(per_seed)
+    if n == 0:
+        return float("nan"), float("nan"), 0
+    return float(per_seed.mean()), float(per_seed.std(ddof=1)) if n > 1 else float("nan"), n
+
+
+def _matched_baseline(df: pd.DataFrame, benchmark: str, lang: str) -> float:
+    sub = df[
+        (df.benchmark == benchmark) & (df.data == lang) & (df.instr == lang)
+    ].drop_duplicates(subset=["template"])
+    return float(sub["baseline_rep"].mean()) if len(sub) else float("nan")
+
+
+def fmt_delta_with_std(delta: float, std: float) -> str:
+    if pd.isna(delta):
+        return "--"
+    pp = round(delta * 100.0, 1)
+    if pp == 0:
+        pp = 0.0
+    base = f"+{pp:.1f}" if pp >= 0 else f"{MINUS}{abs(pp):.1f}"
+    if pd.isna(std):
+        return base
+    return base + r"\,$\pm$\," + f"{std * 100:.1f}"
+
+
+def write_table_matched_ladder(df: pd.DataFrame, lang: str) -> str:
+    """Per-language matched-diagonal ladder: data == instr == lang.
+
+    Baseline row shows absolute accuracy (no Δ); subsequent rows show
+    Δ-vs-baseline ± seed-std where multi-seed.
+
+    Paper section: §4.3 (headline cond-2 matched-language gains).
+    """
+    conds = _matched_ladder_conditions(lang)
+    lang_name = {"es": "Spanish", "zh": "Chinese", "ur": "Urdu"}[lang]
+
+    lines: list[str] = [
+        r"\begin{table}[t]",
+        r"  \centering",
+        r"  \small",
+        r"  \begin{tabular}{l" + "r" * len(BENCH_ORDER) + r"}",
+        r"    \toprule",
+        "    Condition & " + " & ".join(
+            f"\\textsc{{{BENCH_LABEL[b]}}}" for b in BENCH_ORDER) + r" \\",
+        r"    \midrule",
+    ]
+    # Baseline row: absolute %, no std
+    baseline_row_cells = [
+        fmt_pct(_matched_baseline(df, b, lang)) for b in BENCH_ORDER
+    ]
+    lines.append(r"    \textit{Baseline} & " + " & ".join(baseline_row_cells) + r" \\")
+    for cond_id, cond_label in conds[1:]:  # skip baseline (already emitted)
+        cells: list[str] = []
+        base = {b: _matched_baseline(df, b, lang) for b in BENCH_ORDER}
+        for b in BENCH_ORDER:
+            mean_acc, std_acc, n_seeds = _matched_per_seed_stats(df, cond_id, b, lang)
+            if n_seeds == 0:
+                cells.append("--")
+                continue
+            delta = mean_acc - base[b]
+            cells.append(fmt_delta_with_std(delta, std_acc))
+        lines.append(f"    {cond_label} & " + " & ".join(cells) + r" \\")
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        r"  \caption{Matched-language ladder for " + lang_name + r": each "
+        r"non-baseline row is the condition's mean $\Delta$ accuracy vs "
+        r"baseline on matched-diagonal cells (data $=$ instr $=$ "
+        + lang + r"), under refined extractor, with $\pm$std across seeds "
+        r"where multi-seed data is available. Baseline row shows absolute "
+        r"accuracy (no $\Delta$).}",
+        r"  \label{tab:matched-ladder-" + lang + r"}",
+        r"\end{table}",
+    ]
+    return "\n".join(lines)
+
+
+# ─── §4.4 Cond-2 vs Cond-5 head-to-head (Type 7) ───────────────────────────
+
+
+def write_table_cond2_vs_cond5(df: pd.DataFrame) -> str:
+    """12 rows (3 langs × 4 benchmarks), comparing cond-2-{L}-5k vs cond-5-{L}-5k
+    at matched-instruction grain. instr == target_lang; mean across seed,
+    template, data_lang.
+
+    Paper section: §4.4 (cond-5 head-to-head presentation).
+    """
+    rows_data: list[tuple[str, str, str, float, float, float]] = []
+    for lang in ("es", "zh", "ur"):
+        for b in BENCH_ORDER:
+            row: dict[str, float] = {}
+            for which, cond in (("c2", f"condition-2-{lang}-5k"),
+                                ("c5", f"condition-5-{lang}-5k")):
+                sub = df[(df.condition == cond) & (df.benchmark == b) & (df.instr == lang)]
+                row[which] = float(sub["delta_rep"].mean()) if len(sub) else float("nan")
+            gap = (row["c2"] - row["c5"]) if not (pd.isna(row["c2"]) or pd.isna(row["c5"])) else float("nan")
+            rows_data.append((lang, b, "", row["c2"], row["c5"], gap))
+
+    lines: list[str] = [
+        r"\begin{table}[t]",
+        r"  \centering",
+        r"  \small",
+        r"  \begin{tabular}{llrrr}",
+        r"    \toprule",
+        r"    Lang & Benchmark & Cond 2 (5k) $\Delta$ & Cond 5 (5k) $\Delta$ & Gap (C2$-$C5) \\",
+        r"    \midrule",
+    ]
+    prev_lang = None
+    for lang, b, _, c2, c5, gap in rows_data:
+        lang_cell = lang if lang != prev_lang else ""
+        prev_lang = lang
+        c2_s = fmt_delta(c2)
+        c5_s = fmt_delta(c5)
+        gap_s = fmt_delta(gap)
+        if not pd.isna(gap) and abs(gap) > 0.05:
+            gap_s = bold(gap_s)
+        lines.append(f"    {lang_cell} & \\textsc{{{BENCH_LABEL[b]}}} & {c2_s} & {c5_s} & {gap_s} \\\\")
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        r"  \caption{Translation-aggressiveness controlled comparison: "
+        r"\textbf{Cond 2} (keyword-only translation) vs \textbf{Cond 5} "
+        r"(combined keyword + LLM natural-language translation) at "
+        r"matched-instruction grain (instr $=$ target language). Both "
+        r"conditions train on the same 5{,}000 source files from "
+        r"\texttt{bigcode/the-stack-v2-dedup}; only the translation pipeline "
+        r"differs. Values are mean $\Delta$ accuracy vs baseline under "
+        r"refined extractor, in percentage points (mean across seed, "
+        r"template, data\_lang). Bold gap marks $|$gap$| > 5$\,pp.}",
+        r"  \label{tab:cond2-vs-cond5}",
+        r"\end{table}",
+    ]
+    return "\n".join(lines)
+
+
+# ─── §4.6 Cross-lingual transfer (Type 8) ──────────────────────────────────
+
+
+_CROSS_LINGUAL_CONDS: list[tuple[str, str]] = [
+    ("condition-1-en-5k", "Cond 1 (en, 5k)"),
+    ("condition-2-es-5k", "Cond 2 (es, 5k)"),
+    ("condition-2-zh-5k", "Cond 2 (zh, 5k)"),
+    ("condition-2-ur-5k", "Cond 2 (ur, 5k)"),
+    ("condition-5-es-5k", "Cond 5 (es, 5k)"),
+    ("condition-5-zh-5k", "Cond 5 (zh, 5k)"),
+    ("condition-5-ur-5k", "Cond 5 (ur, 5k)"),
+]
+
+
+def write_table_cross_lingual_transfer(df: pd.DataFrame) -> str:
+    """Effect of target-language fine-tuning on English evaluation cells.
+
+    Filter: instr == en. Aggregation: mean delta_rep across seed, template,
+    data_lang, grouped by (condition, benchmark).
+
+    Paper section: §4.6 (cross-lingual transfer, secondary finding).
+    """
+    sub = df[df.instr == "en"]
+
+    def cell(cond: str, benchmark: str) -> float:
+        s = sub[(sub.condition == cond) & (sub.benchmark == benchmark)]
+        return float(s["delta_rep"].mean()) if len(s) else float("nan")
+
+    lines: list[str] = [
+        r"\begin{table}[t]",
+        r"  \centering",
+        r"  \small",
+        r"  \begin{tabular}{l" + "r" * len(BENCH_ORDER) + r"}",
+        r"    \toprule",
+        "    Condition & " + " & ".join(
+            f"\\textsc{{{BENCH_LABEL[b]}}} $\\Delta$" for b in BENCH_ORDER) + r" \\",
+        r"    \midrule",
+    ]
+    for cond_id, cond_label in _CROSS_LINGUAL_CONDS:
+        cells: list[str] = []
+        for b in BENCH_ORDER:
+            v = cell(cond_id, b)
+            s = fmt_delta(v)
+            if not pd.isna(v):
+                if v > 0.02:
+                    s = bold(s)
+                elif v < -0.02:
+                    s = r"\textit{" + s + r"}"
+            cells.append(s)
+        lines.append(f"    {cond_label} & " + " & ".join(cells) + r" \\")
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        r"  \caption{Cross-lingual transfer: effect of fine-tuning "
+        r"conditions on English evaluation (instr $=$ en cells), under "
+        r"refined extractor. Cond-2-ur-5k improves English Belebele and "
+        r"English XNLI more than Cond-1-en-5k does --- a surprising "
+        r"secondary finding suggesting that low-resource code fine-tuning "
+        r"provides representational signal beyond the matched language. "
+        r"Values are mean $\Delta$ accuracy vs baseline in percentage "
+        r"points; bold marks $\Delta > +2$\,pp, italic marks $\Delta < -2$\,pp.}",
+        r"  \label{tab:cross-lingual-transfer}",
+        r"\end{table}",
+    ]
+    return "\n".join(lines)
+
+
+# ─── §4.7 Mirror sign-flip catalogue (Type 9) ──────────────────────────────
+
+
+def _flip_rows_sib200(df: pd.DataFrame) -> pd.DataFrame:
+    """SIB-200 win→loss flips at (condition × benchmark) aggregate grain.
+    Aggregate mean delta_orig and delta_rep over all sub-cells per
+    (cond, benchmark=sib200); a flip needs sign change AND |delta_rep|>0.005.
+    n_cells = count of finest sub-cells (seed × template × data × instr)
+    contributing to that condition's SIB-200 aggregate."""
+    sub = df[(df.condition != "baseline") & (df.benchmark == "sib200")]
+    agg = (sub.groupby("condition")
+           .agg(delta_orig=("delta_orig", "mean"),
+                delta_rep=("delta_rep", "mean"),
+                n_cells=("delta_rep", "count"))
+           .reset_index())
+    keep = []
+    for _, r in agg.iterrows():
+        o, rep = r["delta_orig"], r["delta_rep"]
+        if pd.isna(o) or pd.isna(rep):
+            continue
+        if abs(rep) <= 0.005:
+            continue
+        if (o > 0 and rep < 0) and o > 0:
+            keep.append(r)
+    return pd.DataFrame(keep).sort_values("delta_rep")
+
+
+def _flip_rows_xnli(df: pd.DataFrame) -> pd.DataFrame:
+    """XNLI loss→win flips at finest (cond × instr × template) grain after
+    averaging across (seed × data). Cell whose mean delta_orig<0 but mean
+    delta_rep>0 with |delta_rep|>0.005."""
+    sub = df[(df.condition != "baseline") & (df.benchmark == "xnli")]
+    agg = (sub.groupby(["condition", "instr", "template"])
+           .agg(delta_orig=("delta_orig", "mean"),
+                delta_rep=("delta_rep", "mean"),
+                n_cells=("delta_rep", "count"))
+           .reset_index())
+    keep = []
+    for _, r in agg.iterrows():
+        o, rep = r["delta_orig"], r["delta_rep"]
+        if pd.isna(o) or pd.isna(rep):
+            continue
+        if abs(rep) <= 0.005:
+            continue
+        if o < 0 and rep > 0:
+            keep.append(r)
+    return pd.DataFrame(keep).sort_values("delta_rep", ascending=False)
+
+
+def write_table_mirror_flips(df: pd.DataFrame) -> str:
+    """Two stacked sub-tables documenting the symmetric extractor corrections.
+
+    A: SIB-200 win→loss flips (Rule-A over-credit removed)
+    B: XNLI loss→win flips (native-paraphrase under-credit recovered)
+
+    Paper section: §4.7 (methodology defense).
+    """
+    a = _flip_rows_sib200(df)
+    b = _flip_rows_xnli(df)
+
+    cond_pretty = {cid: lbl.replace(r"\textit{", "").replace("}", "")
+                   for cid, lbl in CONDITIONS}
+
+    def fmt_4(x: float) -> str:
+        if pd.isna(x):
+            return "--"
+        # Force 4 decimals; for negatives use math-mode minus
+        if x < 0:
+            return f"{MINUS}{abs(x):.4f}"
+        return f"+{x:.4f}"
+
+    lines: list[str] = [
+        r"\begin{table}[t]",
+        r"  \centering",
+        r"  \small",
+        # Sub-table A
+        r"  \begin{tabular}{lrrrr}",
+        r"    \toprule",
+        r"    \multicolumn{5}{c}{\textbf{A. SIB-200 win$\rightarrow$loss flips "
+        r"(Rule-A over-credit corrections)}} \\",
+        r"    \midrule",
+        r"    Condition & n cells & $\Delta_{\text{orig}}$ & $\Delta_{\text{refined}}$ & $|\text{shift}|$ \\",
+        r"    \midrule",
+    ]
+    for _, r in a.iterrows():
+        shift = abs(r["delta_orig"] - r["delta_rep"])
+        cond = cond_pretty.get(r["condition"], r["condition"])
+        lines.append(
+            f"    {cond} & {int(r['n_cells'])} & "
+            f"{fmt_4(r['delta_orig'])} & {fmt_4(r['delta_rep'])} & "
+            f"{shift:.4f} \\\\"
+        )
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        r"",
+        r"  \vspace{0.6em}",
+        r"",
+        # Sub-table B
+        r"  \begin{tabular}{llrrrrr}",
+        r"    \toprule",
+        r"    \multicolumn{7}{c}{\textbf{B. XNLI loss$\rightarrow$win flips "
+        r"(native-paraphrase under-credit corrections)}} \\",
+        r"    \midrule",
+        r"    Condition & instr & tmpl & n cells & "
+        r"$\Delta_{\text{orig}}$ & $\Delta_{\text{refined}}$ & $|\text{shift}|$ \\",
+        r"    \midrule",
+    ]
+    for _, r in b.iterrows():
+        shift = abs(r["delta_orig"] - r["delta_rep"])
+        cond = cond_pretty.get(r["condition"], r["condition"])
+        lines.append(
+            f"    {cond} & {r['instr']} & {int(r['template'])} & "
+            f"{int(r['n_cells'])} & "
+            f"{fmt_4(r['delta_orig'])} & {fmt_4(r['delta_rep'])} & "
+            f"{shift:.4f} \\\\"
+        )
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        r"  \caption{Mirror-image extractor corrections. \textbf{Top}: "
+        r"SIB-200 cells where Rule-A over-credit was removed (sign flips "
+        r"win $\rightarrow$ loss). \textbf{Bottom}: XNLI cells where "
+        r"native-paraphrase under-credit was recovered (sign flips loss "
+        r"$\rightarrow$ win). The symmetric pattern --- corrections in "
+        r"each direction --- demonstrates that the refinement is principled "
+        r"correction of known scoring bugs, not hypothesis-favoring tuning. "
+        r"A is aggregated at (condition $\times$ benchmark) grain; B at "
+        r"(condition $\times$ instr $\times$ template) grain because the "
+        r"XNLI flips concentrate in a specific (instr=zh, template=2) "
+        r"slice.}",
+        r"  \label{tab:mirror-flips}",
+        r"\end{table}",
+    ]
+    return "\n".join(lines)
+
+
 # ─── Driver ─────────────────────────────────────────────────────────────────
 
 
@@ -513,6 +933,43 @@ def main() -> None:
         print(f"[type4:{b}] rows_emitted={block.count(chr(92) + chr(92))}")
         out.append(block)
         out.append("")
+
+    # ─── Tables for paper §4 (sections referenced in each writer's docstring) ─
+    out.append("% ─── §4.1 Baseline-accuracy headroom ───")
+    out.append("")
+    block = write_table_baseline_headroom(df)
+    print(f"[s4.1:baseline-headroom] rows_emitted={block.count(chr(92) + chr(92))}")
+    out.append(block)
+    out.append("")
+
+    out.append("% ─── §4.3 Per-language matched-language ladder ───")
+    out.append("")
+    for lang in ("es", "zh", "ur"):
+        block = write_table_matched_ladder(df, lang)
+        print(f"[s4.3:matched-ladder-{lang}] rows_emitted={block.count(chr(92) + chr(92))}")
+        out.append(block)
+        out.append("")
+
+    out.append("% ─── §4.4 Cond-2 vs Cond-5 head-to-head ───")
+    out.append("")
+    block = write_table_cond2_vs_cond5(df)
+    print(f"[s4.4:cond2-vs-cond5] rows_emitted={block.count(chr(92) + chr(92))}")
+    out.append(block)
+    out.append("")
+
+    out.append("% ─── §4.6 Cross-lingual transfer ───")
+    out.append("")
+    block = write_table_cross_lingual_transfer(df)
+    print(f"[s4.6:cross-lingual-transfer] rows_emitted={block.count(chr(92) + chr(92))}")
+    out.append(block)
+    out.append("")
+
+    out.append("% ─── §4.7 Mirror sign-flip catalogue ───")
+    out.append("")
+    block = write_table_mirror_flips(df)
+    print(f"[s4.7:mirror-flips] rows_emitted={block.count(chr(92) + chr(92))}")
+    out.append(block)
+    out.append("")
 
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text("\n".join(out), encoding="utf-8")
