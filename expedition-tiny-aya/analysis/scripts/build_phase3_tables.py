@@ -35,7 +35,6 @@ HF_REPO_TYPE = "dataset"
 HF_TABLES_PREFIX = "phase3/analysis/refined-tables"
 
 LANG_ORDER = ["en", "es", "zh", "ur"]
-NON_EN_LANGS = ["es", "zh", "ur"]
 BENCH_ORDER = ["sib200", "xnli", "csqa", "belebele"]
 BENCH_LABEL = {
     "sib200": "SIB-200",
@@ -264,12 +263,14 @@ def _type2_table(
     label: str,
     caption: str,
 ) -> str:
-    cols = [(b, lang) for b in BENCH_ORDER for lang in NON_EN_LANGS]
+    langs = LANG_ORDER
+    n_langs = len(langs)
+    cols = [(b, lang) for b in BENCH_ORDER for lang in langs]
 
     lines: list[str] = [
         r"\begin{table*}[t]",
         r"  \centering",
-        r"  \footnotesize",
+        r"  \scriptsize",
         r"  \begin{tabular}{l" + "r" * len(cols) + r"}",
         r"    \toprule",
     ]
@@ -278,10 +279,13 @@ def _type2_table(
     col_idx = 2
     for b in BENCH_ORDER:
         bench_header_parts.append(
-            r"\multicolumn{3}{c}{\textsc{" + BENCH_LABEL[b] + r"}}"
+            r"\multicolumn{" + str(n_langs) + r"}{c}{\textsc{"
+            + BENCH_LABEL[b] + r"}}"
         )
-        cmidrules.append(r"\cmidrule(lr){" + f"{col_idx}-{col_idx + 2}" + r"}")
-        col_idx += 3
+        cmidrules.append(
+            r"\cmidrule(lr){" + f"{col_idx}-{col_idx + n_langs - 1}" + r"}"
+        )
+        col_idx += n_langs
     lines.append(r"    Condition & " + " & ".join(bench_header_parts) + r" \\")
     lines.append("    " + " ".join(cmidrules))
     lines.append(r"     & " + " & ".join(lang for _, lang in cols) + r" \\")
