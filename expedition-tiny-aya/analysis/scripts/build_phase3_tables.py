@@ -36,6 +36,20 @@ HF_TABLES_PREFIX = "phase3/analysis/refined-tables"
 
 LANG_ORDER = ["en", "es", "zh", "ur"]
 BENCH_ORDER = ["sib200", "xnli", "csqa", "belebele"]
+
+# Per-benchmark bolding thresholds for Type 4 (Δ-vs-baseline) tables.
+# Calibrated from 2× the worst-case seed-σ observed across the four
+# multi-seed (5K) conditions on each benchmark; below these magnitudes a Δ
+# is comparable to seed-to-seed reproducibility noise and shouldn't be
+# typographically highlighted. A flat threshold would mislead readers on
+# SIB-200 (where small n=204 and high seed σ inflate noise) and miss real
+# small effects on X-CSQA / Belebele (large n, tight seed σ).
+TYPE4_BOLD_THRESHOLD_FRAC = {
+    "sib200":   0.08,  # 8pp — n=204, max seed σ ≈ 4.3pp across 5K conds
+    "xnli":     0.04,  # 4pp — n=2505, max seed σ ≈ 2.0pp
+    "csqa":     0.03,  # 3pp — n=1000, max seed σ ≈ 1.6pp
+    "belebele": 0.04,  # 4pp — n=900, max seed σ ≈ 1.9pp
+}
 BENCH_LABEL = {
     "sib200": "SIB-200",
     "xnli": "XNLI",
@@ -414,6 +428,8 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
         "    Condition & " + " & ".join(LANG_ORDER) + r" \\",
         r"    \midrule",
     ]
+    threshold = TYPE4_BOLD_THRESHOLD_FRAC[benchmark]
+    threshold_pp = int(round(threshold * 100))
     for cond, label in CONDITIONS:
         if cond == "baseline":
             continue
@@ -421,7 +437,7 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
         for lang in LANG_ORDER:
             val = lookup(delta, cond, lang)
             s = fmt_delta(val)
-            if not pd.isna(val) and abs(val) > 0.05:
+            if not pd.isna(val) and abs(val) > threshold:
                 s = bold(s)
             cells.append(s)
         lines.append(f"    {label} & " + " & ".join(cells) + r" \\")
@@ -431,7 +447,9 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
         r"  \caption{Phase-3 $\Delta$-vs-baseline under refined scoring on "
         r"\textsc{" + BENCH_LABEL[benchmark] + r"}, by condition $\times$ "
         r"instruction language; values in percentage points; bold marks "
-        r"$|\Delta| > 5$\,pp.}",
+        r"$|\Delta| > " + str(threshold_pp) + r"$\,pp (per-benchmark threshold, "
+        r"calibrated from $2 \times$ the worst-case seed-$\sigma$ observed across "
+        r"the four multi-seed 5K conditions on this benchmark).}",
         r"  \label{tab:t4-" + BENCH_SHORT[benchmark] + r"-delta}",
         r"\end{table}",
     ]
