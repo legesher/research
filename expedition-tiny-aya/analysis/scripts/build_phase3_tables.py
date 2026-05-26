@@ -5,8 +5,13 @@ Generates booktabs-formatted tables into a single
 
 * Type 1 — refined-extractor accuracy, one per benchmark   (4 tables)
 * Type 2 — native- vs English-prompt refined accuracy       (2 tables)
+              + matched-diagonal Δ variant (P2)              (1 table)
 * Type 3 — orig vs refined side-by-side, one per benchmark (4 tables)
 * Type 4 — Δ-vs-baseline (refined), one per benchmark      (4 tables)
+
+Type-1/2/4 tables carry an ``$n_s$'' column showing the seed count for
+each condition (P1), so a reader can distinguish 3-seed multi-trial
+estimates from 1-seed point estimates at a glance.
 
 Plus tables tied to specific paper sections in §4 (added later, in
 paper-section order rather than table-type order — see each writer's
@@ -88,6 +93,26 @@ CONDITIONS: list[tuple[str, str]] = [
     ("condition-5-ur-5k", r"Cond 5 (ur, 5k)"),
     ("condition-5-zh-5k", r"Cond 5 (zh, 5k)"),
 ]
+
+
+# ─── P1 helper: n_seeds per condition ───────────────────────────────────────
+
+
+def n_seeds_for(df: pd.DataFrame, cond: str) -> int:
+    """Return the seed count for a condition. Baseline returns 1 (one
+    un-fine-tuned reference run with seed=none); fine-tuned conditions
+    return 3 or 1 depending on which seeds were actually run."""
+    if cond == "baseline":
+        return 1
+    return int(df[df.condition == cond]["seed"].nunique())
+
+
+def fmt_n_seeds(n: int, cond: str) -> str:
+    """LaTeX cell for n_seeds. Baseline shows '—' since seed=none is not a
+    seed in the fine-tuning sense; everything else shows the integer."""
+    if cond == "baseline":
+        return "--"
+    return str(n)
 
 # Repo-relative — this script lives at expedition-tiny-aya/analysis/scripts/,
 # tables.tex lands at expedition-tiny-aya/analysis/phase-3/.
@@ -253,26 +278,31 @@ def write_type1_table(df: pd.DataFrame, benchmark: str) -> str:
         r"\begin{table}[t]",
         r"  \centering",
         r"  \small",
-        r"  \begin{tabular}{l" + "r" * len(LANG_ORDER) + r"}",
+        # Condition + n_seeds + 4 lang cols
+        r"  \begin{tabular}{lr" + "r" * len(LANG_ORDER) + r"}",
         r"    \toprule",
-        "    Condition & " + " & ".join(LANG_ORDER) + r" \\",
+        r"    Condition & $n_s$ & " + " & ".join(LANG_ORDER) + r" \\",
         r"    \midrule",
     ]
     for cond, label in CONDITIONS:
+        ns = fmt_n_seeds(n_seeds_for(df, cond), cond)
         cells: list[str] = []
         for lang in LANG_ORDER:
             if cond == "baseline":
                 cells.append(fmt_pct(base.loc[benchmark, lang]))
             else:
                 cells.append(fmt_pct(lookup(grid, cond, lang)))
-        lines.append(f"    {label} & " + " & ".join(cells) + r" \\")
+        lines.append(f"    {label} & {ns} & " + " & ".join(cells) + r" \\")
     lines += [
         r"    \bottomrule",
         r"  \end{tabular}",
         r"  \caption{Phase-3 refined-extractor accuracy on \textsc{"
         + BENCH_LABEL[benchmark]
         + r"}, by condition $\times$ instruction language; cell values are "
-        r"means across seed, template, and data language.}",
+        r"means across seed, template, and data language. The $n_s$ column "
+        r"reports the number of seeds the condition was trained with; cells "
+        r"in $n_s\!=\!1$ rows are point estimates without seed-spread "
+        r"information.}",
         r"  \label{tab:t1-" + BENCH_SHORT[benchmark] + r"}",
         r"\end{table}",
     ]
@@ -286,7 +316,16 @@ def _type2_table(
     *,
     label: str,
     caption: str,
+    cell_formatter=fmt_pct,
+    skip_baseline: bool = False,
 ) -> str:
+    """Render a Type-2 booktabs table (rows = conditions, cols = 4 bench × 4 lang).
+
+    cell_formatter: how to format each numeric cell (default fmt_pct for
+                    absolute accuracy; pass fmt_delta for Δ variants).
+    skip_baseline:  set True for Δ variants where the baseline row would be
+                    all zeros.
+    """
     langs = LANG_ORDER
     n_langs = len(langs)
     cols = [(b, lang) for b in BENCH_ORDER for lang in langs]
@@ -295,12 +334,14 @@ def _type2_table(
         r"\begin{table*}[t]",
         r"  \centering",
         r"  \scriptsize",
-        r"  \begin{tabular}{l" + "r" * len(cols) + r"}",
+        # Condition + n_seeds + 16 data cols
+        r"  \begin{tabular}{lr" + "r" * len(cols) + r"}",
         r"    \toprule",
     ]
     bench_header_parts: list[str] = []
     cmidrules: list[str] = []
-    col_idx = 2
+    # Column 1 = Condition, column 2 = n_seeds. Benchmark groups start at column 3.
+    col_idx = 3
     for b in BENCH_ORDER:
         bench_header_parts.append(
             r"\multicolumn{" + str(n_langs) + r"}{c}{\textsc{"
@@ -310,19 +351,22 @@ def _type2_table(
             r"\cmidrule(lr){" + f"{col_idx}-{col_idx + n_langs - 1}" + r"}"
         )
         col_idx += n_langs
-    lines.append(r"    Condition & " + " & ".join(bench_header_parts) + r" \\")
+    lines.append(r"    Condition & $n_s$ & " + " & ".join(bench_header_parts) + r" \\")
     lines.append("    " + " ".join(cmidrules))
-    lines.append(r"     & " + " & ".join(lang for _, lang in cols) + r" \\")
+    lines.append(r"     & & " + " & ".join(lang for _, lang in cols) + r" \\")
     lines.append(r"    \midrule")
 
     for cond, clabel in CONDITIONS:
+        if skip_baseline and cond == "baseline":
+            continue
+        ns = fmt_n_seeds(n_seeds_for(df, cond), cond)
         cells: list[str] = []
         for (b, lang) in cols:
             if cond == "baseline":
-                cells.append(fmt_pct(base.get((b, lang), float("nan"))))
+                cells.append(cell_formatter(base.get((b, lang), float("nan"))))
             else:
-                cells.append(fmt_pct(lookup(grid, cond, (b, lang))))
-        lines.append(f"    {clabel} & " + " & ".join(cells) + r" \\")
+                cells.append(cell_formatter(lookup(grid, cond, (b, lang))))
+        lines.append(f"    {clabel} & {ns} & " + " & ".join(cells) + r" \\")
 
     lines += [
         r"    \bottomrule",
@@ -359,6 +403,52 @@ def write_type2_english(df: pd.DataFrame) -> str:
             r"(instr $=$ en, data $=$ target language); Phase-3 equivalent of "
             r"the Phase-2 ``English Prompt Results'' table."
         ),
+    )
+
+
+def write_type2_native_delta(df: pd.DataFrame) -> str:
+    """Matched-diagonal Δ-vs-baseline variant of Type-2 native (P2).
+
+    Same shape as Type-2 native (cond rows × bench × lang cols) but cell
+    values are Δ-vs-baseline computed at the matched-diagonal grain
+    (data $=$ instr $=$ language for that column), with NO cross-data
+    averaging. This is the methodologically tightest "did this condition
+    improve on its target task" view.
+
+    Companion to Type-4 (Δ-vs-baseline, but pooled across data_lang under
+    instr_lang). Reading the two side-by-side reveals when an instr-only
+    aggregate hides a smaller (or opposite-signed) matched-diagonal
+    effect. Worked example: Cond 2-ur-5k Belebele instr=ur in Type-4
+    shows +5.9pp (bolded); at the matched diagonal (data=ur, instr=ur)
+    this is the same Cond 2-ur-5k Belebele ur cell in this table, where
+    Δ = +4.1pp — both positive, but the matched-diagonal magnitude is
+    smaller. For Cond 2-ur-5k SIB-200 the gap is starker: Type-4
+    instr=ur is +12.0pp; matched-diagonal is −9.0pp.
+    """
+    return _type2_table(
+        df,
+        cond_native_grid(df, "delta_rep"),
+        baseline_native_row(df, "delta_rep"),  # unused (skip_baseline)
+        label="tab:t2-native-delta",
+        caption=(
+            r"Matched-diagonal $\Delta$-vs-baseline (refined extractor): "
+            r"each cell is the condition's $\Delta$ accuracy on data $=$ "
+            r"instr $=$ the column language, in percentage points. Unlike "
+            r"Type-4 (which averages across data languages under each "
+            r"instr language), this view fixes both the data language "
+            r"and the instr language to the column header, giving the "
+            r"tightest ``matched-language gain'' estimate. Reading this "
+            r"table alongside Type-4 surfaces cases where an "
+            r"instr-aggregate $\Delta$ masks a different matched-diagonal "
+            r"effect: e.g. Cond 2-ur-5k \textsc{SIB-200} ur shows "
+            r"$-9.0$\,pp here vs $+12.0$\,pp in Type-4 (sign flip); "
+            r"Cond 2-ur-5k \textsc{Belebele} ur shows $+4.1$\,pp here vs "
+            r"$+5.9$\,pp in Type-4 (same sign, smaller magnitude). The "
+            r"$n_s$ column carries the same seed-count meaning as in "
+            r"Type-1/2/4.}"
+        ),
+        cell_formatter=fmt_delta,
+        skip_baseline=True,
     )
 
 
@@ -433,9 +523,10 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
         r"\begin{table}[t]",
         r"  \centering",
         r"  \small",
-        r"  \begin{tabular}{l" + "r" * len(LANG_ORDER) + r"}",
+        # Condition + n_seeds + 4 lang cols
+        r"  \begin{tabular}{lr" + "r" * len(LANG_ORDER) + r"}",
         r"    \toprule",
-        "    Condition & " + " & ".join(LANG_ORDER) + r" \\",
+        r"    Condition & $n_s$ & " + " & ".join(LANG_ORDER) + r" \\",
         r"    \midrule",
     ]
     threshold = TYPE4_BOLD_THRESHOLD_FRAC[benchmark]
@@ -443,6 +534,7 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
     for cond, label in CONDITIONS:
         if cond == "baseline":
             continue
+        ns = fmt_n_seeds(n_seeds_for(df, cond), cond)
         cells: list[str] = []
         for lang in LANG_ORDER:
             val = lookup(delta, cond, lang)
@@ -450,7 +542,7 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
             if not pd.isna(val) and abs(val) > threshold:
                 s = bold(s)
             cells.append(s)
-        lines.append(f"    {label} & " + " & ".join(cells) + r" \\")
+        lines.append(f"    {label} & {ns} & " + " & ".join(cells) + r" \\")
     lines += [
         r"    \bottomrule",
         r"  \end{tabular}",
@@ -459,7 +551,9 @@ def write_type4_table(df: pd.DataFrame, benchmark: str) -> str:
         r"instruction language; values in percentage points; bold marks "
         r"$|\Delta| > " + str(threshold_pp) + r"$\,pp (per-benchmark threshold, "
         r"calibrated from $2 \times$ the worst-case seed-$\sigma$ observed across "
-        r"the four multi-seed 5K conditions on this benchmark).}",
+        r"the four multi-seed 5K conditions on this benchmark). Cells in "
+        r"$n_s\!=\!1$ rows are point estimates without seed-spread; treat "
+        r"borderline-bolded values as suggestive rather than robust.}",
         r"  \label{tab:t4-" + BENCH_SHORT[benchmark] + r"-delta}",
         r"\end{table}",
     ]
@@ -897,6 +991,27 @@ def main() -> None:
         "phase3/analysis/refined-tables/vs_baseline_cells.tsv"
     )
     out.append("% Requires: \\usepackage{booktabs}")
+    out.append("%")
+    out.append("% ─── Accounting (P3 methodology note) ───────────────────────────────")
+    out.append("% 21 sessions total = 20 fine-tuned (condition × seed) + 1 baseline")
+    out.append("%   - 4 five-K conditions × 3 seeds = 12 multi-seed sessions")
+    out.append("%   - 4 twenty-K conditions × 1 seed = 4  single-seed sessions")
+    out.append("%   - 1 cond-3-zh-5k × 1 seed         = 1  single-seed session")
+    out.append("%   - 3 cond-5 conditions × 1 seed    = 3  single-seed sessions")
+    out.append("%   - 1 baseline (seed=none)          = 1  un-fine-tuned reference")
+    out.append("%")
+    out.append("% 1,664 observations = 1,536 fine-tuned cells + 128 baseline cells")
+    out.append("%   - 1,536 from vs_baseline_cells.tsv (one row per fine-tuned")
+    out.append("%     (cond × seed × template × benchmark × data × instr))")
+    out.append("%   - 128 baseline cells = 64 (benchmark × data × instr) cells")
+    out.append("%     × 2 templates (baseline runs without seed variation)")
+    out.append("%")
+    out.append("% Aggregation policy: when reporting means or stds across the seed")
+    out.append("% dimension, the pipeline collapses templates within each seed")
+    out.append("% FIRST, then averages across seeds. Per-seed std uses ddof=1.")
+    out.append("% This avoids inflating sample size by treating (seed, template)")
+    out.append("% as independent observations.")
+    out.append("% ────────────────────────────────────────────────────────────────────")
     out.append("")
 
     out.append("% ─── Type 1: Refined-extractor accuracy, one per benchmark ───")
@@ -915,6 +1030,11 @@ def main() -> None:
     out.append("")
     block = write_type2_english(df)
     print(f"[type2:english] rows_emitted={block.count(chr(92) + chr(92))}")
+    out.append(block)
+    out.append("")
+    # P2: matched-diagonal Δ variant; sits next to Type-2 native it supplements
+    block = write_type2_native_delta(df)
+    print(f"[type2:native-delta] rows_emitted={block.count(chr(92) + chr(92))}")
     out.append(block)
     out.append("")
 
