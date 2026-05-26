@@ -176,12 +176,18 @@ def main() -> None:
     out = pd.DataFrame(rows)
     n_comparisons = len(out)
     bonferroni_threshold = 0.05 / n_comparisons
-    out["sig_05_prop_z"] = out["prop_z_p"].apply(
-        lambda p: "**" if isinstance(p, float) and p < 0.01
-        else ("*" if isinstance(p, float) and p < 0.05 else "")
+    # Significance markers follow academic-stats convention:
+    #   *   p < 0.05   (uncorrected)
+    #   **  p < 0.01   (uncorrected)
+    #   *** p < Bonferroni-adjusted (family-wise error 0.05; tightest)
+    # We compute both columns rather than a single "best marker" column so a
+    # reader can choose their preferred correction without reverse-engineering
+    # the p-value back out of the marker.
+    out["sig_uncorrected_prop_z"] = out["prop_z_p"].apply(
+        lambda p: "**" if p < 0.01 else ("*" if p < 0.05 else "")
     )
     out["sig_bonferroni_prop_z"] = out["prop_z_p"].apply(
-        lambda p: "*" if isinstance(p, float) and p < bonferroni_threshold else ""
+        lambda p: "***" if p < bonferroni_threshold else ""
     )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)

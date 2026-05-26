@@ -4,5 +4,6 @@ datasets>=2.14.0
 huggingface_hub>=0.20.0
 pandas>=2.0.0
 numpy>=1.24.0
+scipy>=1.10.0  # build_significance.py — t-tests + proportion z-test
 sentencepiece>=0.1.99
 accelerate>=0.25.0
