@@ -559,15 +559,13 @@
   \label{tab:cross-lingual-transfer}
 \end{table}
 
-% ─── §4.7 Mirror sign-flip catalogue ───
+% ─── §4.7 SIB-200 sign-flip catalogue ───
 
 \begin{table}[t]
   \centering
   \small
   \begin{tabular}{lrrrr}
     \toprule
-    \multicolumn{5}{c}{\textbf{A. SIB-200 win$\rightarrow$loss flips (Rule-A over-credit corrections)}} \\
-    \midrule
     Condition & n cells & $\Delta_{\text{orig}}$ & $\Delta_{\text{refined}}$ & $|\text{shift}|$ \\
     \midrule
     Cond 2 (ur, 20k) & 16 & +0.1388 & $-$0.0300 & 0.1688 \\
@@ -577,19 +575,6 @@
     Cond 2 (zh, 20k) & 16 & +0.0175 & $-$0.0074 & 0.0248 \\
     \bottomrule
   \end{tabular}
-
-  \vspace{0.6em}
-
-  \begin{tabular}{llrrrrr}
-    \toprule
-    \multicolumn{7}{c}{\textbf{B. XNLI loss$\rightarrow$win flips (native-paraphrase under-credit corrections)}} \\
-    \midrule
-    Condition & instr & tmpl & n cells & $\Delta_{\text{orig}}$ & $\Delta_{\text{refined}}$ & $|\text{shift}|$ \\
-    \midrule
-    Cond 5 (zh, 5k) & zh & 2 & 4 & $-$0.0415 & +0.0318 & 0.0732 \\
-    Cond 1 (en, 20k) & zh & 2 & 4 & $-$0.0105 & +0.0302 & 0.0407 \\
-    \bottomrule
-  \end{tabular}
-  \caption{Mirror-image extractor corrections. \textbf{Top}: SIB-200 cells where Rule-A over-credit was removed (sign flips win $\rightarrow$ loss). \textbf{Bottom}: XNLI cells where native-paraphrase under-credit was recovered (sign flips loss $\rightarrow$ win). The symmetric pattern --- corrections in each direction --- demonstrates that the refinement is principled correction of known scoring bugs, not hypothesis-favoring tuning. A is aggregated at (condition $\times$ benchmark) grain; B at (condition $\times$ instr $\times$ template) grain because the XNLI flips concentrate in a specific (instr=zh, template=2) slice.}
-  \label{tab:mirror-flips}
+  \caption{\textsc{SIB-200} sign-flip catalogue. Five (condition $\times$ benchmark) aggregates where the original extractor reported a positive $\Delta$ vs baseline but the refined extractor reports a negative $\Delta$ --- i.e. cells where the refinement removed Rule-A over-credit. Aggregation grain: mean across (instr $\times$ seed $\times$ template $\times$ data) within each (condition, benchmark); flip requires $|\Delta_{\text{refined}}| > 0.005$ to exclude noise-floor wobble. The $|\text{shift}|$ column reports the absolute distance between the two extractors' aggregate estimates.}
+  \label{tab:sib200-sign-flips}
 \end{table}

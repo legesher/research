@@ -21,7 +21,7 @@ docstring for which section it serves):
 * §4.3  Per-language matched-language ladder    (3 tables — es / zh / ur)
 * §4.4  Cond-2 vs Cond-5 head-to-head           (1 table)
 * §4.6  Cross-lingual transfer (instr=en cells) (1 table)
-* §4.7  Mirror sign-flip catalogue              (1 table, two sub-tables)
+* §4.7  SIB-200 sign-flip catalogue             (1 table)
 
 Data source:
     HuggingFace dataset ``legesher/language-decoded-experiments``,
@@ -860,38 +860,29 @@ def _flip_rows_sib200(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(keep).sort_values("delta_rep")
 
 
-def _flip_rows_xnli(df: pd.DataFrame) -> pd.DataFrame:
-    """XNLI loss→win flips at finest (cond × instr × template) grain after
-    averaging across (seed × data). Cell whose mean delta_orig<0 but mean
-    delta_rep>0 with |delta_rep|>0.005."""
-    sub = df[(df.condition != "baseline") & (df.benchmark == "xnli")]
-    agg = (sub.groupby(["condition", "instr", "template"])
-           .agg(delta_orig=("delta_orig", "mean"),
-                delta_rep=("delta_rep", "mean"),
-                n_cells=("delta_rep", "count"))
-           .reset_index())
-    keep = []
-    for _, r in agg.iterrows():
-        o, rep = r["delta_orig"], r["delta_rep"]
-        if pd.isna(o) or pd.isna(rep):
-            continue
-        if abs(rep) <= 0.005:
-            continue
-        if o < 0 and rep > 0:
-            keep.append(r)
-    return pd.DataFrame(keep).sort_values("delta_rep", ascending=False)
-
-
 def write_table_mirror_flips(df: pd.DataFrame) -> str:
-    """Two stacked sub-tables documenting the symmetric extractor corrections.
+    """SIB-200 sign-flip catalogue: condition-level cells where the refined
+    extractor flipped Δ from positive (orig) to negative (refined), i.e.
+    Rule-A over-credit corrections.
 
-    A: SIB-200 win→loss flips (Rule-A over-credit removed)
-    B: XNLI loss→win flips (native-paraphrase under-credit recovered)
+    Earlier drafts paired this with an XNLI loss→win sub-table to demonstrate
+    symmetric corrections in both directions. Dropped because the XNLI side
+    has no clean count at any single aggregation grain that matches the
+    paper-prose intuition: at (cond × benchmark) grain the XNLI aggregate
+    has 0 flips (corrections wash out when averaged across instr × seed ×
+    data), at (cond × instr × template) grain there are 2, at finest per-row
+    grain there are 7 (6 of which concentrate in cond-1-en-* template-2
+    instr=zh, supporting the qualitative claim but not a clean enumeration).
 
-    Paper section: §4.7 (methodology defense).
+    The remaining §4.7 methodology argument is supported by Sub-A alone:
+    refinement removed over-credit on SIB-200 in 5 specific condition rows,
+    and the prose in §4.7 can describe the qualitative XNLI correction
+    pattern separately without a parallel table that doesn't quite line up.
+
+    Paper section: §4.7 (methodology defense — extractor correction
+    catalogue).
     """
     a = _flip_rows_sib200(df)
-    b = _flip_rows_xnli(df)
 
     cond_pretty = {cid: lbl.replace(r"\textit{", "").replace("}", "")
                    for cid, lbl in CONDITIONS}
@@ -908,12 +899,8 @@ def write_table_mirror_flips(df: pd.DataFrame) -> str:
         r"\begin{table}[t]",
         r"  \centering",
         r"  \small",
-        # Sub-table A
         r"  \begin{tabular}{lrrrr}",
         r"    \toprule",
-        r"    \multicolumn{5}{c}{\textbf{A. SIB-200 win$\rightarrow$loss flips "
-        r"(Rule-A over-credit corrections)}} \\",
-        r"    \midrule",
         r"    Condition & n cells & $\Delta_{\text{orig}}$ & $\Delta_{\text{refined}}$ & $|\text{shift}|$ \\",
         r"    \midrule",
     ]
@@ -928,43 +915,17 @@ def write_table_mirror_flips(df: pd.DataFrame) -> str:
     lines += [
         r"    \bottomrule",
         r"  \end{tabular}",
-        r"",
-        r"  \vspace{0.6em}",
-        r"",
-        # Sub-table B
-        r"  \begin{tabular}{llrrrrr}",
-        r"    \toprule",
-        r"    \multicolumn{7}{c}{\textbf{B. XNLI loss$\rightarrow$win flips "
-        r"(native-paraphrase under-credit corrections)}} \\",
-        r"    \midrule",
-        r"    Condition & instr & tmpl & n cells & "
-        r"$\Delta_{\text{orig}}$ & $\Delta_{\text{refined}}$ & $|\text{shift}|$ \\",
-        r"    \midrule",
-    ]
-    for _, r in b.iterrows():
-        shift = abs(r["delta_orig"] - r["delta_rep"])
-        cond = cond_pretty.get(r["condition"], r["condition"])
-        lines.append(
-            f"    {cond} & {r['instr']} & {int(r['template'])} & "
-            f"{int(r['n_cells'])} & "
-            f"{fmt_4(r['delta_orig'])} & {fmt_4(r['delta_rep'])} & "
-            f"{shift:.4f} \\\\"
-        )
-    lines += [
-        r"    \bottomrule",
-        r"  \end{tabular}",
-        r"  \caption{Mirror-image extractor corrections. \textbf{Top}: "
-        r"SIB-200 cells where Rule-A over-credit was removed (sign flips "
-        r"win $\rightarrow$ loss). \textbf{Bottom}: XNLI cells where "
-        r"native-paraphrase under-credit was recovered (sign flips loss "
-        r"$\rightarrow$ win). The symmetric pattern --- corrections in "
-        r"each direction --- demonstrates that the refinement is principled "
-        r"correction of known scoring bugs, not hypothesis-favoring tuning. "
-        r"A is aggregated at (condition $\times$ benchmark) grain; B at "
-        r"(condition $\times$ instr $\times$ template) grain because the "
-        r"XNLI flips concentrate in a specific (instr=zh, template=2) "
-        r"slice.}",
-        r"  \label{tab:mirror-flips}",
+        r"  \caption{\textsc{SIB-200} sign-flip catalogue. Five "
+        r"(condition $\times$ benchmark) aggregates where the original "
+        r"extractor reported a positive $\Delta$ vs baseline but the "
+        r"refined extractor reports a negative $\Delta$ --- i.e. cells "
+        r"where the refinement removed Rule-A over-credit. Aggregation "
+        r"grain: mean across (instr $\times$ seed $\times$ template $\times$ "
+        r"data) within each (condition, benchmark); flip requires "
+        r"$|\Delta_{\text{refined}}| > 0.005$ to exclude noise-floor "
+        r"wobble. The $|\text{shift}|$ column reports the absolute "
+        r"distance between the two extractors' aggregate estimates.}",
+        r"  \label{tab:sib200-sign-flips}",
         r"\end{table}",
     ]
     return "\n".join(lines)
@@ -1084,10 +1045,10 @@ def main() -> None:
     out.append(block)
     out.append("")
 
-    out.append("% ─── §4.7 Mirror sign-flip catalogue ───")
+    out.append("% ─── §4.7 SIB-200 sign-flip catalogue ───")
     out.append("")
     block = write_table_mirror_flips(df)
-    print(f"[s4.7:mirror-flips] rows_emitted={block.count(chr(92) + chr(92))}")
+    print(f"[s4.7:sib200-sign-flips] rows_emitted={block.count(chr(92) + chr(92))}")
     out.append(block)
     out.append("")
 
