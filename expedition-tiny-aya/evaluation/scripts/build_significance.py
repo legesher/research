@@ -127,6 +127,15 @@ def compute_row(cond: str, benchmark: str, data: str, instr: str,
 
     seed_sigma = float(per_seed_vals.std(ddof=1)) if len(per_seed_vals) > 1 else float("nan")
 
+    # Missing numeric values are emitted as np.nan (not the empty string)
+    # so that pandas keeps the columns float-dtyped. to_csv renders NaN as
+    # empty by default, so the TSV display is identical to the old code.
+    # Keeping float dtype matters for downstream comparisons (the
+    # significance-marker lambdas below) and for re-reading the TSV into
+    # pandas without object-dtype surprises.
+    def _round_or_nan(x: float, ndigits: int) -> float:
+        return round(x, ndigits) if not pd.isna(x) else float("nan")
+
     return {
         "condition": cond,
         "benchmark": benchmark,
@@ -135,18 +144,18 @@ def compute_row(cond: str, benchmark: str, data: str, instr: str,
         "n_seeds": len(per_seed_vals),
         "n_examples_cond": n_cond_total,
         "n_examples_base": n_base_total,
-        "baseline_acc": round(base_mean, 4),
-        "cond_acc": round(cond_mean, 4),
-        "delta_pp": round(delta * 100, 2),
-        "seed_sigma_pp": round(seed_sigma * 100, 2) if not pd.isna(seed_sigma) else "",
-        "one_sample_t": round(t1, 3) if not pd.isna(t1) else "",
+        "baseline_acc": _round_or_nan(base_mean, 4),
+        "cond_acc": _round_or_nan(cond_mean, 4),
+        "delta_pp": _round_or_nan(delta * 100, 2),
+        "seed_sigma_pp": _round_or_nan(seed_sigma * 100, 2),
+        "one_sample_t": _round_or_nan(t1, 3),
         "one_sample_df": os_df,
-        "one_sample_p": round(p1, 5) if not pd.isna(p1) else "",
-        "welch_t": round(t2, 3) if not pd.isna(t2) else "",
-        "welch_df": round(welch_df, 2) if not pd.isna(welch_df) else "",
-        "welch_p": round(p2, 5) if not pd.isna(p2) else "",
-        "z_prop": round(z, 3) if not pd.isna(z) else "",
-        "prop_z_p": round(p_z, 5) if not pd.isna(p_z) else "",
+        "one_sample_p": _round_or_nan(p1, 5),
+        "welch_t": _round_or_nan(t2, 3),
+        "welch_df": _round_or_nan(welch_df, 2),
+        "welch_p": _round_or_nan(p2, 5),
+        "z_prop": _round_or_nan(z, 3),
+        "prop_z_p": _round_or_nan(p_z, 5),
     }
 
 
@@ -182,12 +191,15 @@ def main() -> None:
     #   *** p < Bonferroni-adjusted (family-wise error 0.05; tightest)
     # We compute both columns rather than a single "best marker" column so a
     # reader can choose their preferred correction without reverse-engineering
-    # the p-value back out of the marker.
+    # the p-value back out of the marker. NaN p-values (no test possible)
+    # render to an empty marker via pd.notna; comparing NaN < threshold
+    # returns False which would also work, but pd.notna is explicit.
     out["sig_uncorrected_prop_z"] = out["prop_z_p"].apply(
-        lambda p: "**" if p < 0.01 else ("*" if p < 0.05 else "")
+        lambda p: "**" if pd.notna(p) and p < 0.01
+        else ("*" if pd.notna(p) and p < 0.05 else "")
     )
     out["sig_bonferroni_prop_z"] = out["prop_z_p"].apply(
-        lambda p: "***" if p < bonferroni_threshold else ""
+        lambda p: "***" if pd.notna(p) and p < bonferroni_threshold else ""
     )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -199,12 +211,9 @@ def main() -> None:
     summary = out.groupby("benchmark").apply(
         lambda g: pd.Series({
             "n_cells": len(g),
-            "n_sig_05_prop_z": (g["prop_z_p"].apply(
-                lambda x: isinstance(x, float) and x < 0.05)).sum(),
-            "n_sig_bonferroni_prop_z": (g["prop_z_p"].apply(
-                lambda x: isinstance(x, float) and x < bonferroni_threshold)).sum(),
-            "n_sig_one_sample_05": (g["one_sample_p"].apply(
-                lambda x: isinstance(x, float) and x < 0.05)).sum(),
+            "n_sig_05_prop_z": (g["prop_z_p"] < 0.05).sum(),
+            "n_sig_bonferroni_prop_z": (g["prop_z_p"] < bonferroni_threshold).sum(),
+            "n_sig_one_sample_05": (g["one_sample_p"] < 0.05).sum(),
         }),
         include_groups=False,
     )
