@@ -1,6 +1,6 @@
 # Research Paper
 
-Draft write-up for "Language, Decoded: Exploring the Impact of Native-Language Code on Multilingual Models."
+Submitted 2026-05-26: "Language, Decoded: Exploring the Impact of Fine-Tuning a Multilingual Model on Native-Language Code."
 
 ## Sections
 

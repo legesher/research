@@ -12,7 +12,7 @@ Research projects exploring multilingual programming and its impact on developer
 
 ### [Expedition Tiny Aya](expedition-tiny-aya/) (March 2026)
 
-**Language, Decoded:** Exploring the impact of native-language code on multilingual AI models. A 2-week research hackathon in collaboration with Cohere's Expedition Tiny Aya, testing whether multilingual code (transpiled and natively written) improves model reasoning, world knowledge, and instruction following.
+**Language, Decoded: Exploring the Impact of Fine-Tuning a Multilingual Model on Native-Language Code.** A 2-week research hackathon in collaboration with Cohere's Expedition Tiny Aya, testing whether fine-tuning a multilingual model on transpiled and natively-written code in target languages improves the model's reasoning, world knowledge, and instruction following in those languages. Paper submitted 2026-05-26.
 
 ## Past Research
 
