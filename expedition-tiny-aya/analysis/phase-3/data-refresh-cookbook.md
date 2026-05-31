@@ -10,20 +10,20 @@ When the underlying per-session JSONs change on HuggingFace (new condition, re-s
 
 ## 0. Pre-flight
 
-- [ ] Active worktree off `origin/main` (per repo convention; don't run from Madison's primary worktree if it's on a branch).
-- [ ] `huggingface_hub` installed and `huggingface-cli login` is current (write scope; same token used for HF PR #38 et al.).
-- [ ] `/tmp/figvenv/bin/python` exists with pandas, matplotlib, scienceplots, huggingface_hub — or substitute a venv that has them.
+- [ ] Active worktree off `origin/main` (per repo convention; don't run from a worktree that's on an unrelated feature branch).
+- [ ] `huggingface_hub` installed and `huggingface-cli login` is current with a write-scope token.
+- [ ] A Python environment with `pandas`, `matplotlib`, `scienceplots`, and `huggingface_hub` installed. Examples below assume `python` resolves to that env; substitute your venv path (e.g. `./venv/bin/python`) if needed.
 
 ## 1. Regenerate refined-tables TSVs from per-session JSONs
 
 ```bash
 mkdir -p /tmp/phase3_refresh
 PHASE3_OUT_DIR=/tmp/phase3_refresh \
-  /tmp/figvenv/bin/python expedition-tiny-aya/evaluation/scripts/build_comparison.py
+  python expedition-tiny-aya/evaluation/scripts/build_comparison.py
 PHASE3_OUT_DIR=/tmp/phase3_refresh \
-  /tmp/figvenv/bin/python expedition-tiny-aya/evaluation/scripts/build_vs_baseline.py
+  python expedition-tiny-aya/evaluation/scripts/build_vs_baseline.py
 PHASE3_OUT_DIR=/tmp/phase3_refresh \
-  /tmp/figvenv/bin/python expedition-tiny-aya/evaluation/scripts/build_framework_comparison.py
+  python expedition-tiny-aya/evaluation/scripts/build_framework_comparison.py
 ```
 
 These read `_summary_reparsed_*.json` files from HF, aggregate, and emit the ~20 TSVs that live at `phase3/analysis/refined-tables/` on HF. Output lands in `$PHASE3_OUT_DIR`. Verify row counts before proceeding — `wc -l /tmp/phase3_refresh/*.tsv` should match expected (e.g. `cells.tsv` ≈ 1,664 rows + header).
@@ -68,9 +68,9 @@ for fig in \
   fig03_regression_concentration \
   fig04_signflip_slopegraph \
   fig05_cond5_rehabilitated; do
-  /tmp/figvenv/bin/python expedition-tiny-aya/analysis/scripts/$fig.py
+  python expedition-tiny-aya/analysis/scripts/$fig.py
 done
-/tmp/figvenv/bin/python expedition-tiny-aya/analysis/scripts/build_phase3_tables.py
+python expedition-tiny-aya/analysis/scripts/build_phase3_tables.py
 ```
 
 All scripts default to HF refined-tables; pass `--tables-dir /tmp/phase3_refresh` to read from a local snapshot instead (useful if you're staging changes before the HF PR is merged).
@@ -91,7 +91,7 @@ These files contain hand-set numbers that the rerun scripts do NOT update automa
 
 - `expedition-tiny-aya/analysis/phase-3/phase3-refined-evaluation.md` — §1 headline table, §3.1 by-benchmark table, §3.2 instr-lang totals + SIB-200×instr crosstab, §3.3 template table, §3.4 condition table, §4 anomalies table, §8.7 conclusion-flip totals. Re-derive from current HF state.
 - `expedition-tiny-aya/analysis/phase-3/captions.md` — extreme-cell call-outs in fig 2 caption (currently mentions `−76 pp pf, +51 pp acc` for the headline cell). If that cell's coordinates shift, update the caption text.
-- `~/.claude/projects/.../memory/paper-prep-callouts.md` — items #20, #22, #23, #24 quote specific numbers from `framework_*.tsv` views. Items #8, #34, #12 quote per-cell numbers. Re-verify if those views regenerated.
+- Any private notes or memory files that quote specific TSV numbers — re-verify if the corresponding views regenerated.
 
 Pull current HF values via `curl -sSL "https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/<name>.tsv"` and grep for the cited numbers.
 
@@ -102,12 +102,13 @@ Stage scripts, figures, tables, and writeup updates together so the diff is revi
 ```bash
 git add expedition-tiny-aya/analysis/figures-phase3/ \
         expedition-tiny-aya/analysis/phase-3/{tables.tex,captions.md,phase3-refined-evaluation.md}
-git -c user.email=7844510+madiedgar@users.noreply.github.com commit -m "refresh(phase-3): regenerate against HF main post <PR ref>"
+git -c user.email=<your-id>+<your-username>@users.noreply.github.com commit \
+  -m "refresh(phase-3): regenerate against HF main post <PR ref>"
 git push -u origin docs/data-refresh-<short-name>
 gh pr create --base main --title "refresh(phase-3): ..."
 ```
 
-The committer-email override is required on this repo (email-privacy restriction blocks the default).
+The committer-email override is required by this repo's email-privacy restriction: GitHub will reject pushes that expose a private email address. Use *your own* `users.noreply.github.com` address (find yours at <https://github.com/settings/emails>, "Keep my email addresses private"). Set it persistently with `git config user.email <your-noreply>` if you prefer not to pass `-c` each commit.
 
 ## Verification checklist
 
