@@ -71,10 +71,9 @@ Each Phase 3 session evaluates on a `4 benchmarks × template{1,2} × data_lang 
 ```
 expedition-tiny-aya/
 ├── analysis/
-│   ├── phase-3/                  # Phase 3 paper-grade analysis (see below)
-│   └── evaluation-summary.md     # Phase 2 headline writeup
+│   ├── phase-2/                  # Phase 2 (hackathon) analysis + figures
+│   └── phase-3/                  # Phase 3 paper-grade analysis (see below)
 ├── data-pipeline/                # The Stack streaming, filtering, packaging
-├── demo/                         # Presentation slides, speaker notes
 ├── evaluation/
 │   └── scripts/
 │       ├── reparse_results.py    # Refined post-hoc extractor (Phase 3, paper-grade)
@@ -82,7 +81,6 @@ expedition-tiny-aya/
 │       ├── build_*.py            # Cross-session table builders (refined-tables)
 │       └── evaluate.ipynb        # Evaluation entry-point notebook
 ├── language-review/              # Per-language reserved-word review and sign-off
-├── paper/                        # LaTeX write-up
 ├── training/                     # QLoRA training notebook (qlora.ipynb)
 └── transpilation/                # Batch transpilation scripts and stress tests
 ```
