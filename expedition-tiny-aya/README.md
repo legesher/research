@@ -1,6 +1,6 @@
 # Expedition Tiny Aya
 
-Language, Decoded: Exploring the Impact of Native-Language Code on Multilingual Models
+Language, Decoded: Exploring the Impact of Fine-Tuning a Multilingual Model on Native-Language Code
 
 > Captains: Madison Edgar (Legesher), Saad Ahmed Bazaz (Grayhat), et al. | Collaboration: Cohere / Expedition Tiny Aya
 > Hackathon: March 10–24, 2026
