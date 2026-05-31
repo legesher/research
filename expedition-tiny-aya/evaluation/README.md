@@ -149,4 +149,4 @@ All results are stored on HuggingFace:
 
 Phase-2 results are archived under `phase2/` in that dataset. Note that phase-2 `english-forgetting/` filenames use abbreviated condition names (e.g., `cond-2-zh_english_results.json`); phase-3 outputs from this pipeline use full condition names (e.g., `condition-2-zh-5k_seed42_summary_template1.json`).
 
-See [analysis/evaluation-summary.md](../analysis/evaluation-summary.md) for the full analysis.
+See [analysis/phase-2/evaluation-summary.md](../analysis/phase-2/evaluation-summary.md) for the full analysis.

@@ -1,6 +1,6 @@
 # Refined-extractor spot-checks — parse-fail floor + cond-5-ur-5k lift
 
-Verification samples for action items H + I in [`phase-3/post-refined-action-items.md`](phase-3/post-refined-action-items.md). Run 2026-05-25 against HF main (post HF PR #34 full-coverage refined dataset).
+Verification samples for action items H + I in [`post-refined-action-items.md`](post-refined-action-items.md). Run 2026-05-25 against HF main (post HF PR #34 full-coverage refined dataset).
 
 All commands rerun from the research repo:
 
@@ -32,7 +32,7 @@ python3 inspect_failures.py <hf-path-or-local>.json --cell <cell> --outcome <out
 
 **Verdict — confirmed genuine.** Parse-fails are model outputs that aren't letter answers: Urdu proper nouns/topic words, empty strings, transliterations. Not a tokenizer or loader artifact. The floor is the model occasionally answering in a non-letter form on Urdu cells, plus a handful of empty-string emissions. Concentrated on the baseline; fine-tuned conditions show essentially 0 parse-fails on letter-answer benchmarks.
 
-The 0.0001 *mean* parse-fail rate quoted in [`phase-3/phase3-refined-evaluation.md`](phase-3/phase3-refined-evaluation.md) §2 is an across-cell average — most cells are 0, a few baseline Urdu cells are 1–4/900–1000.
+The 0.0001 *mean* parse-fail rate quoted in [`phase3-refined-evaluation.md`](phase3-refined-evaluation.md) §2 is an across-cell average — most cells are 0, a few baseline Urdu cells are 1–4/900–1000.
 
 ## I — cond-5-ur-5k template2 SIB-200 instr=ur sanity sample
 
@@ -72,8 +72,8 @@ The 19/18/11/8-count clusters all show **multiline outputs** — the model emits
 
 ## Pointers
 
-- [`phase-3/phase3-refined-evaluation.md`](phase-3/phase3-refined-evaluation.md) — the writeup these spot-checks support
-- [`phase-3/post-refined-action-items.md`](phase-3/post-refined-action-items.md) — items H and I
-- [`evaluation/scripts/inspect_failures.py`](../evaluation/scripts/inspect_failures.py) — the tool used
+- [`phase3-refined-evaluation.md`](phase3-refined-evaluation.md) — the writeup these spot-checks support
+- [`post-refined-action-items.md`](post-refined-action-items.md) — items H and I
+- [`evaluation/scripts/inspect_failures.py`](../../evaluation/scripts/inspect_failures.py) — the tool used
 
 _Run 2026-05-25 against `phase3/conditions/.../seed42/` on HF main._

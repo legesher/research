@@ -6,7 +6,7 @@ Fetches benchmark results from HuggingFace (including baseline),
 then generates comparison charts across experimental conditions.
 
 Usage:
-    python plot_condition_comparison.py [--output-dir ../figures] [--cache-dir /path/to/cache]
+    python plot_condition_comparison.py [--output-dir ../phase-2/figures] [--cache-dir /path/to/cache]
 
 Charts generated:
     1. Grouped bar charts (condition x benchmark, per language x prompt type)
@@ -743,7 +743,7 @@ def main():
         "--output-dir",
         type=str,
         default=None,
-        help="Directory to save figures (default: ../figures relative to this script)",
+        help="Directory to save figures (default: ../phase-2/figures relative to this script)",
     )
     parser.add_argument(
         "--cache-dir",
@@ -755,7 +755,7 @@ def main():
 
     script_dir = Path(__file__).resolve().parent
     output_dir = (
-        Path(args.output_dir) if args.output_dir else script_dir.parent / "figures"
+        Path(args.output_dir) if args.output_dir else script_dir.parent / "phase-2" / "figures"
     )
     cache_dir = Path(args.cache_dir) if args.cache_dir else None
 

@@ -1,11 +1,11 @@
 # Transpilation Pipeline
 
-Batch transpilation of Python source files from English into Chinese (zh), Spanish (es), and Urdu (ur) using Legesher.
+Stress-testing and validation of Legesher's transpilation of Python source files from English into Chinese (zh), Spanish (es), and Urdu (ur). The batch transpilation runner itself lives in [`../data-pipeline/scripts/batch_transpile.py`](../data-pipeline/scripts/batch_transpile.py); this directory holds the transpiler stress-test harness and its reports.
 
 ## Contents
 
-- `scripts/` — Batch transpilation wrapper, stress test
-- `results/` — Stress test reports and batch run logs
+- `scripts/stress_test_transpiler.py` — Transpiler stress-test harness
+- `results/` — Stress-test reports (`reports/*.json`) and the [findings writeup](results/STRESS_TEST_FINDINGS.md)
 
 ## Dependencies
 
@@ -16,10 +16,7 @@ Batch transpilation of Python source files from English into Chinese (zh), Spani
 ## Usage
 
 ```bash
-# Run batch transpilation
-python scripts/batch_transpile.py --config configs/transpile_config.yaml
-
-# Run stress test for a language
+# Run the transpiler stress test for a language
 python scripts/stress_test_transpiler.py --lang zh --num-files 1000
 ```
 
