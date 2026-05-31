@@ -1,6 +1,6 @@
 # Constant-output bias on Phase-3 SIB-200 — findings
 
-Companion to [`correct-via-constant-rates.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/correct-via-constant-rates.tsv) (on HF; built by [`evaluation/scripts/build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py)) — action item F from [`phase-3/post-refined-action-items.md`](phase-3/post-refined-action-items.md). Run 2026-05-25 against HF main.
+Companion to [`correct-via-constant-rates.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/correct-via-constant-rates.tsv) (on HF; built by [`evaluation/scripts/build_correct_via_constant.py`](../../evaluation/scripts/build_correct_via_constant.py)) — action item F from [`post-refined-action-items.md`](post-refined-action-items.md). Run 2026-05-25 against HF main.
 
 The TSV holds 416 rows (one per condition × seed × template × data_lang × instr_lang SIB-200 cell, 42 input files). Two parallel metrics:
 
@@ -31,7 +31,7 @@ The raw-output metric is the stronger evidence of "model isn't reading the passa
 | condition-5-ur-5k   | 0.4933                | 0.4035               | 0.4057                               | 0.3201                              |
 | **condition-5-zh-5k** | **0.6391** (highest) | 0.5058               | 0.4833                               | 0.3281                              |
 
-Rollup is **seed-collapsed**: per-(template, data, instr) cell, mean across seeds; then mean across cells per condition. This avoids the seed-vs-cell aggregation conflation bug class — pivots on `(condition, seed, template, benchmark, data, instr)` that label their observation count as `n_cells` will inflate multi-seed conditions, since the actual unique-cell count is `total / (n_seeds × n_templates)`. The TSV emitted by [`build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py) is at full per-row grain (one row per seed × template × cell), so any rollup over it must collapse seeds first.
+Rollup is **seed-collapsed**: per-(template, data, instr) cell, mean across seeds; then mean across cells per condition. This avoids the seed-vs-cell aggregation conflation bug class — pivots on `(condition, seed, template, benchmark, data, instr)` that label their observation count as `n_cells` will inflate multi-seed conditions, since the actual unique-cell count is `total / (n_seeds × n_templates)`. The TSV emitted by [`build_correct_via_constant.py`](../../evaluation/scripts/build_correct_via_constant.py) is at full per-row grain (one row per seed × template × cell), so any rollup over it must collapse seeds first.
 
 ## Critical reversal — cond-2-ur-5k is the *least* constant-output condition
 
@@ -59,7 +59,7 @@ The conditions where constant-output bias actually deserves a paper caveat are *
 | cond-2-es-5k       | seed456 | 2  | es   | es    | 204 | 0.4902 | `Science/Technology`   | 0.7255          | 0.5100        |
 | cond-2-es-5k       | seed123 | 2  | en   | es    | 204 | 0.4902 | `Science/Technology`   | 0.7206          | 0.5100        |
 
-All 10 are template2 (native-prompt). The es-instr cells dominate — cond-5-es-5k and cond-2-es-5k together account for 7 of the top 10. cond-2-es-5k is one of the four conclusion-flip cells (§8.3 of [`phase-3/phase3-refined-evaluation.md`](phase-3/phase3-refined-evaluation.md)); the constant-output bias is a plausible mechanism for why the headline cond-vs-baseline gain reverses post-extractor-refinement.
+All 10 are template2 (native-prompt). The es-instr cells dominate — cond-5-es-5k and cond-2-es-5k together account for 7 of the top 10. cond-2-es-5k is one of the four conclusion-flip cells (§8.3 of [`phase3-refined-evaluation.md`](phase3-refined-evaluation.md)); the constant-output bias is a plausible mechanism for why the headline cond-vs-baseline gain reverses post-extractor-refinement.
 
 ## What this means for the paper
 
@@ -74,9 +74,9 @@ For paper claims, a per-cell flag at `top_raw_share >= 0.5` AND `correct_via_con
 ## Pointers
 
 - [`correct-via-constant-rates.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/correct-via-constant-rates.tsv) — full per-cell table (on HF)
-- [`evaluation/scripts/build_correct_via_constant.py`](../evaluation/scripts/build_correct_via_constant.py) — build script
+- [`evaluation/scripts/build_correct_via_constant.py`](../../evaluation/scripts/build_correct_via_constant.py) — build script
 - [`refined-verification-spot-checks.md`](refined-verification-spot-checks.md) — I's cond-5-ur-5k spot-check (which surfaced the cond-5 constant-output pattern)
-- [`phase-3/post-refined-action-items.md`](phase-3/post-refined-action-items.md) — item F (this finding shifts the framing)
-- [`phase-3/phase3-refined-evaluation.md`](phase-3/phase3-refined-evaluation.md) §8.3 — conclusion-flip cells (cond-2-es / cond-2-zh / cond-3-zh)
+- [`post-refined-action-items.md`](post-refined-action-items.md) — item F (this finding shifts the framing)
+- [`phase3-refined-evaluation.md`](phase3-refined-evaluation.md) §8.3 — conclusion-flip cells (cond-2-es / cond-2-zh / cond-3-zh)
 
 _Run 2026-05-25 against HF main post HF PR #34. Re-run when refined data refreshes._

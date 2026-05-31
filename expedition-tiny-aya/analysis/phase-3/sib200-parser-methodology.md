@@ -3,7 +3,7 @@
 **Date**: 2026-05-19
 **Author**: Madison (with analysis support from Claude)
 **Linear**: (TBD)
-**Sibling document**: [evaluation-summary.md](../evaluation-summary.md) — Phase 2 XNLI label-extraction precedent
+**Sibling document**: [evaluation-summary.md](../phase-2/evaluation-summary.md) — Phase 2 XNLI label-extraction precedent
 **Data source**: smoke runs at n=20, four conditions × two templates (baseline, cond-2-{es,ur,zh}), Phase-3 pipeline
 
 > **TL;DR**: Phase-3 smoke runs revealed that the SIB-200 extractor in `run_eval_single.py` matched only the seven canonical English category strings. When prompted in native scripts, the model produced topically-correct answers in surface forms the extractor rejected — counting them as parse-failures. A native-aware extractor (three additional rules) closes the gap. For the Urdu-fine-tuned condition (`cond-2-ur`) evaluated on Urdu data with Urdu instructions, this changes the measured accuracy from **0.000** to **1.000**. The model was answering perfectly all along; English-only parsing was discarding every correct response.
@@ -61,7 +61,7 @@ The parser fix does _not_ uniformly affect every condition:
   解释：此文本讨论了…
   ```
 
-  The first-line-only extraction logic (carried over from Phase-2 XNLI re-scoring; see `evaluation-summary.md` Issue 4) already handled this cleanly.
+  The first-line-only extraction logic (carried over from Phase-2 XNLI re-scoring; see `phase-2/evaluation-summary.md` Issue 4) already handled this cleanly.
 
 These are three distinct multilingual generation behaviours under the same fine-tuning recipe:
 
@@ -104,4 +104,4 @@ And a single results-section sentence:
 - **Confirm at full eval scale.** Smoke n=20 is sufficient signal but not the final number. Re-run cond-2-ur and baseline at full sample count; expect the Urdu cells to remain near 1.000 but with non-trivial variance from the rare cells the extractor still misses.
 - **Surface forms still uncaught.** Template-2 baseline `data=es, instr=ur` lenient new_fail is 0.55 — half the responses on that cell still aren't matched. Pull the offending `raw_output` values and decide whether to extend `SIB200_SCITECH_NATIVE` or document the residual as a known limit.
 - **Re-upload latest `evaluate.ipynb` to Kaggle.** The Phase-3 notebook on Kaggle predates PR #49; until it's refreshed, every new eval will still need a post-hoc re-parse cell. Bake the fix in upstream so future runs report lenient numbers directly.
-- **Symmetry check for the other three benchmarks.** XNLI extraction was already audited in Phase 2 (see `evaluation-summary.md`). X-CSQA and Belebele are letter-choice tasks (A/B/C/D/E) and so far appear robust, but a one-page audit of their parse-failure rates per condition is warranted before publication.
+- **Symmetry check for the other three benchmarks.** XNLI extraction was already audited in Phase 2 (see `phase-2/evaluation-summary.md`). X-CSQA and Belebele are letter-choice tasks (A/B/C/D/E) and so far appear robust, but a one-page audit of their parse-failure rates per condition is warranted before publication.
