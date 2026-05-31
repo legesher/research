@@ -10,31 +10,31 @@ Requirements:
 
 Usage:
     # Transpile a directory of Python files to Chinese
-    python batch_transpile.py ./source-python zh --output ./transpiled-zh
+    python scripts/batch_transpile.py ./source-python zh --output ./transpiled-zh
 
     # Transpile to multiple languages
-    python batch_transpile.py ./source-python zh,am,ur --output ./transpiled
+    python scripts/batch_transpile.py ./source-python zh,am,ur --output ./transpiled
 
     # Resume after interruption
-    python batch_transpile.py ./source-python zh --output ./transpiled-zh --resume
+    python scripts/batch_transpile.py ./source-python zh --output ./transpiled-zh --resume
 
     # Stream from HuggingFace dataset
-    python batch_transpile.py --hf-dataset bigcode/the-stack-dedup zh --output ./transpiled-zh --hf-limit 50000
+    python scripts/batch_transpile.py --hf-dataset bigcode/the-stack-dedup zh --output ./transpiled-zh --hf-limit 50000
 
     # Customize workers and batch size
-    python batch_transpile.py ./source-python zh --output ./transpiled-zh --workers 8 --batch-size 500
+    python scripts/batch_transpile.py ./source-python zh --output ./transpiled-zh --workers 8 --batch-size 500
 
     # Use tree-sitter backend
-    python batch_transpile.py ./source-python zh --output ./transpiled-zh --backend tree-sitter
+    python scripts/batch_transpile.py ./source-python zh --output ./transpiled-zh --backend tree-sitter
 
     # Compare both backends
-    python batch_transpile.py ./source-python zh --output ./transpiled-zh --backend both
+    python scripts/batch_transpile.py ./source-python zh --output ./transpiled-zh --backend both
 
     # Enable pre-transpilation syntax validation
-    python batch_transpile.py ./source-python zh --output ./transpiled-zh --validate-syntax
+    python scripts/batch_transpile.py ./source-python zh --output ./transpiled-zh --validate-syntax
 
     # Process languages in parallel
-    python batch_transpile.py ./source-python zh,am,ur --output ./transpiled --parallel-languages
+    python scripts/batch_transpile.py ./source-python zh,am,ur --output ./transpiled --parallel-languages
 """
 
 from __future__ import annotations
@@ -982,13 +982,13 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python batch_transpile.py ./source-python zh --output ./transpiled
-  python batch_transpile.py ./source-python zh,am,ur --output ./transpiled
-  python batch_transpile.py ./source-python zh --output ./transpiled --resume
-  python batch_transpile.py --hf-dataset bigcode/the-stack-dedup zh --output ./transpiled --hf-limit 50000
-  python batch_transpile.py ./source-python zh --output ./transpiled --backend tree-sitter
-  python batch_transpile.py ./source-python zh --output ./transpiled --backend both
-  python batch_transpile.py ./source-python zh,am,ur --output ./transpiled --parallel-languages
+  python scripts/batch_transpile.py ./source-python zh --output ./transpiled
+  python scripts/batch_transpile.py ./source-python zh,am,ur --output ./transpiled
+  python scripts/batch_transpile.py ./source-python zh --output ./transpiled --resume
+  python scripts/batch_transpile.py --hf-dataset bigcode/the-stack-dedup zh --output ./transpiled --hf-limit 50000
+  python scripts/batch_transpile.py ./source-python zh --output ./transpiled --backend tree-sitter
+  python scripts/batch_transpile.py ./source-python zh --output ./transpiled --backend both
+  python scripts/batch_transpile.py ./source-python zh,am,ur --output ./transpiled --parallel-languages
         """,
     )
     parser.add_argument(
