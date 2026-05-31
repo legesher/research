@@ -4,8 +4,6 @@ _Paper: **Language, Decoded: Exploring the Impact of Fine-Tuning a Multilingual 
 
 In-repo home for the **Language Decoded** project: code, scripts, configs, transpilation tooling, evaluation pipeline, and per-phase analysis. Datasets, trained adapters, and raw evaluation outputs live on Hugging Face — this repo is what produces them.
 
-> **Experiment and proposed paper title:** _Language Decoded: Exploring the Impact of Native Code on Multilingual Models_
->
 > Project lead: Madi Edgar (Legesher) · Technical lead: Saad Ahmed Bazaz (Grayhat) · Research mentor: Tom Sherborne (Cohere). Originated as a proposal during [Cohere's Tiny Aya Expedition](https://aya.for.ai) (March 2026 hackathon) and extended into Phase 3 for the accompanying paper.
 
 ## Canonical source of truth
