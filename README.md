@@ -12,6 +12,8 @@ Research projects exploring multilingual programming and its impact on developer
 
 ### [Expedition Tiny Aya](expedition-tiny-aya/) (March 2026)
 
+![Cohere Expedition Tiny Aya — a collaboration between grayhat and Legesher](expedition-tiny-aya/assets/cohere-grayhat-legesher-collaboration.png)
+
 **Language, Decoded: Exploring the Impact of Fine-Tuning a Multilingual Model on Native-Language Code.** A 2-week research hackathon in collaboration with Cohere's Expedition Tiny Aya, testing whether fine-tuning a multilingual model on transpiled and natively-written code in target languages improves the model's reasoning, world knowledge, and instruction following in those languages. Paper submitted 2026-05-26.
 
 ## Past Research
