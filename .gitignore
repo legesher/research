@@ -19,7 +19,6 @@ dist/
 build/
 
 # Environment
-.env
 .venv/
 venv/
 
@@ -28,7 +27,6 @@ wandb/
 mlruns/
 
 # IDE
-.vscode/
 .idea/
 *.swp
 
@@ -45,3 +43,5 @@ Thumbs.db
 # Local script output (results live on HuggingFace)
 rescored_results/
 **/rescored_results/
+config.bat
+node_modules
