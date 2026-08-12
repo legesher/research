@@ -122,6 +122,7 @@ def process_file(remote_path: str, condition: str, seed: str) -> tuple[list[dict
 
     rows_out: list[dict] = []
     mismatches = 0
+    unexpected_golds: Counter = Counter()
     for key, items in data.items():
         m = CELL_KEY_RE.match(key)
         if not m or not isinstance(items, list):
@@ -131,7 +132,13 @@ def process_file(remote_path: str, condition: str, seed: str) -> tuple[list[dict
         pred_by_gold: dict[str, Counter] = {g: Counter() for g in SIB200_CATEGORIES}
         cell_correct = 0
         for row in items:
-            gold = row["gold"]
+            gold = row.get("gold")
+            if gold not in pred_by_gold:
+                # Guard rather than KeyError: the canonical reparse_file and
+                # build_correct_via_constant.py both tolerate a gold outside the
+                # expected set, and a whole analysis run should not die on one row.
+                unexpected_golds[gold] += 1
+                continue
             pred = extract_sib200_category(row["raw_output"])
             pred_by_gold[gold][pred] += 1
             if pred == gold:
@@ -168,6 +175,16 @@ def process_file(remote_path: str, condition: str, seed: str) -> tuple[list[dict
                 row_out[f"pred_{_slug(cat)}"] = c[cat]
             row_out["pred_none"] = c[None]
             rows_out.append(row_out)
+    if unexpected_golds:
+        # Never drop rows silently: a skipped gold changes every denominator
+        # downstream, and an exclusion the operator cannot see reads as
+        # "we covered everything".
+        print(
+            f"  !! {sum(unexpected_golds.values())} row(s) skipped for an "
+            f"unexpected gold label in {remote_path}: "
+            f"{dict(unexpected_golds)}",
+            file=sys.stderr,
+        )
     return rows_out, mismatches
 
 

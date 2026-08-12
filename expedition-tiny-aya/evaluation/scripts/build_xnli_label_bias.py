@@ -90,7 +90,12 @@ CELL_KEY_RE = re.compile(
     r"^template(?P<template>\d+)_xnli_data=(?P<data>[a-z]+)_instr=(?P<instr>[a-z]+)$"
 )
 
-_CJK_RE = re.compile(r"[　-〿㐀-䶿一-鿿豈-﫿]")
+# CJK Symbols and Punctuation starts at U+3000 IDEOGRAPHIC SPACE, which is
+# whitespace (str.isspace() is True), not evidence of CJK framing: a line
+# ending in one would otherwise count as CJK-framed with no CJK character
+# present. The range starts at U+3001 for that reason -- 、。「」 and the rest
+# of the block are genuine framing and stay in.
+_CJK_RE = re.compile(r"[\u3001-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 TIER_NAMES = ("tier1a_english", "tier1b_native", "tier2_glued", "tier3_paraphrase")
 
@@ -158,6 +163,7 @@ def process_file(remote_path: str, condition: str, seed: str) -> tuple[list[dict
 
     rows_out: list[dict] = []
     mismatches = 0
+    unexpected_golds: Counter = Counter()
     for key, items in data.items():
         m = CELL_KEY_RE.match(key)
         if not m or not isinstance(items, list):
@@ -172,17 +178,32 @@ def process_file(remote_path: str, condition: str, seed: str) -> tuple[list[dict
         cell_correct = 0
         for row in items:
             gold = row["gold"]
+            if gold not in pred_by_gold:
+                # Guard rather than KeyError: the canonical reparse_file and
+                # build_correct_via_constant both tolerate an unexpected gold.
+                unexpected_golds[gold] += 1
+                continue
             pred, tier = extract_xnli_label_tagged(row["raw_output"])
-            assert pred == extract_xnli_label(row["raw_output"]), (
-                f"tagged extractor diverged from reparse_results on {key}"
-            )
+            canonical = extract_xnli_label(row["raw_output"])
+            if pred != canonical:
+                # NOT an assert: `python -O` strips those, and this run still
+                # prints its success line — which would leave the provenance
+                # claim in xnli-label-bias.md silently unbacked. The second
+                # extraction is the point of this loop, not an accident.
+                raise RuntimeError(
+                    f"tagged extractor diverged from reparse_results on {key}: "
+                    f"tagged={pred!r} canonical={canonical!r}"
+                )
             pred_by_gold[gold][pred] += 1
             if tier is not None:
                 tier_by_gold[gold][tier] += 1
             if tier == "tier2_glued":
                 if pred == "entailment":
                     tier2_entail_by_gold[gold] += 1
-                first_line = row["raw_output"].strip().split("\n")[0]
+                # .strip() on the line too, exactly as extract_xnli_label_tagged
+                # does: without it this reads trailing whitespace the tier
+                # decision never saw.
+                first_line = row["raw_output"].strip().split("\n")[0].strip()
                 if _CJK_RE.search(first_line):
                     tier2_cjk_by_gold[gold] += 1
             if pred == gold:
@@ -227,6 +248,16 @@ def process_file(remote_path: str, condition: str, seed: str) -> tuple[list[dict
                     "tier2_cjk_frame": tier2_cjk_by_gold[gold],
                 }
             )
+    if unexpected_golds:
+        # Never drop rows silently: a skipped gold changes every denominator
+        # downstream, and an exclusion the operator cannot see reads as
+        # "we covered everything".
+        print(
+            f"  !! {sum(unexpected_golds.values())} row(s) skipped for an "
+            f"unexpected gold label in {remote_path}: "
+            f"{dict(unexpected_golds)}",
+            file=sys.stderr,
+        )
     return rows_out, mismatches
 
 
