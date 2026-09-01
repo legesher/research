@@ -43,5 +43,8 @@ Thumbs.db
 # Local script output (results live on HuggingFace)
 rescored_results/
 **/rescored_results/
+
+# Local Claude Code agent state (settings, worktrees, locks) — never committed (CORE-1974)
+.claude/
 config.bat
 node_modules
