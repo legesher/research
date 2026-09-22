@@ -8,6 +8,7 @@ Per-condition benchmark evaluation across 4 dataset languages (en, zh, es, ur) a
 - `scripts/evaluate.ipynb` — Runs the eval suite against a configured `(condition, seed)` (dual-GPU, template-split)
 - `scripts/rescore_xnli.py` — One-time XNLI re-scoring correction script (legacy)
 - `requirements.txt` — Python dependencies
+- `scripts/test_*.py` — Stdlib `unittest` suite for the analysis scripts. Run from the repository root with `python -m unittest discover -s expedition-tiny-aya/evaluation/scripts -p 'test_*.py' -v` (`huggingface_hub` must be installed); CI runs the same command in `.github/workflows/tests.yml`
 
 Results are stored on HuggingFace, not in this directory.
 
