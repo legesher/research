@@ -158,9 +158,11 @@ CELL = "template1_xnli_data=zh_instr=zh"
 REMOTE = "phase3/conditions/baseline/seednone/baseline_seednone_results_template1.json"
 
 # 8 rows, 6 correct. Row 4 is the 8caafac regression: a Tier-2 glued label
-# whose first line ends in U+3000 before a second line. The outer strip
-# never reaches it, so only the per-line strip (plus the U+3001 lower
-# bound) keeps it out of tier2_cjk_frame.
+# whose first line ends in U+3000 before a second line. What keeps it out
+# of tier2_cjk_frame, as seen through process_file, is the U+3001 lower
+# bound on _CJK_RE. The per-line strip is defensive: once the class starts
+# at U+3001 no whitespace code point is inside it, so a revert of the strip
+# alone is not observable here.
 VALID_ROWS = [
     {"gold": "entailment", "raw_output": "entailment"},  # 1a, correct
     {"gold": "entailment", "raw_output": "答案是entailment"},  # 2 + CJK, correct

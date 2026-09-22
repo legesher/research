@@ -14,6 +14,10 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    # The suite patches every Hub call; this makes any unpatched call fail
+    # fast in CI instead of reaching the network.
+    env:
+      HF_HUB_OFFLINE: "1"
     steps:
       # Actions are pinned to full commit SHAs, not mutable tags.
       - name: Checkout

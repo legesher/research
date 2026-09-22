@@ -118,8 +118,7 @@ class TestUnexpectedGoldGuard(_ProcessFileHarness):
         self.assertEqual([r["gold_category"] for r in rows], list(sib.SIB200_CATEGORIES))
         self.assertEqual(sum(r["n_gold"] for r in rows), len(VALID_ROWS))
         self.assertIn("2 row(s) skipped", err)
-        self.assertIn("bogus", err)
-        self.assertIn("None", err)  # the row with no gold key
+        self.assertIn("{'bogus': 1, None: 1}", err)  # None is the row with no gold key
         self.assertIn(REMOTE, err)
 
     def test_confusion_counts_per_gold_category(self):
