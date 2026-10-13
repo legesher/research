@@ -15,7 +15,10 @@ Subcommands (run from the repository root; ``all`` runs them in order):
   reparse  For every session with results on main but no reparsed sibling,
            download the results, run the refined extractor locally into an
            overlay directory, and verify the session against the condition's
-           seed-42 session (same cells, row counts, inputs and gold labels).
+           reference session (the first other seed with results on main,
+           seed 42 where it exists): same cells, row counts, inputs and gold
+           labels. Without a reference session only the cell inventory is
+           checked and the report says so.
            With --upload, open one Hugging Face PR per session via
            upload_reparsed_summaries.py and check the PR carries the same
            cells as the local run.
@@ -186,8 +189,16 @@ def hf_inventory() -> dict:
     return {"experiments_main": exp_main, "lora_main": lora_main, "open_prs": open_prs}
 
 
+def _condition_short(subfolder_template: str) -> str:
+    """``tiny-aya-base/condition-3-zh-5k-native-code-seed{seed}`` -> ``condition-3-zh-5k``:
+    the condition token the training notebook keeps when it names an adapter
+    folder after the data config instead of the eval template."""
+    cond_token = subfolder_template.split("/")[-1].split("-seed")[0]
+    return "-".join(cond_token.split("-")[:4])
+
+
 def adapter_state(entry: dict, seed: str, lora_files: set[str]) -> str:
-    """present / misnamed / missing / n/a (baseline)."""
+    """present / misnamed (<folder>) / missing / n/a (baseline)."""
     tmpl = entry.get("subfolder_template")
     if not tmpl:
         return "n/a"
@@ -196,14 +207,16 @@ def adapter_state(entry: dict, seed: str, lora_files: set[str]) -> str:
         return "present"
     # The training notebook names the folder after the data config; cond-3's
     # config lives under a phase-2 prefix, so its adapter can arrive misnamed.
-    tail = f"seed{seed}/"
-    cond_token = tmpl.split("/")[-1].split("-seed")[0]
-    short = "-".join(cond_token.split("-")[:4])  # condition-3-zh-5k
-    for f in lora_files:
+    short = _condition_short(tmpl)
+    for f in sorted(lora_files):
         parts = f.split("/")
-        if len(parts) >= 2 and parts[1].endswith(f"seed{seed}") and short in parts[1] and parts[1] + "/" != folder:
+        if (
+            len(parts) >= 2
+            and parts[1].endswith(f"seed{seed}")
+            and short in parts[1]
+            and f"{parts[0]}/{parts[1]}/" != folder
+        ):
             return f"misnamed ({parts[1]})"
-    del tail
     return "missing"
 
 
@@ -222,10 +235,8 @@ def classify_session(
 
     if counts["reparsed"] == 2:
         state = "complete"
-    elif prs["reparsed"]:
-        state = f"reparse PR #{prs['reparsed'][0]} open"
     elif counts["results"] == 2:
-        state = "needs reparse"
+        state = f"reparse PR #{prs['reparsed'][0]} open" if prs["reparsed"] else "needs reparse"
     elif prs["results"]:
         state = f"results PR #{prs['results'][0]} open"
     elif counts["results"] == 1:
@@ -267,8 +278,11 @@ def discover_hf_seeds(cond: str, entry: dict, inv: dict) -> set[str]:
     tmpl = entry.get("subfolder_template")
     if tmpl:
         apat = re.compile("^" + re.escape(tmpl).replace(re.escape("{seed}"), r"([0-9]+)") + "/")
+        # Misnamed folders (data-config name instead of the eval template) still
+        # carry the condition token and the seed suffix.
+        mpat = re.compile(rf"^[^/]+/[^/]*{re.escape(_condition_short(tmpl))}[^/]*-seed([0-9]+)/")
         for f in inv["lora_main"]:
-            m = apat.match(f)
+            m = apat.match(f) or mpat.match(f)
             if m:
                 seeds.add(m.group(1))
     return seeds
@@ -340,37 +354,56 @@ def load_results(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+MODEL_OUTPUT_KEYS = frozenset({"raw_output", "pred", "correct"})
+
+
+def _inputs(row: dict) -> dict:
+    """Everything the model was given: the row minus its outputs and the gold
+    label (gold is compared separately so the report names it)."""
+    return {k: v for k, v in row.items() if k not in MODEL_OUTPUT_KEYS and k != "gold"}
+
+
 def verify_session(
-    new: dict[str, dict], ref: dict[str, dict], expected: set[str], reparsed: dict[str, dict] | None = None
+    new: dict[str, dict],
+    ref: dict[str, dict] | None,
+    expected: set[str],
+    reparsed: dict[str, dict] | None = None,
 ) -> list[str]:
-    """Compare a new session's two results files against the reference
-    session's (keyed by template). Returns a list of problems; empty means
-    the session passes. Checks: every expected cell present in both, same
-    row count per cell, identical input text sequence, identical gold label
-    sequence; and, when given, an accuracy for every cell in the reparsed
-    summaries."""
+    """Compare a new session's two results files (keyed by template) against
+    the reference session's. Returns a list of problems; empty means the
+    session passes. Checks: every expected cell present in both, same row
+    count per cell, identical input fields (every key except the model
+    outputs and gold; benchmarks name their inputs differently, so the whole
+    row is compared rather than one field), identical gold label sequence;
+    and, when given, an accuracy for every cell in the reparsed summaries.
+    With ``ref`` None only the new session's inventory is checked."""
     problems: list[str] = []
     for template in TEMPLATES:
-        n, r = new.get(template), ref.get(template)
-        if n is None or r is None:
-            problems.append(f"{template}: missing results file ({'new' if n is None else 'reference'})")
+        n = new.get(template)
+        if n is None:
+            problems.append(f"{template}: missing results file (new)")
             continue
-        cells_new = {k for k in n if k.startswith(template + "_")}
-        cells_ref = {k for k in r if k.startswith(template + "_")}
         want = {c for c in expected if c.startswith(template + "_")}
+        cells_new = {k for k in n if k.startswith(template + "_")}
         for c in sorted(want - cells_new):
             problems.append(f"{c}: missing in new session")
-        for c in sorted(want - cells_ref):
-            problems.append(f"{c}: missing in reference session")
-        for c in sorted(want & cells_new & cells_ref):
-            rn, rr = n[c], r[c]
-            if len(rn) != len(rr):
-                problems.append(f"{c}: {len(rn)} rows vs {len(rr)} in reference")
-                continue
-            if [x.get("text") for x in rn] != [x.get("text") for x in rr]:
-                problems.append(f"{c}: input text differs from reference")
-            if [x.get("gold") for x in rn] != [x.get("gold") for x in rr]:
-                problems.append(f"{c}: gold labels differ from reference")
+        if ref is not None:
+            r = ref.get(template)
+            if r is None:
+                problems.append(f"{template}: missing results file (reference)")
+            else:
+                cells_ref = {k for k in r if k.startswith(template + "_")}
+                for c in sorted(want - cells_ref):
+                    problems.append(f"{c}: missing in reference session")
+                for c in sorted(want & cells_new & cells_ref):
+                    rn, rr = n[c], r[c]
+                    if len(rn) != len(rr):
+                        problems.append(f"{c}: {len(rn)} rows vs {len(rr)} in reference")
+                        continue
+                    if [_inputs(x) for x in rn] != [_inputs(x) for x in rr]:
+                        problems.append(f"{c}: input fields differ from reference")
+                    if [x.get("gold") for x in rn] != [x.get("gold") for x in rr]:
+                        problems.append(f"{c}: gold labels differ from reference")
         if reparsed is not None:
             rs = reparsed.get(template)
             if rs is None:
@@ -380,6 +413,19 @@ def verify_session(
                 for c in sorted(want - have):
                     problems.append(f"{c}: no accuracy in reparsed summary")
     return problems
+
+
+def reference_seed(cond: str, seed: str, rows: list[dict], entry: dict) -> str | None:
+    """The seed to verify ``seed`` against: the first other registered seed of
+    ``cond`` whose results are complete on main (seed 42 first when it is one
+    of them), or None when the condition has no other evaluated seed."""
+    complete = {
+        r["seed"] for r in rows if r["condition"] == cond and r["results"] == "2/2" and r["seed"] != seed
+    }
+    candidates = [s_ for s_ in entry["seeds"] if s_ in complete]
+    if "42" in candidates:
+        return "42"
+    return candidates[0] if candidates else None
 
 
 # ─── Steps ───────────────────────────────────────────────────────────────────
@@ -473,9 +519,10 @@ class Refresh:
         done = []
         for cond, seed, prs in todo:
             entry = self.matrix[cond]
-            ref_seed = "42" if seed != "42" else next((s for s in entry["seeds"] if s != seed), None)
-            print(f"[reparse] {cond} seed {seed} (reference seed {ref_seed})")
-            new_results, ref_results, reparsed = {}, {}, {}
+            ref_seed = reference_seed(cond, seed, rows, entry)
+            print(f"[reparse] {cond} seed {seed} (reference seed {ref_seed or 'none available'})")
+            new_results, reparsed = {}, {}
+            ref_results: dict[str, dict] | None = {} if ref_seed is not None else None
             for t, remote in zip(TEMPLATES, session_paths(cond, seed)["results"]):
                 local = self._download(remote)
                 rows_ = reparse_file(local, only=None)
@@ -486,16 +533,24 @@ class Refresh:
                 new_results[t] = load_results(local)
                 reparsed[t] = body
                 print(f"  wrote {out.relative_to(self.dir)} (cells_changed={body['reparse_metadata']['cells_changed']})")
-            if ref_seed is not None:
+            if ref_results is not None:
                 for t, remote in zip(TEMPLATES, session_paths(cond, ref_seed)["results"]):
                     ref_results[t] = load_results(self._download(remote))
             problems = verify_session(new_results, ref_results, expected_cells(entry), reparsed)
             report = self.dir / f"verify_{cond}_seed{seed}.md"
             verdict = "PASS" if not problems else f"FAIL ({len(problems)} problems)"
-            lines = [f"# {cond} seed {seed} vs seed {ref_seed}: {verdict}", ""]
-            lines += [f"- {p}" for p in problems] or [
-                "- every expected cell present; row counts, inputs and gold labels identical to the reference session"
-            ]
+            against = f"vs seed {ref_seed}" if ref_seed is not None else "(no reference session available)"
+            lines = [f"# {cond} seed {seed} {against}: {verdict}", ""]
+            if problems:
+                lines += [f"- {p}" for p in problems]
+            elif ref_seed is not None:
+                lines.append(
+                    "- every expected cell present; row counts, input fields and gold labels identical to the reference session"
+                )
+            else:
+                lines.append(
+                    "- every expected cell present in the results and the reparsed summaries; no other evaluated seed of this condition exists on main, so no cross-session comparison was made"
+                )
             print(f"  verification: {verdict} -> {report.name}")
             if problems:
                 for p in problems[:20]:
@@ -563,6 +618,8 @@ class Refresh:
         from huggingface_hub import snapshot_download
 
         print("[build] snapshotting summary JSONs and refined tables from main...")
+        if self.snapshot.exists():
+            shutil.rmtree(self.snapshot)
         snapshot_download(
             EXPERIMENTS_REPO,
             repo_type="dataset",
@@ -577,17 +634,21 @@ class Refresh:
             allow_patterns=[f"{TABLES_PREFIX}/*"],
             local_dir=str(self.main_tables),
         )
-        overlaid = []
+        overlaid, superseded = [], []
         if self.overlay.exists():
             for src in sorted(self.overlay.rglob("*_summary_reparsed_*.json")):
                 rel = src.relative_to(self.overlay)
                 dst = self.snapshot / rel
-                if not dst.exists():
-                    dst.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy(src, dst)
-                    overlaid.append(str(rel))
+                if dst.exists():
+                    superseded.append(str(rel))
+                    continue
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(src, dst)
+                overlaid.append(str(rel))
         if overlaid:
             print(f"[build] overlaid {len(overlaid)} local reparsed summaries not yet on main")
+        if superseded:
+            print(f"[build] {len(superseded)} overlay files are now on main and were ignored")
         if self.tables.exists():
             shutil.rmtree(self.tables)
         self.tables.mkdir(parents=True)
@@ -666,13 +727,13 @@ class Refresh:
         ]
         message = self.TABLES_PR_TITLE + (f" with {', '.join(sessions)}" if sessions else "")
         existing = [
-            n for n, pr in self.inv["open_prs"].items() if pr["title"].startswith(self.TABLES_PR_TITLE)
+            n
+            for n, pr in sorted(self.inv["open_prs"].items())
+            if pr["title"].startswith(self.TABLES_PR_TITLE)
+            and api.get_discussion_details(EXPERIMENTS_REPO, n, repo_type="dataset").status == "open"
         ]
         if existing:
-            num = min(existing)
-            if api.get_discussion_details(EXPERIMENTS_REPO, num, repo_type="dataset").status != "open":
-                existing = []
-        if existing:
+            num = existing[0]
             api.create_commit(
                 repo_id=EXPERIMENTS_REPO,
                 repo_type="dataset",
@@ -704,7 +765,8 @@ class Refresh:
             self._run(ANALYSIS_SCRIPTS / f"{fig}.py", "--tables-dir", str(self.tables))
         prov = ["--provisional", *sorted(self.provisional)] if self.provisional else []
         out = self._run(ANALYSIS_SCRIPTS / "build_phase3_tables.py", "--tables-dir", str(self.tables), *prov)
-        print(out.splitlines()[-1])
+        if out.strip():
+            print(out.strip().splitlines()[-1])
         stat = subprocess.run(
             ["git", "diff", "--stat", "--", "expedition-tiny-aya/analysis/figures-phase3/", str(PHASE3_ANALYSIS)],
             cwd=REPO_ROOT,

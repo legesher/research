@@ -154,16 +154,20 @@ def accounting_header(df: pd.DataFrame, provisional: set[str] | None = None) -> 
     sessions = fine.drop_duplicates(subset=["condition", "seed"])
     n_sessions = len(sessions)
     seeds_per_cond = sessions.groupby("condition")["seed"].nunique()
+    n_templates = int(df.template.nunique())
     baseline_cells = len(
         df.drop_duplicates(subset=["benchmark", "data", "instr", "template"])
+    )
+    known = [c for c, _ in CONDITIONS]
+    conds_in_data = sorted(
+        seeds_per_cond.index,
+        key=lambda c: (known.index(c) if c in known else len(known), c),
     )
     lines = [
         "% ─── Accounting (P3 methodology note) ───────────────────────────────",
         f"% {n_sessions + 1} sessions total = {n_sessions} fine-tuned (condition × seed) + 1 baseline",
     ]
-    for cond, _label in CONDITIONS:
-        if cond == "baseline" or cond not in seeds_per_cond.index:
-            continue
+    for cond in conds_in_data:
         n = int(seeds_per_cond[cond])
         seeds = ", ".join(
             sorted(sessions[sessions.condition == cond]["seed"], key=_seed_sort_key)
@@ -178,9 +182,9 @@ def accounting_header(df: pd.DataFrame, provisional: set[str] | None = None) -> 
     lines.append(f"%   - {len(df):,} from vs_baseline_cells.tsv (one row per fine-tuned")
     lines.append("%     (cond × seed × template × benchmark × data × instr))")
     lines.append(
-        f"%   - {baseline_cells} baseline cells = {baseline_cells // 2} (benchmark × data × instr) cells"
+        f"%   - {baseline_cells} baseline cells = {baseline_cells // n_templates} (benchmark × data × instr) cells"
     )
-    lines.append("%     × 2 templates (baseline runs without seed variation)")
+    lines.append(f"%     × {n_templates} templates (baseline runs without seed variation)")
     present_prov = provisional_sessions(df, provisional)
     if present_prov:
         lines.append("%")

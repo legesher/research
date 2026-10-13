@@ -85,6 +85,19 @@ class LadderTests(unittest.TestCase):
             "tiny-aya-base/condition-3-zh-5k-native-code-seed{seed}",
         )
 
+    def test_real_notebook_ladder_matches_the_tables_condition_list(self):
+        """The ladder the refresh reads and the condition list the LaTeX tables
+        render must name the same conditions; a condition added to one and not
+        the other would be silently dropped from status or from the tables."""
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "analysis" / "scripts"))
+        import build_phase3_tables as tables  # noqa: E402
+
+        matrix = rsr.load_eval_matrix()
+        self.assertEqual(set(matrix), {c for c, _ in tables.CONDITIONS})
+        for cond, entry in matrix.items():
+            self.assertTrue(entry["seeds"], cond)
+            self.assertEqual(len(rsr.expected_cells(entry)) % 8, 0, cond)
+
     def test_expected_cells_follow_the_registered_languages(self):
         entry = {"dataset_langs": ["en", "ur"], "instruction_langs": ["ur"]}
         cells = rsr.expected_cells(entry)
@@ -127,13 +140,35 @@ class ClassifyTests(unittest.TestCase):
         self.assertEqual(r["state"], "reparse PR #57 open")
         self.assertEqual(r["open_prs"], [57])
 
-    def test_misnamed_cond3_adapter_is_detected(self):
-        e = self.matrix["condition-3-zh-5k"]
+    def test_misnamed_unregistered_cond3_adapter_surfaces_in_status(self):
         lora = {"tiny-aya-base/phase-2-the-stack-v1-condition-3-zh-5k-seed123/adapter_config.json"}
         inv = self._inv(set(), lora)
-        r = rsr.classify_session("condition-3-zh-5k", "123", e, inv, False, set())
+        rows = {(r["condition"], r["seed"]): r for r in rsr.build_status(self.matrix, inv, set())}
+        self.assertIn(("condition-3-zh-5k", "123"), rows)
+        r = rows[("condition-3-zh-5k", "123")]
         self.assertEqual(r["adapter"], "misnamed (phase-2-the-stack-v1-condition-3-zh-5k-seed123)")
         self.assertEqual(r["state"], "adapter misnamed (unregistered)")
+        # the properly named seed-42 folder of the same condition is not mistaken for seed 123
+        self.assertEqual(rows[("condition-3-zh-5k", "42")]["adapter"], "missing")
+
+    def test_results_only_in_a_pr_are_not_reparsed_from_main(self):
+        e = self.matrix["condition-2-ur-20k"]
+        lora = {"tiny-aya-base/condition-2-ur-20k-seed123/adapter_config.json"}
+        prs = {9: {"title": "eval", "added": _session_files("condition-2-ur-20k", "123", reparsed=True), "note": ""}}
+        inv = self._inv(set(), lora, prs)
+        r = rsr.classify_session("condition-2-ur-20k", "123", e, inv, True, set())
+        self.assertEqual(r["state"], "results PR #9 open")
+
+    def test_reference_seed_prefers_42_then_any_complete_other_seed(self):
+        e = {"seeds": ["42", "123", "456"]}
+        rows = [
+            {"condition": "c", "seed": "42", "results": "2/2"},
+            {"condition": "c", "seed": "123", "results": "2/2"},
+            {"condition": "c", "seed": "456", "results": "0/2"},
+        ]
+        self.assertEqual(rsr.reference_seed("c", "123", rows, e), "42")
+        self.assertEqual(rsr.reference_seed("c", "42", rows, e), "123")
+        self.assertIsNone(rsr.reference_seed("c", "42", [rows[0]], e))
 
     def test_unregistered_seed_on_hub_appears_in_status(self):
         lora = {"tiny-aya-base/condition-3-zh-5k-native-code-seed123/adapter_config.json"}
@@ -187,7 +222,7 @@ class VerifySessionTests(unittest.TestCase):
         exp = {self.CELL1, self.CELL2}
         new = self._session()
         new["template2"][self.CELL2][0]["text"] = "这是另一个句子。"
-        self.assertEqual(rsr.verify_session(new, self._session(), exp), [f"{self.CELL2}: input text differs from reference"])
+        self.assertEqual(rsr.verify_session(new, self._session(), exp), [f"{self.CELL2}: input fields differ from reference"])
 
     def test_row_count_and_missing_cell_are_problems(self):
         exp = {self.CELL1, self.CELL2, "template1_xnli_data=zh_instr=ur"}
@@ -195,6 +230,28 @@ class VerifySessionTests(unittest.TestCase):
         problems = rsr.verify_session(new, self._session(), exp)
         self.assertIn(f"{self.CELL1}: 3 rows vs 2 in reference", problems)
         self.assertIn("template1_xnli_data=zh_instr=ur: missing in new session", problems)
+
+    def test_input_fields_are_compared_for_every_benchmark_not_only_sib200_text(self):
+        # XNLI rows carry premise/hypothesis, Belebele rows passage/question: no "text" key.
+        xnli = "template1_xnli_data=ur_instr=ur"
+        beleb = "template2_belebele_data=zh_instr=zh"
+        def rows_x(premise):
+            return [{"premise": premise, "hypothesis": "वह घर पर है।", "gold": "entailment", "raw_output": "x", "pred": "x", "correct": False}]
+        def rows_b(passage):
+            return [{"passage": passage, "question": "作者的观点是什么？", "gold": "B", "raw_output": "B", "pred": "B", "correct": True}]
+        ref = {"template1": {xnli: rows_x("वह घर गया।")}, "template2": {beleb: rows_b("这是一段文字。")}}
+        same = {"template1": {xnli: rows_x("वह घर गया।")}, "template2": {beleb: rows_b("这是一段文字。")}}
+        self.assertEqual(rsr.verify_session(same, ref, {xnli, beleb}), [])
+        changed = {"template1": {xnli: rows_x("वह बाज़ार गया।")}, "template2": {beleb: rows_b("这是另一段文字。")}}
+        self.assertEqual(
+            rsr.verify_session(changed, ref, {xnli, beleb}),
+            [f"{xnli}: input fields differ from reference", f"{beleb}: input fields differ from reference"],
+        )
+
+    def test_without_a_reference_only_the_inventory_is_checked(self):
+        exp = {self.CELL1, self.CELL2, "template1_xnli_data=zh_instr=ur"}
+        problems = rsr.verify_session(self._session(), None, exp, self._reparsed())
+        self.assertEqual(problems, ["template1_xnli_data=zh_instr=ur: missing in new session", "template1_xnli_data=zh_instr=ur: no accuracy in reparsed summary"])
 
     def test_reparsed_summary_missing_a_cell_is_a_problem(self):
         exp = {self.CELL1, self.CELL2}
