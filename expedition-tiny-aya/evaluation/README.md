@@ -62,7 +62,7 @@ legesher/language-decoded-lora/
 
 The eval script loads each adapter via `FastLanguageModel.from_pretrained(model_name=LORA_REPO, subfolder=<path>)`. For `baseline`, no subfolder; it loads `CohereLabs/tiny-aya-base` directly.
 
-**Seeds and statistical reporting.** Conditions with multiple registered seeds (cond-1-en-5k and cond-2-{zh,es,ur}-5k at three seeds; cond-1-en-20k, cond-2-{zh,es,ur}-20k, cond-3-zh-5k and cond-5-{zh,es,ur}-5k at two) should be evaluated at every seed and reported as mean ± std. Single-seed conditions are point estimates. Until the seed-123 evaluations of the 20k conditions are published, every 20k number in the analysis writeups is still a seed-42 point estimate. Aggregation happens offline from the per-`(condition, seed)` summary JSONs.
+**Seeds and statistical reporting.** Conditions with multiple registered seeds (cond-1-en-5k and cond-2-{zh,es,ur}-5k at three seeds; cond-1-en-20k, cond-2-{zh,es,ur}-20k, cond-3-zh-5k and cond-5-{zh,es,ur}-5k at two) should be evaluated at every seed and reported as mean ± std. Single-seed conditions are point estimates. As of 2026-10-13 the seed-123 evaluations are published for cond-1-en-20k, cond-2-es-20k and cond-5-zh-5k (provisional: evaluated in a later software environment than the seed-42 sessions, pending a drift check) and the analysis tables report those three as two-seed means; every other 20k, cond-3 and cond-5 number is still a seed-42 point estimate. `scripts/refresh_seed_results.py status` lists the current state per session. Aggregation happens offline from the per-`(condition, seed)` summary JSONs.
 
 ## Prompt Templates
 

@@ -27,13 +27,13 @@ the scientific source of truth and this repository is the navigational one.
 Run from the repository root:
 
 ```sh
-python3 -m pip install huggingface_hub     # the scripts import it at module level
+python3 -m pip install huggingface_hub pandas   # the scripts import them at module level
 HF_HUB_OFFLINE=1 python3 -m unittest discover -s expedition-tiny-aya/evaluation/scripts -p 'test_*.py' -v
 ```
 
-Summary lines to expect (count as of 2026-09-24; it grows, it never shrinks):
+Summary lines to expect (count as of 2026-10-13; it grows, it never shrinks):
 
-- `Ran 139 tests in 0.1s` then `OK`
+- `Ran 175 tests in 0.3s` then `OK`
 
 `.github/workflows/tests.yml` runs the same command on Python 3.12 with `HF_HUB_OFFLINE: "1"` set
 for the job; Python 3.14 also passes locally.
@@ -41,7 +41,8 @@ for the job; Python 3.14 also passes locally.
 Facts behind that command:
 
 - The suite is stdlib `unittest`; there is no pytest configuration and nothing to install beyond
-  `huggingface_hub`. The tests themselves make no network calls and patch every Hub call.
+  `huggingface_hub` and `pandas` (the `build_*` scripts under test import it). The tests themselves
+  make no network calls and patch every Hub call.
 - Each test module inserts its own directory on `sys.path` and imports the script under test by
   bare module name (`import reparse_results`), so no package install is needed.
 - The `build_*.py` scripts that rebuild published tables do download per-row data from Hugging Face
