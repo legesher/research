@@ -37,13 +37,13 @@ The preprocessing notebook caches all 4 dataset languages × 4 instruction-langu
 | condition-2-ur-5k  | 42, 123, 456 | en, zh, es, ur | en, ur            | **64**                      | ✅ all seeds     |
 | condition-2-ur-20k | 42, 123      | en, zh, es, ur | en, ur            | **64**                      | ✅ 42, ⏳ 123    |
 | condition-3-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      | ✅               |
-| condition-5-zh-5k  | 42           | en, zh, es, ur | en, zh            | **64**                      | ✅               |
-| condition-5-es-5k  | 42           | en, zh, es, ur | en, es            | **64**                      | ✅               |
+| condition-5-zh-5k  | 42, 123      | en, zh, es, ur | en, zh            | **64**                      | ✅ all seeds     |
+| condition-5-es-5k  | 42, 123      | en, zh, es, ur | en, es            | **64**                      | ✅ 42, ⏳ 123    |
 | condition-5-ur-5k  | 42, 123      | en, zh, es, ur | en, ur            | **64**                      | ✅ all seeds     |
 
 Cells per `(condition, seed)` = 4 benchmarks × 2 templates × dataset-langs × instruction-langs.
 
-⏳ in the last column marks a registered seed whose adapter is still training (October 2026 seed-123 batch for the 20k conditions). The eval notebook will fail to load that adapter until it is pushed to Hugging Face.
+⏳ in the last column marks a registered seed whose adapter is still training (October 2026 seed-123 batch for the 20k and condition-5 runs). The eval notebook will fail to load that adapter until it is pushed to Hugging Face.
 
 **Rule for condition-2/3/5:** instruction language is always English OR the model's trained-on language, regardless of which dataset language we're evaluating against. A condition-2-ur model evaluated on `xnli_zh` gets either English or Urdu instructions, never Chinese — the model wasn't trained to follow Chinese instructions in that condition.
 
@@ -57,13 +57,12 @@ legesher/language-decoded-lora/
     ├── condition-2-{zh,es,ur}-5k-seed{42,123,456}/
     ├── condition-2-{zh,es,ur}-20k-seed{42,123}/  (zh, ur seed 123 pending)
     ├── condition-3-zh-5k-native-code-seed42/
-    ├── condition-5-{es,zh}-5k-c4ai-aya-expanse-32b-seed42/
-    └── condition-5-ur-5k-c4ai-aya-expanse-32b-seed{42,123}/
+    └── condition-5-{es,zh,ur}-5k-c4ai-aya-expanse-32b-seed{42,123}/  (es seed 123 pending)
 ```
 
 The eval script loads each adapter via `FastLanguageModel.from_pretrained(model_name=LORA_REPO, subfolder=<path>)`. For `baseline`, no subfolder; it loads `CohereLabs/tiny-aya-base` directly.
 
-**Seeds and statistical reporting.** Conditions with multiple registered seeds (cond-1-en-5k and cond-2-{zh,es,ur}-5k at three seeds; cond-1-en-20k, cond-2-{zh,es,ur}-20k and cond-5-ur-5k at two) should be evaluated at every seed and reported as mean ± std. Single-seed conditions are point estimates. Until the seed-123 evaluations of the 20k conditions are published, every 20k number in the analysis writeups is still a seed-42 point estimate. Aggregation happens offline from the per-`(condition, seed)` summary JSONs.
+**Seeds and statistical reporting.** Conditions with multiple registered seeds (cond-1-en-5k and cond-2-{zh,es,ur}-5k at three seeds; cond-1-en-20k, cond-2-{zh,es,ur}-20k and cond-5-{zh,es,ur}-5k at two) should be evaluated at every seed and reported as mean ± std. Single-seed conditions are point estimates. Until the seed-123 evaluations of the 20k conditions are published, every 20k number in the analysis writeups is still a seed-42 point estimate. Aggregation happens offline from the per-`(condition, seed)` summary JSONs.
 
 ## Prompt Templates
 
@@ -121,14 +120,14 @@ From the saved preprocess notebook version, use **Output → New Dataset** (or *
 
 6. **Commit** to save outputs, or upload them to `legesher/language-decoded-experiments` on HF.
 
-7. **Repeat for each `(condition, seed)`.** With the seeds registered above, the full sweep is **26 Kaggle sessions** when every adapter is on HF:
+7. **Repeat for each `(condition, seed)`.** With the seeds registered above, the full sweep is **28 Kaggle sessions** when every adapter is on HF:
    - 1 baseline
    - 3 cond-1-en-5k (seeds 42, 123, 456) + 2 cond-1-en-20k (seeds 42, 123)
    - 9 cond-2-{zh,es,ur}-5k (3 langs × 3 seeds) + 6 cond-2-{zh,es,ur}-20k (3 langs × 2 seeds)
    - 1 cond-3-zh-5k
-   - 2 cond-5-zh-5k and cond-5-es-5k (seed 42) + 2 cond-5-ur-5k (seeds 42, 123)
+   - 6 cond-5-{zh,es,ur}-5k (3 langs × 2 seeds)
 
-   Today, **24 of 26** can run. The seed-123 adapters for `condition-2-zh-20k` and `condition-2-ur-20k` are still training (see the ⏳ marks in the matrix); run those two sessions once the adapters land on HF.
+   Today, **25 of 28** can run. The seed-123 adapters for `condition-2-zh-20k`, `condition-2-ur-20k` and `condition-5-es-5k` are still training (see the ⏳ marks in the matrix); run those three sessions once the adapters land on HF.
 
 > **Schema note:** if you have cached JSONLs from an earlier version of this pipeline (the PR #37-era `english`/`language` column suffixes), delete `eval_unsloth_artifacts/datasets/*.jsonl` and rerun preprocess before running evaluate. The current schema uses `prompt_{template_id}_{instruction_lang}` columns.
 
