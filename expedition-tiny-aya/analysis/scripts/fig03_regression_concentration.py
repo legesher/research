@@ -44,7 +44,7 @@ TEMPLATES = ["t1", "t2"]
 def regression_counts(df: pd.DataFrame) -> pd.Series:
     """Per-condition count of SIB-200 cells with Δacc < 0 (raw rows)."""
     reg = df[(df.benchmark == "sib200") & (df.delta_acc < 0)]
-    counts = reg.groupby("condition").size().sort_values(ascending=False)
+    counts = reg.groupby("condition").size().sort_values(ascending=False, kind="mergesort")
     return counts
 
 

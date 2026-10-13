@@ -83,7 +83,11 @@ def render_slopegraph(
         label_fontsize: pt for per-row labels at left of "Original".
         min_sep_pp: minimum vertical separation between adjacent row labels (pp).
     """
-    plotted = df_subset.sort_values("delta_orig", ascending=False).reset_index(drop=True)
+    plotted = df_subset.sort_values(
+        ["delta_orig", "condition", "seed", "template", "benchmark", "data", "instr"],
+        ascending=[False, True, True, True, True, True, True],
+        kind="mergesort",
+    ).reset_index(drop=True)
     n_plot = len(plotted)
 
     # Row label includes benchmark so the same script can emit per-benchmark
@@ -164,7 +168,13 @@ def main() -> None:
     flips = load_table("conclusion_flips", tables_dir=args.tables_dir).copy()
     flips["shift"] = flips["delta_rep"] - flips["delta_orig"]
     flips["abs_shift"] = flips["shift"].abs()
-    flips = flips.sort_values("abs_shift", ascending=False).reset_index(drop=True)
+    # Tie-breakers keep rows with equal |shift| in a fixed order, so the
+    # appendix TSV and the slopegraph rows are reproducible run to run.
+    flips = flips.sort_values(
+        ["abs_shift", "condition", "seed", "template", "benchmark", "data", "instr"],
+        ascending=[False, True, True, True, True, True, True],
+        kind="mergesort",
+    ).reset_index(drop=True)
 
     n_total = len(flips)
 
