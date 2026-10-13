@@ -62,7 +62,7 @@ The "Mixed Native Sources" name for cond-3 is a Phase 2 holdover; its meaning sh
 | **Belebele** | 4-way reading-comprehension MC | — | ✓ |
 | MGSM | Multilingual math reasoning | ✓ | **dropped** (null result at 3.35B, 250 examples/lang) |
 
-Each Phase 3 session evaluates on a `4 benchmarks × template{1,2} × data_lang × instr_lang` matrix, 3 seeds at 5k, 1 seed at 20k. See [Evaluation Benchmarks](https://huggingface.co/datasets/legesher/language-decoded-experiments#evaluation-benchmarks) on the HF card for selection rationale per benchmark.
+Each Phase 3 session evaluates on a `4 benchmarks × template{1,2} × data_lang × instr_lang` matrix, 3 seeds at 5k and 2 seeds at 20k (seed 123 at 20k was added in October 2026; its evaluations are in progress, so published 20k numbers are still single-seed). See [Evaluation Benchmarks](https://huggingface.co/datasets/legesher/language-decoded-experiments#evaluation-benchmarks) on the HF card for selection rationale per benchmark.
 
 ---
 
