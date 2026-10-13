@@ -171,11 +171,13 @@ class NamingTests(unittest.TestCase):
         m = drift.SESSION_RE.match("baseline_seednone_results_template2.json")
         self.assertEqual((m["cond"], m["seed"], m["template"]), ("baseline", "none", "template2"))
         self.assertIsNone(drift.SESSION_RE.match("condition-2-es-20k_seed42_summary_template1.json"))
+        self.assertIsNone(drift.SESSION_RE.match("condition-2-es-20k_seed42_results_template1.json.bak"))
 
     def test_reference_regex_and_path(self):
         m = drift.REFERENCE_RE.match("condition-2-es-20k/seed42")
         self.assertEqual((m["cond"], m["seed"]), ("condition-2-es-20k", "42"))
         self.assertIsNone(drift.REFERENCE_RE.match("condition-2-es-20k"))
+        self.assertIsNone(drift.REFERENCE_RE.match("phase3/conditions/condition-2-es-20k/seed42"))
         self.assertEqual(
             drift._reference_path("condition-2-es-20k", "42", "template2"),
             "phase3/conditions/condition-2-es-20k/seed42/condition-2-es-20k_seed42_results_template2.json",
