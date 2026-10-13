@@ -69,7 +69,7 @@ def main() -> None:
 
     # Sort rows by mean_delta_orig descending so labels on the left column
     # are top-to-bottom in the same order as the lines.
-    sub = sub.sort_values("delta_orig_pp", ascending=False).reset_index(drop=True)
+    sub = sub.sort_values("delta_orig_pp", ascending=False, kind="mergesort").reset_index(drop=True)
 
     fig, ax = plt.subplots(figsize=(WIDTH_DOUBLE, 3.5))
     x_orig, x_rep = 0.0, 1.0

@@ -111,7 +111,7 @@ def draw_panel(ax: plt.Axes, panel_df: pd.DataFrame, panel_label: str, n_annotat
 
     # Annotate the top-|delta_orig| cells. Hand-tuned offsets — alternate
     # left/right so labels don't pile up on either margin.
-    top = panel_df.reindex(panel_df.delta_orig.abs().sort_values(ascending=False).index).head(n_annotate)
+    top = panel_df.reindex(panel_df.delta_orig.abs().sort_values(ascending=False, kind="mergesort").index).head(n_annotate)
     for i, row in enumerate(top.itertuples()):
         side_left = (i % 2 == 0)
         x_anchor = X_LEFT if side_left else X_RIGHT

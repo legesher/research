@@ -248,7 +248,11 @@ def figures_out_dir() -> Path:
 
 
 def save_figure(fig: plt.Figure, stem: str) -> None:
-    """Write fig as both PDF (paper) and PNG (blog/preview)."""
+    """Write fig as both PDF (paper) and PNG (blog/preview).
+
+    The PDF is written without a creation timestamp so that two runs on the
+    same tables produce byte-identical files; a regeneration diff then shows
+    data changes only."""
     out = figures_out_dir()
-    fig.savefig(out / f"{stem}.pdf")
+    fig.savefig(out / f"{stem}.pdf", metadata={"CreationDate": None})
     fig.savefig(out / f"{stem}.png", dpi=200)
