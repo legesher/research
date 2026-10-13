@@ -10,8 +10,18 @@ Generates booktabs-formatted tables into a single
 * Type 4 — Δ-vs-baseline (refined), one per benchmark      (4 tables)
 
 Type-1/2/4 tables carry an ``$n_s$'' column showing the seed count for
-each condition (P1), so a reader can distinguish 3-seed multi-trial
-estimates from 1-seed point estimates at a glance.
+each condition (P1), so a reader can distinguish multi-seed estimates from
+1-seed point estimates at a glance. Seed counts, and the session and cell
+accounting in the file header, are computed from the data, never hard-coded.
+
+CLI:
+    python build_phase3_tables.py [--tables-dir PATH] [--provisional 'COND/seedN' ...]
+
+    --tables-dir reads vs_baseline_cells.tsv from a local directory (a staged
+    refresh) instead of Hugging Face. --provisional names sessions
+    (condition/seedN, shell wildcards allowed) whose results are not yet
+    final; every table that includes such a session gets a LaTeX comment
+    saying so, and the header lists them.
 
 Plus tables tied to specific paper sections in §4 (added later, in
 paper-section order rather than table-type order — see each writer's
@@ -39,6 +49,7 @@ Conventions:
 """
 from __future__ import annotations
 
+import fnmatch
 from pathlib import Path
 
 import pandas as pd
@@ -101,7 +112,7 @@ CONDITIONS: list[tuple[str, str]] = [
 def n_seeds_for(df: pd.DataFrame, cond: str) -> int:
     """Return the seed count for a condition. Baseline returns 1 (one
     un-fine-tuned reference run with seed=none); fine-tuned conditions
-    return 3 or 1 depending on which seeds were actually run."""
+    return the number of distinct seeds actually run (1, 2 or 3 today)."""
     if cond == "baseline":
         return 1
     return int(df[df.condition == cond]["seed"].nunique())
@@ -113,6 +124,92 @@ def fmt_n_seeds(n: int, cond: str) -> str:
     if cond == "baseline":
         return "--"
     return str(n)
+
+# ─── Header accounting (computed from the data) ─────────────────────────────
+
+
+def is_provisional(cond: str, seed: str, patterns) -> bool:
+    """True when ``condition/seedN`` matches any shell-style pattern."""
+    key = f"{cond}/seed{seed}"
+    return any(fnmatch.fnmatchcase(key, pat) for pat in patterns)
+
+
+def provisional_sessions(df: pd.DataFrame, patterns) -> list[str]:
+    """``condition/seedN`` keys present in ``df`` that match the patterns."""
+    fine = df[df.condition != "baseline"].drop_duplicates(subset=["condition", "seed"])
+    return sorted(
+        f"{c}/seed{s}" for c, s in zip(fine.condition, fine.seed) if is_provisional(c, s, patterns or ())
+    )
+
+
+def accounting_header(df: pd.DataFrame, provisional: set[str] | None = None) -> list[str]:
+    """Session and cell accounting for the tables.tex header, derived from the
+    cells file so it cannot drift from the data when a seed is added.
+
+    Fine-tuned sessions are the distinct (condition, seed) pairs; the baseline
+    is one un-fine-tuned reference. Cells are the rows of vs_baseline_cells.tsv
+    plus the baseline's own cells (one per (benchmark, data, instr, template)).
+    """
+    fine = df[df.condition != "baseline"]
+    sessions = fine.drop_duplicates(subset=["condition", "seed"])
+    n_sessions = len(sessions)
+    seeds_per_cond = sessions.groupby("condition")["seed"].nunique()
+    baseline_cells = len(
+        df.drop_duplicates(subset=["benchmark", "data", "instr", "template"])
+    )
+    lines = [
+        "% ─── Accounting (P3 methodology note) ───────────────────────────────",
+        f"% {n_sessions + 1} sessions total = {n_sessions} fine-tuned (condition × seed) + 1 baseline",
+    ]
+    for cond, _label in CONDITIONS:
+        if cond == "baseline" or cond not in seeds_per_cond.index:
+            continue
+        n = int(seeds_per_cond[cond])
+        seeds = ", ".join(
+            sorted(sessions[sessions.condition == cond]["seed"], key=_seed_sort_key)
+        )
+        kind = "multi-seed" if n > 1 else "single-seed"
+        lines.append(f"%   - {cond}: {n} seed{'s' if n != 1 else ''} ({seeds}) = {n} {kind} session{'s' if n != 1 else ''}")
+    lines.append("%   - 1 baseline (seed=none)          = 1  un-fine-tuned reference")
+    lines.append("%")
+    lines.append(
+        f"% {len(df) + baseline_cells:,} observations = {len(df):,} fine-tuned cells + {baseline_cells} baseline cells"
+    )
+    lines.append(f"%   - {len(df):,} from vs_baseline_cells.tsv (one row per fine-tuned")
+    lines.append("%     (cond × seed × template × benchmark × data × instr))")
+    lines.append(
+        f"%   - {baseline_cells} baseline cells = {baseline_cells // 2} (benchmark × data × instr) cells"
+    )
+    lines.append("%     × 2 templates (baseline runs without seed variation)")
+    present_prov = provisional_sessions(df, provisional)
+    if present_prov:
+        lines.append("%")
+        lines.append("% PROVISIONAL sessions (evaluated in a later software environment than")
+        lines.append("% the rest; not final until the evaluation drift between the two")
+        lines.append("% environments has been measured):")
+        for key in present_prov:
+            lines.append(f"%   - {key}")
+        lines.append("% Tables that include these sessions carry a '% provisional' comment.")
+    lines.append("%")
+    return lines
+
+
+def _seed_sort_key(seed: str) -> tuple[int, int | str]:
+    seed = str(seed)
+    return (0, int(seed)) if seed.isdigit() else (1, seed)
+
+
+def provisional_note(df: pd.DataFrame, provisional: set[str] | None) -> str:
+    """One LaTeX comment line naming the provisional sessions present in
+    ``df``, or an empty string when none are."""
+    present = provisional_sessions(df, provisional)
+    if not present:
+        return ""
+    return (
+        f"% provisional: includes {', '.join(present)}; "
+        "not final until the evaluation drift check is resolved"
+    )
+
 
 # Repo-relative — this script lives at expedition-tiny-aya/analysis/scripts/,
 # tables.tex lands at expedition-tiny-aya/analysis/phase-3/.
@@ -126,15 +223,22 @@ MINUS = "$-$"
 # ─── IO ─────────────────────────────────────────────────────────────────────
 
 
-def load_cells() -> pd.DataFrame:
-    from huggingface_hub import hf_hub_download
+def load_cells(tables_dir: Path | None = None) -> pd.DataFrame:
+    """Load vs_baseline_cells.tsv from ``tables_dir`` when given, else from
+    Hugging Face main (cached by huggingface_hub)."""
+    if tables_dir is not None:
+        cached = Path(tables_dir) / "vs_baseline_cells.tsv"
+        if not cached.exists():
+            raise FileNotFoundError(f"vs_baseline_cells.tsv not found under {tables_dir}")
+    else:
+        from huggingface_hub import hf_hub_download
 
-    cached = hf_hub_download(
-        repo_id=HF_REPO_ID,
-        repo_type=HF_REPO_TYPE,
-        filename=f"{HF_TABLES_PREFIX}/vs_baseline_cells.tsv",
-    )
-    df = pd.read_csv(cached, sep="\t")
+        cached = hf_hub_download(
+            repo_id=HF_REPO_ID,
+            repo_type=HF_REPO_TYPE,
+            filename=f"{HF_TABLES_PREFIX}/vs_baseline_cells.tsv",
+        )
+    df = pd.read_csv(cached, sep="\t", dtype={"seed": str})
     # Delta columns may be strings with leading + sign; coerce.
     for c in ("delta_orig", "delta_rep"):
         if df[c].dtype == object:
@@ -623,9 +727,10 @@ def _matched_ladder_conditions(lang: str) -> list[tuple[str, str]]:
 
 def _matched_per_seed_stats(
     df: pd.DataFrame, condition: str, benchmark: str, lang: str
-) -> tuple[float, float, int]:
-    """For (cond, benchmark, data=lang, instr=lang), compute (mean, std, n_seeds)
-    of per-seed accuracies, where each seed's value is averaged across templates."""
+) -> tuple[float, float, int, list[float]]:
+    """For (cond, benchmark, data=lang, instr=lang), compute (mean, std, n_seeds,
+    per-seed values in ascending seed order) of per-seed accuracies, where each
+    seed's value is averaged across templates."""
     sub = df[
         (df.condition == condition) & (df.benchmark == benchmark)
         & (df.data == lang) & (df.instr == lang)
@@ -633,8 +738,10 @@ def _matched_per_seed_stats(
     per_seed = sub.groupby("seed")["cond_rep"].mean()
     n = len(per_seed)
     if n == 0:
-        return float("nan"), float("nan"), 0
-    return float(per_seed.mean()), float(per_seed.std(ddof=1)) if n > 1 else float("nan"), n
+        return float("nan"), float("nan"), 0, []
+    per_seed = per_seed.reindex(sorted(per_seed.index, key=_seed_sort_key))
+    std = float(per_seed.std(ddof=1)) if n > 1 else float("nan")
+    return float(per_seed.mean()), std, n, [float(v) for v in per_seed]
 
 
 def _matched_baseline(df: pd.DataFrame, benchmark: str, lang: str) -> float:
@@ -644,13 +751,23 @@ def _matched_baseline(df: pd.DataFrame, benchmark: str, lang: str) -> float:
     return float(sub["baseline_rep"].mean()) if len(sub) else float("nan")
 
 
-def fmt_delta_with_std(delta: float, std: float) -> str:
-    if pd.isna(delta):
-        return "--"
+def _fmt_pp1(delta: float) -> str:
     pp = round(delta * 100.0, 1)
     if pp == 0:
         pp = 0.0
-    base = f"+{pp:.1f}" if pp >= 0 else f"{MINUS}{abs(pp):.1f}"
+    return f"+{pp:.1f}" if pp >= 0 else f"{MINUS}{abs(pp):.1f}"
+
+
+def fmt_delta_with_std(delta: float, std: float, per_seed_deltas: list[float] | None = None) -> str:
+    """Delta cell for the matched ladder. One seed: the point estimate. Two
+    seeds: the mean followed by the two per-seed deltas in parentheses (seed
+    order), because a two-seed standard deviation is not a spread estimate.
+    Three or more seeds: mean $\\pm$ sample std."""
+    if pd.isna(delta):
+        return "--"
+    base = _fmt_pp1(delta)
+    if per_seed_deltas is not None and len(per_seed_deltas) == 2:
+        return base + " (" + "/".join(_fmt_pp1(d) for d in per_seed_deltas) + ")"
     if pd.isna(std):
         return base
     return base + r"\,$\pm$\," + f"{std * 100:.1f}"
@@ -686,12 +803,12 @@ def write_table_matched_ladder(df: pd.DataFrame, lang: str) -> str:
         cells: list[str] = []
         base = {b: _matched_baseline(df, b, lang) for b in BENCH_ORDER}
         for b in BENCH_ORDER:
-            mean_acc, std_acc, n_seeds = _matched_per_seed_stats(df, cond_id, b, lang)
+            mean_acc, std_acc, n_seeds, per_seed = _matched_per_seed_stats(df, cond_id, b, lang)
             if n_seeds == 0:
                 cells.append("--")
                 continue
             delta = mean_acc - base[b]
-            cells.append(fmt_delta_with_std(delta, std_acc))
+            cells.append(fmt_delta_with_std(delta, std_acc, [v - base[b] for v in per_seed]))
         lines.append(f"    {cond_label} & " + " & ".join(cells) + r" \\")
     lines += [
         r"    \bottomrule",
@@ -699,9 +816,11 @@ def write_table_matched_ladder(df: pd.DataFrame, lang: str) -> str:
         r"  \caption{Matched-language ladder for " + lang_name + r": each "
         r"non-baseline row is the condition's mean $\Delta$ accuracy vs "
         r"baseline on matched-diagonal cells (data $=$ instr $=$ "
-        + lang + r"), under refined extractor, with $\pm$std across seeds "
-        r"where multi-seed data is available. Baseline row shows absolute "
-        r"accuracy (no $\Delta$).}",
+        + lang + r"), under refined extractor. Three-seed conditions show "
+        r"mean $\pm$ std across seeds; two-seed conditions show the mean "
+        r"followed by the two per-seed values in parentheses (seed order); "
+        r"single-seed conditions are point estimates. Baseline row shows "
+        r"absolute accuracy (no $\Delta$).}",
         r"  \label{tab:matched-ladder-" + lang + r"}",
         r"\end{table}",
     ]
@@ -934,8 +1053,33 @@ def write_table_mirror_flips(df: pd.DataFrame) -> str:
 # ─── Driver ─────────────────────────────────────────────────────────────────
 
 
+def _with_note(block: str, note: str) -> str:
+    """Prefix a table block with the provisional comment when one applies.
+    Every table aggregates across seeds, so the note applies to all of them."""
+    return f"{note}\n{block}" if note else block
+
+
 def main() -> None:
-    df = load_cells()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Build the Phase-3 LaTeX result tables.")
+    parser.add_argument(
+        "--tables-dir",
+        type=Path,
+        default=None,
+        help="Read vs_baseline_cells.tsv from this directory instead of Hugging Face.",
+    )
+    parser.add_argument(
+        "--provisional",
+        nargs="*",
+        default=[],
+        metavar="COND/SEED",
+        help="Sessions (condition/seedN, shell wildcards allowed) whose results are provisional; noted in the header and on every table that includes them.",
+    )
+    args = parser.parse_args()
+    provisional = set(args.provisional)
+
+    df = load_cells(args.tables_dir)
     print(
         f"[load] rows={len(df)} "
         f"conditions={df.condition.nunique()} "
@@ -953,20 +1097,7 @@ def main() -> None:
     )
     out.append("% Requires: \\usepackage{booktabs}")
     out.append("%")
-    out.append("% ─── Accounting (P3 methodology note) ───────────────────────────────")
-    out.append("% 21 sessions total = 20 fine-tuned (condition × seed) + 1 baseline")
-    out.append("%   - 4 five-K conditions × 3 seeds = 12 multi-seed sessions")
-    out.append("%   - 4 twenty-K conditions × 1 seed = 4  single-seed sessions")
-    out.append("%   - 1 cond-3-zh-5k × 1 seed         = 1  single-seed session")
-    out.append("%   - 3 cond-5 conditions × 1 seed    = 3  single-seed sessions")
-    out.append("%   - 1 baseline (seed=none)          = 1  un-fine-tuned reference")
-    out.append("%")
-    out.append("% 1,664 observations = 1,536 fine-tuned cells + 128 baseline cells")
-    out.append("%   - 1,536 from vs_baseline_cells.tsv (one row per fine-tuned")
-    out.append("%     (cond × seed × template × benchmark × data × instr))")
-    out.append("%   - 128 baseline cells = 64 (benchmark × data × instr) cells")
-    out.append("%     × 2 templates (baseline runs without seed variation)")
-    out.append("%")
+    out.extend(accounting_header(df, provisional))
     out.append("% Aggregation policy: when reporting means or stds across the seed")
     out.append("% dimension, the pipeline collapses templates within each seed")
     out.append("% FIRST, then averages across seeds. Per-seed std uses ddof=1.")
@@ -975,28 +1106,30 @@ def main() -> None:
     out.append("% ────────────────────────────────────────────────────────────────────")
     out.append("")
 
+    note = provisional_note(df, provisional)
+
     out.append("% ─── Type 1: Refined-extractor accuracy, one per benchmark ───")
     out.append("")
     for b in BENCH_ORDER:
         block = write_type1_table(df, b)
         print(f"[type1:{b}] rows_emitted={block.count(chr(92) + chr(92))}")
-        out.append(block)
+        out.append(_with_note(block, note))
         out.append("")
 
     out.append("% ─── Type 2: Native vs English prompt ───")
     out.append("")
     block = write_type2_native(df)
     print(f"[type2:native] rows_emitted={block.count(chr(92) + chr(92))}")
-    out.append(block)
+    out.append(_with_note(block, note))
     out.append("")
     block = write_type2_english(df)
     print(f"[type2:english] rows_emitted={block.count(chr(92) + chr(92))}")
-    out.append(block)
+    out.append(_with_note(block, note))
     out.append("")
     # P2: matched-diagonal Δ variant; sits next to Type-2 native it supplements
     block = write_type2_native_delta(df)
     print(f"[type2:native-delta] rows_emitted={block.count(chr(92) + chr(92))}")
-    out.append(block)
+    out.append(_with_note(block, note))
     out.append("")
 
     out.append("% ─── Type 3: Orig vs refined side-by-side, one per benchmark ───")
@@ -1004,7 +1137,7 @@ def main() -> None:
     for b in BENCH_ORDER:
         block = write_type3_table(df, b)
         print(f"[type3:{b}] rows_emitted={block.count(chr(92) + chr(92))}")
-        out.append(block)
+        out.append(_with_note(block, note))
         out.append("")
 
     out.append("% ─── Type 4: Δ-vs-baseline (refined), one per benchmark ───")
@@ -1012,7 +1145,7 @@ def main() -> None:
     for b in BENCH_ORDER:
         block = write_type4_table(df, b)
         print(f"[type4:{b}] rows_emitted={block.count(chr(92) + chr(92))}")
-        out.append(block)
+        out.append(_with_note(block, note))
         out.append("")
 
     # ─── Tables for paper §4 (sections referenced in each writer's docstring) ─
@@ -1020,7 +1153,7 @@ def main() -> None:
     out.append("")
     block = write_table_baseline_headroom(df)
     print(f"[s4.1:baseline-headroom] rows_emitted={block.count(chr(92) + chr(92))}")
-    out.append(block)
+    out.append(_with_note(block, note))
     out.append("")
 
     out.append("% ─── §4.3 Per-language matched-language ladder ───")
@@ -1028,28 +1161,28 @@ def main() -> None:
     for lang in ("es", "zh", "ur"):
         block = write_table_matched_ladder(df, lang)
         print(f"[s4.3:matched-ladder-{lang}] rows_emitted={block.count(chr(92) + chr(92))}")
-        out.append(block)
+        out.append(_with_note(block, note))
         out.append("")
 
     out.append("% ─── §4.4 Cond-2 vs Cond-5 head-to-head ───")
     out.append("")
     block = write_table_cond2_vs_cond5(df)
     print(f"[s4.4:cond2-vs-cond5] rows_emitted={block.count(chr(92) + chr(92))}")
-    out.append(block)
+    out.append(_with_note(block, note))
     out.append("")
 
     out.append("% ─── §4.6 Cross-lingual transfer ───")
     out.append("")
     block = write_table_cross_lingual_transfer(df)
     print(f"[s4.6:cross-lingual-transfer] rows_emitted={block.count(chr(92) + chr(92))}")
-    out.append(block)
+    out.append(_with_note(block, note))
     out.append("")
 
     out.append("% ─── §4.7 SIB-200 sign-flip catalogue ───")
     out.append("")
     block = write_table_mirror_flips(df)
     print(f"[s4.7:sib200-sign-flips] rows_emitted={block.count(chr(92) + chr(92))}")
-    out.append(block)
+    out.append(_with_note(block, note))
     out.append("")
 
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)

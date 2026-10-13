@@ -392,7 +392,7 @@ If a paper plot needs to flag which (condition, benchmark) cells are "extractor-
 _See **Figure 4** for the sign-flip slopegraphs:_
 
 - _`figures-phase3/fig04_signflip_sib200_top15.pdf`_ — _main paper figure, top 15 of 43 SIB-200 flips by |shift|._
-- _`figures-phase3/fig04_signflip_sib200_all43.pdf`_ — _appendix figure, all 43 SIB-200 flips._
+- _`figures-phase3/fig04_signflip_sib200_all45.pdf`_ — _appendix figure, all SIB-200 flips (43 for the Phase-3 sessions; 45 with the provisional seed-123 session of condition-2-es-20k)._
 - _`figures-phase3/fig04_signflip_xnli_all5.pdf`_ — _separate small figure for the 5 XNLI flips._
 
 ### 8.8 Reading guide — which number to report for which claim

@@ -42,6 +42,7 @@ The most consequential non-flip is **cond-2-ur-5k SIB-200**: +0.205 under the or
 | `_summary_*.json` on HF (no `reparsed`)                                                                                                                  | Inference-time extractor accuracy                       | No — retained for provenance only                       |
 | Phase 3 writeup ([`phase-3/phase3-refined-evaluation.md`](phase-3/phase3-refined-evaluation.md))                                                          | Both readings side-by-side with narrative               | Authoritative narrative; numbers mirror HF tables       |
 | Anything in this repo dated before 2026-05-19 that quotes Phase 3 SIB-200                                                                                | Probably original-extractor                             | Re-check against `cells.tsv` / `conclusion_flips.tsv`   |
+| `analysis/phase-3/cross-seed-variance.tsv` and `cross-seed-variance-by-condition.md` (generated from `vs_baseline_cells.tsv`)                            | Per-seed values, n_seeds, mean/std/min/max per aggregate | **Yes** for seed-count and spread claims; rows marked `provisional` are not final |
 | External (slides, Linear, drafts) quoting Phase 3 SIB-200 from `_summary_*.json`                                                                         | Original-extractor numbers — likely wrong post-refinement | Update against refined siblings                        |
 
 ## Rule for paper-prep
@@ -61,4 +62,8 @@ If a number you have in a draft was sourced from a `_summary_*.json` file, find 
 - Cross-session cells pivot (HF): [`cells.tsv`](https://huggingface.co/datasets/legesher/language-decoded-experiments/resolve/main/phase3/analysis/refined-tables/cells.tsv)
 - HF dataset card banner: [`legesher/language-decoded-experiments`](https://huggingface.co/datasets/legesher/language-decoded-experiments)
 
-_Last updated: 2026-05-25._
+## Seed counts
+
+A condition's seed count is whatever `vs_baseline_cells.tsv` holds, never a fixed list: `build_phase3_tables.py` derives the `$n_s$` column and the header accounting from it, and `build_cross_seed_variance.py` derives `n_seeds`. When a new (condition, seed) session lands, run `evaluation/scripts/refresh_seed_results.py` (see `phase-3/data-refresh-cookbook.md`). Sessions evaluated in a later software environment than the Phase-3 sessions are labelled provisional in every generated output until the evaluation drift between the environments has been measured; a provisional number may be prepared for the paper but not presented as final.
+
+_Last updated: 2026-10-13._
