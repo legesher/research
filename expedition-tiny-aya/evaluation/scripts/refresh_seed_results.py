@@ -25,7 +25,8 @@ Subcommands (run from the repository root; ``all`` runs them in order):
   build    Snapshot the per-session summary JSONs from main, add the local
            overlay, rebuild the refined-tables TSVs (comparison, vs-baseline,
            framework, significance), diff them against main, and regenerate
-           analysis/phase-3/cross-seed-variance.{tsv,md}. With --upload, open
+           analysis/phase-3/cross-seed-variance.tsv and
+           cross-seed-variance-by-condition.md. With --upload, open
            one Hugging Face PR carrying the changed TSVs.
   render   Rerun the five figure scripts and build_phase3_tables.py against
            the rebuilt tables.
@@ -45,8 +46,10 @@ Usage:
         --provisional '*-20k/seed123' --upload      # also opens the Hugging Face PRs
 
 The eval ladder is read from ``EVAL_MATRIX`` in evaluate.ipynb, so a seed that
-is registered there is expected here; seeds found on Hugging Face but not
-registered are reported as unregistered rather than ignored.
+is registered there is expected here. Seeds found on Hugging Face but not
+registered are reported as unregistered in the status table and left alone:
+they are not reparsed, not overlaid into the tables and not uploaded until
+the ladder registers them.
 """
 from __future__ import annotations
 
@@ -347,7 +350,7 @@ def diff_status(prev: list[dict] | None, cur: list[dict]) -> list[str]:
     return out or ["no change since the last run"]
 
 
-# ─── Verification of a new session against seed 42 ──────────────────────────
+# ─── Verification of a new session against its reference session ────────────
 
 
 def load_results(path: Path) -> dict:
@@ -511,8 +514,15 @@ class Refresh:
         todo = [
             (r["condition"], r["seed"], r["open_prs"])
             for r in rows
-            if r["state"].startswith(("needs reparse", "reparse PR"))
+            if r["registered"] and r["state"].startswith(("needs reparse", "reparse PR"))
         ]
+        skipped = [
+            f"{r['condition']} seed {r['seed']}"
+            for r in rows
+            if not r["registered"] and r["state"].startswith(("needs reparse", "reparse PR"))
+        ]
+        if skipped:
+            print(f"[reparse] not processed, seed not registered in EVAL_MATRIX: {', '.join(skipped)}")
         if not todo:
             print("[reparse] nothing to reparse or verify")
             return []
@@ -558,23 +568,38 @@ class Refresh:
                 report.write_text("\n".join(lines) + "\n", encoding="utf-8")
                 raise SystemExit(f"{cond} seed {seed} failed verification; not uploading")
             self.changes.append(f"reparse: {cond} seed {seed} reparsed locally, verification {verdict}")
-            if prs:
-                for pr in prs:
-                    lines += ["", f"## Hugging Face PR #{pr}", ""]
-                    lines += [f"- {m}" for m in self._check_pr_matches(cond, seed, pr, reparsed)]
-            elif self.args.upload:
-                pr = self._upload_reparsed(cond, seed)
-                lines += ["", f"## Hugging Face PR #{pr} (opened by this run)", ""]
-                lines += [f"- {m}" for m in self._check_pr_matches(cond, seed, pr, reparsed)]
-            report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            mismatch: str | None = None
+            try:
+                if prs:
+                    for pr in prs:
+                        lines += ["", f"## Hugging Face PR #{pr}", ""]
+                        notes, ok = self._check_pr_matches(cond, seed, pr, reparsed)
+                        lines += [f"- {m}" for m in notes]
+                        if not ok:
+                            mismatch = f"PR #{pr} content differs from the local reparse for {cond} seed {seed}"
+                            break
+                elif self.args.upload:
+                    pr = self._upload_reparsed(cond, seed)
+                    lines += ["", f"## Hugging Face PR #{pr} (opened by this run)", ""]
+                    notes, ok = self._check_pr_matches(cond, seed, pr, reparsed)
+                    lines += [f"- {m}" for m in notes]
+                    if not ok:
+                        mismatch = f"PR #{pr} content differs from the local reparse for {cond} seed {seed}"
+            finally:
+                if mismatch:
+                    lines += ["", f"**FAIL:** {mismatch}"]
+                report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            if mismatch:
+                raise SystemExit(mismatch)
             done.append((cond, seed))
         return done
 
-    def _check_pr_matches(self, cond: str, seed: str, pr: int, local: dict[str, dict]) -> list[str]:
+    def _check_pr_matches(self, cond: str, seed: str, pr: int, local: dict[str, dict]) -> tuple[list[str], bool]:
         """Compare the reparsed summaries on ``refs/pr/N`` with the local run:
         same accuracies and parse-failure rates for every cell, and the same
-        extractor hash. Raises if they differ."""
+        extractor hash. Returns (report lines, all identical)."""
         notes = []
+        ok = True
         for t, remote in zip(TEMPLATES, session_paths(cond, seed)["reparsed"]):
             body = json.loads(self._download(remote, revision=f"refs/pr/{pr}").read_text(encoding="utf-8"))
             same = (
@@ -591,18 +616,23 @@ class Refresh:
             )
             print(f"  PR #{pr} {msg}")
             notes.append(msg)
-            if not same:
-                raise SystemExit(f"PR #{pr} content differs from the local reparse for {remote}")
-        self.changes.append(f"verify: Hugging Face PR #{pr} ({cond} seed {seed}) matches the local reparse cell for cell (unmerged)")
-        return notes
+            ok = ok and same
+        if ok:
+            self.changes.append(f"verify: Hugging Face PR #{pr} ({cond} seed {seed}) matches the local reparse cell for cell (unmerged)")
+        else:
+            self.changes.append(f"verify: Hugging Face PR #{pr} ({cond} seed {seed}) DIFFERS from the local reparse")
+        return notes, ok
 
     def _upload_reparsed(self, cond: str, seed: str) -> int:
+        message = f"add reparsed summaries for {cond} seed {seed}"
+        if is_provisional(cond, seed, self.provisional):
+            message += " (provisional: evaluated in a later software environment than the other seeds)"
         out = self._run(
             SCRIPTS_DIR / "upload_reparsed_summaries.py",
             "--only",
             f"{cond}/seed{seed}",
             "--commit-message",
-            f"add reparsed summaries for {cond} seed {seed}",
+            message,
         )
         m = re.search(r"PR number:\s+(\d+)", out)
         if not m:

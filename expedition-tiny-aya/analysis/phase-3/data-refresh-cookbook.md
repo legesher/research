@@ -10,7 +10,7 @@ When the underlying per-session JSONs change on HuggingFace (new condition, re-s
 
 ## One command: `refresh_seed_results.py`
 
-`evaluation/scripts/refresh_seed_results.py` runs steps 1 to 5 below as one rerunnable command and reports what changed since its last run. Use it when new (condition, seed) sessions are landing over several days; use the manual steps when you need to intervene between them.
+`evaluation/scripts/refresh_seed_results.py` runs the reparse plus steps 1, 4 and 5 below as one rerunnable command (step 2 only with `--upload`; step 3 is unnecessary because it reads its own fresh snapshot rather than the Hub cache) and reports what changed since its last run. Use it when new (condition, seed) sessions are landing over several days; use the manual steps when you need to intervene between them.
 
 ```bash
 # Status only: for every (condition, seed) in EVAL_MATRIX, what is on Hugging Face
@@ -19,7 +19,7 @@ python expedition-tiny-aya/evaluation/scripts/refresh_seed_results.py status
 
 # Everything, no uploads: reparse new sessions locally and verify them against the condition's reference session,
 # rebuild the refined tables with the local reparsed summaries overlaid, regenerate
-# cross-seed-variance.{tsv,md}, rerun the figures and tables.tex.
+# cross-seed-variance.tsv and cross-seed-variance-by-condition.md, rerun the figures and tables.tex.
 python expedition-tiny-aya/evaluation/scripts/refresh_seed_results.py all \
   --provisional '*-20k/seed123' 'condition-3-*/seed123' 'condition-5-*/seed123'
 
@@ -30,7 +30,7 @@ python expedition-tiny-aya/evaluation/scripts/refresh_seed_results.py all --prov
 - `--refresh-dir` (default `/tmp/phase3_refresh`, or `$PHASE3_REFRESH_DIR`) holds `status.md`, `status.json`, one `verify_<condition>_seed<N>.md` per new session, the rebuilt `tables/`, `changed_tables.txt` and `last_run_changes.md`.
 - `--provisional` labels sessions (`condition/seedN`, shell wildcards) whose results are not yet final. The label is carried into `cross-seed-variance.tsv` (`provisional` column), `cross-seed-variance-by-condition.md`, the `tables.tex` header and a `% provisional` comment on every table that includes such a session, and the Hugging Face PR descriptions.
 - The script never merges on Hugging Face. Sessions whose reparsed summaries sit in an open PR are reparsed locally anyway and the PR content is checked cell for cell against that local run.
-- The eval ladder is read from `EVAL_MATRIX` in `evaluate.ipynb`; a seed present on Hugging Face but not registered there is reported as `(unregistered)`.
+- The eval ladder is read from `EVAL_MATRIX` in `evaluate.ipynb`; a seed present on Hugging Face but not registered there is reported as `(unregistered)` and not processed further.
 - It needs `scipy` (for `build_significance.py`) in addition to the packages in step 0.
 
 ## 0. Pre-flight
@@ -59,7 +59,7 @@ Two more generated tables depend on `vs_baseline_cells.tsv` and are rebuilt from
 PHASE3_TABLES_DIR=/tmp/phase3_refresh PHASE3_ANALYSIS_TABLES_DIR=/tmp/phase3_refresh \
   python expedition-tiny-aya/evaluation/scripts/build_significance.py      # significance.tsv
 python expedition-tiny-aya/evaluation/scripts/build_cross_seed_variance.py \
-  --cells /tmp/phase3_refresh/vs_baseline_cells.tsv                        # analysis/phase-3/cross-seed-variance.{tsv,md}
+  --cells /tmp/phase3_refresh/vs_baseline_cells.tsv                        # cross-seed-variance.tsv + cross-seed-variance-by-condition.md
 ```
 
 ## 2. Upload changed TSVs to HF via single-file PR
