@@ -33,7 +33,7 @@ HF_HUB_OFFLINE=1 python3 -m unittest discover -s expedition-tiny-aya/evaluation/
 
 Summary lines to expect (count as of 2026-10-13; it grows, it never shrinks):
 
-- `Ran 175 tests in 0.3s` then `OK`
+- `Ran 182 tests in 0.3s` then `OK`
 
 `.github/workflows/tests.yml` runs the same command on Python 3.12 with `HF_HUB_OFFLINE: "1"` set
 for the job; Python 3.14 also passes locally.
