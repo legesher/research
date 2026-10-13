@@ -1,10 +1,11 @@
 """Figure 4 — sign-flip slopegraph, faceted by benchmark.
 
-The conclusion-flip catalogue holds 48 cells whose sign(Δ vs baseline) changed
-between the original and refined extractors. They split across exactly two
-benchmarks: 43 on SIB-200, 5 on XNLI. X-CSQA and Belebele contribute zero
-flips by construction (the extractor refinement didn't touch their letter-
-based answer format).
+The conclusion-flip catalogue holds the cells whose sign(Δ vs baseline)
+changed between the original and refined extractors (48 for the 21 Phase-3
+sessions; the count grows as sessions are added, and the output stems carry
+the current per-benchmark counts). They fall on exactly two benchmarks,
+SIB-200 and XNLI. X-CSQA and Belebele contribute zero flips by construction
+(the extractor refinement didn't touch their letter-based answer format).
 
 Each benchmark gets its own figure (one or two variants, depending on count):
   - If a benchmark has more than --top-n flips, emit BOTH a top-N main-paper
@@ -86,7 +87,6 @@ def render_slopegraph(
     plotted = df_subset.sort_values(
         ["delta_orig", "condition", "seed", "template", "benchmark", "data", "instr"],
         ascending=[False, True, True, True, True, True, True],
-        kind="mergesort",
     ).reset_index(drop=True)
     n_plot = len(plotted)
 
@@ -169,11 +169,11 @@ def main() -> None:
     flips["shift"] = flips["delta_rep"] - flips["delta_orig"]
     flips["abs_shift"] = flips["shift"].abs()
     # Tie-breakers keep rows with equal |shift| in a fixed order, so the
-    # appendix TSV and the slopegraph rows are reproducible run to run.
+    # appendix TSV and the slopegraph rows are reproducible run to run. The
+    # six key columns identify a row uniquely, so no stable sort is needed.
     flips = flips.sort_values(
         ["abs_shift", "condition", "seed", "template", "benchmark", "data", "instr"],
         ascending=[False, True, True, True, True, True, True],
-        kind="mergesort",
     ).reset_index(drop=True)
 
     n_total = len(flips)
