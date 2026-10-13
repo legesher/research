@@ -26,7 +26,7 @@ Columns added by this generator (the original nine are unchanged):
 * ``seeds``: the seeds behind the row, ascending, comma-separated.
 * ``per_seed``: the per-seed aggregate for each seed, ``seed=value`` pairs
   separated by ``;``, in the same order as ``seeds``. With two seeds the
-  paper reports these two values (or their mean with the range), never an
+  analysis reports these two values (or their mean with the range), never an
   SD-based interval.
 * ``provisional``: ``no``, or the comma-separated subset of ``seeds`` whose
   session (``condition/seedN``) matches a ``--provisional`` pattern. A row is

@@ -748,7 +748,7 @@ class Refresh:
             "Regenerated with build_comparison.py, build_vs_baseline.py, build_framework_comparison.py "
             "and build_significance.py from the per-session summaries on main"
             + (f" plus the reparsed summaries for {', '.join(sessions)} (open PRs on this repo)" if sessions else "")
-            + f". Files: {', '.join(names)}. Paper tables and figures in the research repo cite these views."
+            + f". Files: {', '.join(names)}. The analysis tables and figures in the research repo cite these views."
             + prov
         )
         ops = [

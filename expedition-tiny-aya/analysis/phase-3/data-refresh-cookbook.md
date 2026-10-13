@@ -2,7 +2,7 @@
 
 When the underlying per-session JSONs change on HuggingFace (new condition, re-scoring, extractor update), the downstream refined-tables TSVs, paper figures, and result tables all need to regenerate. This is the documented sequence. Each step is run from the repo root.
 
-**When you need this:** new model session uploaded; extractor refined again; bug-class fix that touches refined-tables (e.g. HF PR #38, #40); or any future rebuttal / camera-ready cycle that requires fresh numbers.
+**When you need this:** new model session uploaded; extractor refined again; bug-class fix that touches refined-tables (e.g. HF PR #38, #40); or any future later revision cycle that requires fresh numbers.
 
 **Triggers that DO NOT require this:** GitHub-only docs/code changes that don't touch the data path; figure-style tweaks; caption rewrites.
 

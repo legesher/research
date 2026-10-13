@@ -1,7 +1,7 @@
-"""Shared utilities for Phase-3 paper figures (EMNLP submission).
+"""Shared utilities for Phase-3 figures.
 
 Conventions locked in (see memory: paper-viz-conventions):
-- EMNLP/ACL two-column: ~3.15" single, ~6.30" double; 8-10pt fonts.
+- Two-column layout: ~3.15" single, ~6.30" double; 8-10pt fonts.
 - scienceplots `science` style (no LaTeX) + Times serif body.
 - Okabe-Ito categorical, cividis sequential, RdBu_r diverging with TwoSlopeNorm.
 - Language order: en -> es -> zh -> ur (resource tier; high -> low).
@@ -94,7 +94,7 @@ CONDITION_LABEL = {
     "condition-5-zh-5k": "C5 zh/5k",
 }
 
-# ACL/EMNLP column widths in inches.
+# Two-column layout widths in inches.
 WIDTH_SINGLE = 3.15
 WIDTH_DOUBLE = 6.30
 
@@ -102,7 +102,7 @@ WIDTH_DOUBLE = 6.30
 
 
 def setup_style() -> None:
-    """Apply EMNLP-appropriate matplotlib rcParams.
+    """Apply two-column-layout matplotlib rcParams.
 
     Tries scienceplots `science` style; falls back to a manual config if the
     package isn't installed (so the script still runs in a stripped env).

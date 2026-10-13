@@ -1,4 +1,4 @@
-"""Build Phase-3 LaTeX result tables (EMNLP submission).
+"""Build Phase-3 LaTeX result tables.
 
 Generates booktabs-formatted tables into a single
 ``expedition-tiny-aya/analysis/phase-3/tables.tex`` file:
