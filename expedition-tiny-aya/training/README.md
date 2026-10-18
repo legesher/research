@@ -77,7 +77,7 @@ To train another model, add its YAML file here, copy its values into `MODEL_CONF
 
 ## Seeded Training Outputs
 
-- `TRAIN_SEEDS` in the config cell sets the seeds. Phase 3 uses `42`, `123` and `456` for the 5k condition-1 and condition-2 runs, and `42` and `123` for the rest; a new seed is evaluated only once it is registered in the evaluation notebook's `EVAL_MATRIX`
+- `TRAIN_SEEDS` in the config cell sets the seeds; Phase 3 trains seeds `42`, `123` and `456`. The seeds registered for each condition are listed in the evaluation notebook's `EVAL_MATRIX`, and a seed is evaluated only once it is registered there
 - Adapters are saved as `{condition}-seed{seed}`, for example `condition-2-zh-5k-seed42`
 - Each seed run writes its own `training_metrics.json` alongside the adapter weights, including an `environment` block with the Python, CUDA and package versions it ran with (unsloth, transformers, trl, peft, torch and others)
 
