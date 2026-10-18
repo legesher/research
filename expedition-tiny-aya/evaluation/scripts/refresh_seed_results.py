@@ -32,7 +32,7 @@ Subcommands (run from the repository root; ``all`` runs them in order):
            the rebuilt tables.
   audit    Read-only check of a finished seed batch (not part of ``all``):
            for every registered condition carrying --seed and
-           --reference-seed, the six session files on main, the session
+           --reference-seed, the six session files of each seed on main, the session
            against the reference (cells, rows, inputs, gold, a reparsed
            accuracy for every cell), reparsed counts against the results
            file, the extractor version (rescoring with the current extractor
@@ -444,7 +444,8 @@ LORA_SETTINGS = ("r", "lora_alpha", "lora_dropout", "bias", "base_model_name_or_
 
 def audit_counts(results: dict[str, dict], reparsed: dict[str, dict]) -> list[str]:
     """Each reparsed ``_count`` equals the cell's row count in the results
-    file, and ``_correct / _count`` equals ``_acc``."""
+    file, and ``_correct / _count`` equals ``_acc``. Only cells present in the
+    reparsed summary are checked; ``verify_session`` covers missing cells."""
     problems = []
     for template, rep in reparsed.items():
         summary = rep.get("summary", {})
@@ -461,9 +462,13 @@ def audit_counts(results: dict[str, dict], reparsed: dict[str, dict]) -> list[st
     return problems
 
 
-def audit_adapter(ref_config: dict, new_config: dict, ref_metrics: dict, new_metrics: dict) -> tuple[list[str], dict]:
+def audit_adapter(
+    ref_config: dict, new_config: dict, ref_metrics: dict, new_metrics: dict, new_seed: str | None = None
+) -> tuple[list[str], dict]:
     """Problems if the LoRA settings or the training step count differ from the
-    reference seed's adapter; info carries the loss and peft version of both."""
+    reference seed's adapter, if either step count is missing, or if the new
+    adapter's training_metrics.json names a different seed than its folder;
+    info carries the loss and peft version of both."""
     problems = []
     for key in LORA_SETTINGS:
         a, b = ref_config.get(key), new_config.get(key)
@@ -475,8 +480,12 @@ def audit_adapter(ref_config: dict, new_config: dict, ref_metrics: dict, new_met
     def steps(m: dict):
         return (m.get("log_history") or [{}])[-1].get("step")
 
-    if steps(ref_metrics) != steps(new_metrics):
+    if steps(ref_metrics) is None or steps(new_metrics) is None:
+        problems.append("training steps: missing from training_metrics.json")
+    elif steps(ref_metrics) != steps(new_metrics):
         problems.append(f"training steps: {steps(new_metrics)} vs {steps(ref_metrics)} in the reference adapter")
+    if new_seed is not None and "seed" in new_metrics and str(new_metrics["seed"]) != str(new_seed):
+        problems.append(f"training_metrics.json records seed {new_metrics['seed']}, not {new_seed}")
     info = {
         "loss": (ref_metrics.get("train_result", {}).get("train_loss"), new_metrics.get("train_result", {}).get("train_loss")),
         "peft": (ref_config.get("peft_version"), new_config.get("peft_version")),
@@ -538,6 +547,23 @@ def rescore_differences(published: dict, rescored: dict) -> list[str]:
         if rescored.get("parse_failure_rates", {}).get(key) != value:
             out.append(f"{key} parse-failure rate: published {value} vs rescored {rescored.get('parse_failure_rates', {}).get(key)}")
     return out
+
+
+def audit_conditions(matrix: dict, seed: str, ref: str, wanted: list[str] | None = None) -> list[str]:
+    """Ladder conditions (adapters only) that register both seeds, limited to
+    ``wanted`` when given; raises SystemExit on a selection that cannot be audited."""
+    if seed == ref:
+        raise SystemExit(f"--seed and --reference-seed are both {seed}; nothing to compare")
+    conds = [
+        c for c, e in matrix.items()
+        if e["subfolder_template"] and seed in e["seeds"] and ref in e["seeds"] and (not wanted or c in wanted)
+    ]
+    missing = set(wanted or []) - set(conds)
+    if missing:
+        raise SystemExit(f"not registered with seeds {ref} and {seed}: {', '.join(sorted(missing))}")
+    if not conds:
+        raise SystemExit(f"no condition in EVAL_MATRIX registers both seed {ref} and seed {seed}")
+    return conds
 
 
 def _fmt(x: float | None, spec: str = ".2f") -> str:
@@ -955,13 +981,7 @@ class Refresh:
         seed, ref = str(self.args.seed), str(self.args.reference_seed)
         current_sha = _extractor_provenance()["content_sha256"]
         exp_main = self.inv["experiments_main"]
-        wanted = set(self.args.conditions or [])
-        conds = [
-            c for c, e in self.matrix.items()
-            if e["subfolder_template"] and seed in e["seeds"] and ref in e["seeds"] and (not wanted or c in wanted)
-        ]
-        if wanted - set(conds):
-            raise SystemExit(f"not registered with seeds {ref} and {seed}: {', '.join(sorted(wanted - set(conds)))}")
+        conds = audit_conditions(self.matrix, seed, ref, self.args.conditions)
         cells_tsv = self._download(f"{TABLES_PREFIX}/cells.tsv").read_text(encoding="utf-8").splitlines()
         header = cells_tsv[0].split("\t")
         ci, si = header.index("condition"), header.index("seed")
@@ -1012,19 +1032,33 @@ class Refresh:
             else:
                 cfg = {s: json.loads(self._download_lora(f"{folders[s]}/adapter_config.json").read_text(encoding="utf-8")) for s in (seed, ref)}
                 met = {s: json.loads(self._download_lora(f"{folders[s]}/training_metrics.json").read_text(encoding="utf-8")) for s in (seed, ref)}
-                adapter_problems, info = audit_adapter(cfg[ref], cfg[seed], met[ref], met[seed])
+                adapter_problems, info = audit_adapter(cfg[ref], cfg[seed], met[ref], met[seed], new_seed=seed)
                 problems += adapter_problems
             n_cells = cells_rows.get((cond, seed), 0)
             if n_cells != len(expected_cells(entry)):
                 problems.append(f"refined cells.tsv has {n_cells} rows for seed {seed}, expected {len(expected_cells(entry))}")
-            provisional = is_provisional(cond, seed, self.provisional) or is_provisional(cond, ref, self.provisional)
-            if provisional and xsv:
+            new_prov = is_provisional(cond, seed, self.provisional)
+            provisional = new_prov or is_provisional(cond, ref, self.provisional)
+            if xsv:
                 xh = xsv[0].split("\t")
                 xc, xp = xh.index("condition"), xh.index("provisional")
-                flagged = [p for p in (line.split("\t") for line in xsv[1:]) if p[xc] == cond and seed in p[xp].split(",")]
-                if not flagged:
+                flagged = any(p[xc] == cond and seed in p[xp].split(",") for p in (line.split("\t") for line in xsv[1:]))
+                if new_prov and not flagged:
                     notes.append(f"seed {seed} matches --provisional but cross-seed-variance.tsv does not flag it")
+                if flagged and not new_prov:
+                    notes.append(
+                        f"cross-seed-variance.tsv flags seed {seed} provisional but it matches no --provisional pattern; "
+                        "it is left out of the same-stack reference"
+                    )
+                    provisional = True
+            if not provisional and info["peft"][0] != info["peft"][1]:
+                notes.append(
+                    f"peft differs ({info['peft'][0]} vs {info['peft'][1]}) although neither session is provisional; "
+                    "check the --provisional patterns"
+                )
             deltas = refined_deltas(new_rep, ref_rep)
+            if len(deltas) < len(expected_cells(entry)):
+                notes.append(f"accuracy deltas cover {len(deltas)} of {len(expected_cells(entry))} expected cells")
             if not provisional:
                 reference_deltas += deltas
             rows.append({
@@ -1048,7 +1082,7 @@ class Refresh:
                 continue
             s, (l0, l1), (p0, p1) = r["spread"], r["loss"], r["peft"]
             report.append(
-                f"| {r['condition']} | {'yes' if r['provisional'] else 'no'} | {r['cells']} | {_fmt(s['sd'])} | {_fmt(s['mean_abs'])} | "
+                f"| {r['condition']} | {'yes' if r['provisional'] else 'no'} | {s['n']} | {_fmt(s['sd'])} | {_fmt(s['mean_abs'])} | "
                 f"{_fmt(s['max_abs'])} | {_fmt(s['mean'], '+.2f')} | {_fmt(l0, '.4f')} / {_fmt(l1, '.4f')} | {p0} / {p1} | "
                 f"{'PASS' if not r['problems'] else 'FAIL'} |"
             )

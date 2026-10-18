@@ -293,7 +293,7 @@ class AuditCheckTests(unittest.TestCase):
     CELL = "template1_sib200_data=ur_instr=zh"
 
     def _results(self, n=3):
-        return {"template1": {self.CELL: [{"text": "یہ ایک جملہ ہے۔", "gold": "سائنس/ٹیکنالوجی", "raw_output": "科学"}] * n}}
+        return {"template1": {self.CELL: [{"text": "वह घर गया।", "gold": "عِلْمٌ", "raw_output": "科学"}] * n}}
 
     def _reparsed(self, correct=2, count=3, acc=None, fail=0.0, sha="a" * 64):
         return {"template1": {
@@ -320,13 +320,16 @@ class AuditCheckTests(unittest.TestCase):
                "target_modules": ["q_proj", "v_proj"], "peft_version": "0.18.1"}
         return {**cfg, **over}
 
-    def _metrics(self, step=1125, loss=1.0861):
-        return {"train_result": {"train_loss": loss}, "log_history": [{"loss": 1.2}, {"step": step}]}
+    def _metrics(self, step=1125, loss=1.0861, seed=None):
+        m = {"train_result": {"train_loss": loss}, "log_history": [{"loss": 1.2}, {"step": step} if step is not None else {}]}
+        if seed is not None:
+            m["seed"] = seed
+        return m
 
     def test_adapter_passes_with_only_the_stack_changed(self):
         problems, info = rsr.audit_adapter(
             self._adapter(), self._adapter(peft_version="0.20.0", target_modules=["v_proj", "q_proj"]),
-            self._metrics(), self._metrics(loss=1.0864),
+            self._metrics(), self._metrics(loss=1.0864, seed=123), new_seed="123",
         )
         self.assertEqual(problems, [])
         self.assertEqual(info, {"loss": (1.0861, 1.0864), "peft": ("0.18.1", "0.20.0")})
@@ -334,6 +337,10 @@ class AuditCheckTests(unittest.TestCase):
     def test_adapter_setting_and_step_differences_are_problems(self):
         problems, _ = rsr.audit_adapter(self._adapter(), self._adapter(r=8), self._metrics(), self._metrics(step=1124))
         self.assertEqual(problems, ["adapter r: 8 vs 16 in the reference adapter", "training steps: 1124 vs 1125 in the reference adapter"])
+
+    def test_missing_steps_and_a_wrong_seed_are_problems(self):
+        problems, _ = rsr.audit_adapter(self._adapter(), self._adapter(), self._metrics(step=None), self._metrics(step=None, seed=42), new_seed="123")
+        self.assertEqual(problems, ["training steps: missing from training_metrics.json", "training_metrics.json records seed 42, not 123"])
 
     def test_deltas_spread_and_parse_failure_rises(self):
         new = self._reparsed(correct=3, fail=0.40)
@@ -351,6 +358,8 @@ class AuditCheckTests(unittest.TestCase):
 
     def test_extractor_sha_and_rescore_differences(self):
         self.assertEqual(rsr.extractor_shas(self._reparsed(sha="b" * 64)), {"b" * 64})
+        no_meta = {"template1": {"summary": {}}}
+        self.assertEqual(rsr.extractor_shas(no_meta), {"missing"})
         pub = self._reparsed()["template1"]
         self.assertEqual(rsr.rescore_differences(pub, json.loads(json.dumps(pub))), [])
         changed = json.loads(json.dumps(pub))
@@ -362,11 +371,38 @@ class AuditCheckTests(unittest.TestCase):
         self.assertTrue(diffs[1].startswith(f"{self.CELL} parse-failure rate"))
 
 
+class AuditSelectionTests(unittest.TestCase):
+    def test_only_conditions_registering_both_seeds_are_audited(self):
+        """On the real ladder every adapter condition registering both seeds is
+        selected; on a copy with the reference seed removed from one
+        condition, that condition is dropped and naming it is an error."""
+        import copy
+
+        matrix = rsr.load_eval_matrix()
+        both = {c for c, e in matrix.items() if e["subfolder_template"] and {"42", "123"} <= set(e["seeds"])}
+        self.assertTrue(both)
+        self.assertEqual(set(rsr.audit_conditions(matrix, "123", "42")), both)
+        victim = sorted(both)[0]
+        trimmed = copy.deepcopy(matrix)
+        trimmed[victim]["seeds"] = [s for s in trimmed[victim]["seeds"] if s != "42"]
+        self.assertEqual(set(rsr.audit_conditions(trimmed, "123", "42")), both - {victim})
+        with self.assertRaises(SystemExit):
+            rsr.audit_conditions(trimmed, "123", "42", [victim])
+
+
+def _two_seed_condition() -> str:
+    """The first real ladder condition registering seeds 42 and 123."""
+    return next(c for c, e in rsr.load_eval_matrix().items() if e["subfolder_template"] and {"42", "123"} <= set(e["seeds"]))
+
+
 class AuditWiringTests(unittest.TestCase):
     """``Refresh.audit`` end to end against a stubbed Hub: one real ladder
-    condition, its expected cells built from the real eval matrix."""
+    condition, its expected cells built from the real eval matrix. Inputs are
+    Devanagari and gold labels vocalised Arabic, so every JSON round trip
+    carries combining marks."""
 
-    COND = "condition-2-ur-20k"
+    TEXT = "वह घर गया।"
+    GOLD = "عِلْمٌ"
 
     def setUp(self):
         import reparse_results
@@ -374,14 +410,16 @@ class AuditWiringTests(unittest.TestCase):
         self.reparse_results = reparse_results
         self.sha = reparse_results._extractor_provenance()["content_sha256"]
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.matrix = rsr.load_eval_matrix()
-        self.cells = sorted(rsr.expected_cells(self.matrix[self.COND]))
+        self.cond = _two_seed_condition()
+        self.cells = sorted(rsr.expected_cells(self.matrix[self.cond]))
         self.files: dict = {}
         for seed in ("42", "123"):
-            sp = rsr.session_paths(self.COND, seed)
+            sp = rsr.session_paths(self.cond, seed)
             for path, t in zip(sp["results"], rsr.TEMPLATES):
-                self.files[path] = {c: [{"text": "یہ ایک جملہ ہے۔", "gold": "سائنس/ٹیکنالوجی", "raw_output": "سائنس"}] * 2
+                self.files[path] = {c: [{"text": self.TEXT, "gold": self.GOLD, "raw_output": "عِلْم"}] * 2
                                     for c in self.cells if c.startswith(t + "_")}
             for path in sp["summary"]:
                 self.files[path] = {"summary": {}, "parse_failure_rates": {}}
@@ -394,13 +432,11 @@ class AuditWiringTests(unittest.TestCase):
                                     "reparse_metadata": {"extractor_provenance": {"content_sha256": self.sha}}}
         self.lora: dict = {}
         for seed in ("42", "123"):
-            folder = self.matrix[self.COND]["subfolder_template"].format(seed=seed)
+            folder = self.matrix[self.cond]["subfolder_template"].format(seed=seed)
             self.lora[f"{folder}/adapter_config.json"] = {"r": 16, "lora_alpha": 32, "target_modules": ["q_proj"], "peft_version": "0.18.1"}
-            self.lora[f"{folder}/training_metrics.json"] = {"train_result": {"train_loss": 1.07}, "log_history": [{"step": 1125}]}
+            self.lora[f"{folder}/training_metrics.json"] = {"seed": int(seed), "train_result": {"train_loss": 1.07}, "log_history": [{"step": 1125}]}
         self.cells_rows = len(self.cells)
-
-    def tearDown(self):
-        self.tmp.cleanup()
+        self.xsv: str | None = None
 
     def _write(self, base: Path, path: str, body) -> Path:
         p = base / path
@@ -408,95 +444,160 @@ class AuditWiringTests(unittest.TestCase):
         p.write_text(body if isinstance(body, str) else json.dumps(body, ensure_ascii=False), encoding="utf-8")
         return p
 
-    def _run(self, drop: str | None = None) -> tuple[int, str]:
+    def _run(self, drop: tuple[str, ...] = (), drop_lora: tuple[str, ...] = (), provisional=(), conditions=None, seed="123") -> tuple[int, str]:
         import argparse
 
-        args = argparse.Namespace(refresh_dir=str(self.root / "refresh"), provisional=[], seed="123", reference_seed="42",
-                                  conditions=[self.COND], parse_failure_threshold=0.05)
+        args = argparse.Namespace(refresh_dir=str(self.root / "refresh"), provisional=list(provisional), seed=seed, reference_seed="42",
+                                  conditions=[self.cond] if conditions is None else conditions, parse_failure_threshold=0.05)
         r = rsr.Refresh(args)
-        exp_main = set(self.files) | {f"{rsr.TABLES_PREFIX}/cells.tsv"}
-        exp_main.discard(drop)
-        r._inv = {"experiments_main": exp_main, "lora_main": set(self.lora), "open_prs": {}}
-        cells_tsv = "condition\tseed\tcell\n" + "".join(f"{self.COND}\t123\t{i}\n" for i in range(self.cells_rows))
+        exp_main = (set(self.files) | {f"{rsr.TABLES_PREFIX}/cells.tsv"}) - set(drop)
+        r._inv = {"experiments_main": exp_main, "lora_main": set(self.lora) - set(drop_lora), "open_prs": {}}
+        # seed before condition, plus rows that must not be counted: the seed-42
+        # session and another condition's seed-123 session.
+        cells_tsv = "seed\tcell\tcondition\n" + "".join(
+            [f"123\t{i}\t{self.cond}\n" for i in range(self.cells_rows)]
+            + [f"42\t{i}\t{self.cond}\n" for i in range(5)]
+            + [f"123\t{i}\tcondition-x\n" for i in range(5)]
+        )
         files = {**self.files, f"{rsr.TABLES_PREFIX}/cells.tsv": cells_tsv}
         r._download = lambda p, revision=None: self._write(self.root / "exp", p, files[p])  # type: ignore[method-assign]
         r._download_lora = lambda p: self._write(self.root / "lora", p, self.lora[p])  # type: ignore[method-assign]
-        with mock.patch("sys.stdout"):
+        analysis = self.root / "analysis"
+        analysis.mkdir(exist_ok=True)
+        if self.xsv is not None:
+            (analysis / "cross-seed-variance.tsv").write_text(self.xsv, encoding="utf-8")
+        with mock.patch("sys.stdout"), mock.patch.object(rsr, "PHASE3_ANALYSIS", analysis):
             n = r.audit()
-        return n, (self.root / "refresh" / "audit-seed123.md").read_text(encoding="utf-8")
+        return n, (self.root / "refresh" / f"audit-seed{seed}.md").read_text(encoding="utf-8")
 
-    def _published(self, results_path: Path) -> dict:
-        """The seed-42 reparsed summary matching a downloaded results file."""
+    def _published(self, results_path: Path, seed: str) -> dict:
+        """The reparsed summary of ``seed`` matching a downloaded results file."""
         template = results_path.name.rsplit("_results_", 1)[1].removesuffix(".json")
-        path = next(p for p in rsr.session_paths(self.COND, "42")["reparsed"] if p.endswith(f"_{template}.json"))
+        path = next(p for p in rsr.session_paths(self.cond, seed)["reparsed"] if p.endswith(f"_{template}.json"))
         return json.loads(json.dumps(self.files[path]))
 
     def test_clean_batch_has_no_problems(self):
         n, report = self._run()
         self.assertEqual(n, 0, report)
-        self.assertIn(f"| {self.COND} | no | {len(self.cells)} |", report)
+        self.assertIn(f"| {self.cond} | no | {len(self.cells)} |", report)
         self.assertIn("0 problem(s) across 1 condition(s).", report)
 
-    def test_missing_session_file_fails(self):
-        dropped = rsr.session_paths(self.COND, "123")["reparsed"][1]
+    def test_every_missing_session_file_is_named(self):
+        dropped = (rsr.session_paths(self.cond, "42")["reparsed"][1], rsr.session_paths(self.cond, "123")["summary"][0])
         n, report = self._run(drop=dropped)
-        self.assertEqual(n, 1)
-        self.assertIn(f"missing on the experiments repo: {dropped}", report)
+        self.assertEqual(n, 2)
+        for p in dropped:
+            self.assertIn(f"missing on the experiments repo: {p}", report)
 
-    def test_short_cells_table_fails(self):
+    def test_missing_adapter_file_fails(self):
+        folder = self.matrix[self.cond]["subfolder_template"].format(seed="123")
+        n, report = self._run(drop_lora=(f"{folder}/training_metrics.json",))
+        self.assertEqual(n, 1)
+        self.assertIn(f"missing on the LoRA repo: {folder}/training_metrics.json", report)
+
+    def test_cells_table_counts_only_the_audited_session(self):
         self.cells_rows -= 1
         n, report = self._run()
         self.assertEqual(n, 1)
         self.assertIn(f"refined cells.tsv has {len(self.cells) - 1} rows for seed 123", report)
 
+    def test_reparsed_count_disagreeing_with_rows_fails(self):
+        path = rsr.session_paths(self.cond, "123")["reparsed"][0]
+        key = next(k for k in self.files[path]["summary"] if k.endswith("_count"))
+        self.files[path]["summary"][key] = 3
+        n, report = self._run()
+        self.assertEqual(n, 2, report)
+        self.assertIn(f"{key[: -len('_count')]}: reparsed count 3 vs 2 rows in the results file", report)
+
     def test_changed_gold_and_adapter_settings_fail(self):
-        first = rsr.session_paths(self.COND, "123")["results"][0]
+        first = rsr.session_paths(self.cond, "123")["results"][0]
         cell = next(iter(self.files[first]))
-        self.files[first][cell] = [{"text": "یہ ایک جملہ ہے۔", "gold": "سیاست", "raw_output": "سائنس"}] * 2
-        folder = self.matrix[self.COND]["subfolder_template"].format(seed="123")
-        self.lora[f"{folder}/adapter_config.json"] = {"r": 8, "lora_alpha": 32, "target_modules": ["q_proj"], "peft_version": "0.20.0"}
+        self.files[first][cell] = [{"text": self.TEXT, "gold": "سِيَاسَةٌ", "raw_output": "عِلْم"}] * 2
+        folder = self.matrix[self.cond]["subfolder_template"].format(seed="123")
+        self.lora[f"{folder}/adapter_config.json"] = {"r": 8, "lora_alpha": 32, "target_modules": ["q_proj"], "peft_version": "0.18.1"}
         n, report = self._run()
         self.assertEqual(n, 2, report)
         self.assertIn(f"{cell}: gold labels differ from reference", report)
         self.assertIn("adapter r: 8 vs 16 in the reference adapter", report)
 
-    def test_old_extractor_is_rescored_and_fails_only_on_a_changed_number(self):
-        for path in rsr.session_paths(self.COND, "42")["reparsed"]:
+    def _rescore(self, seed: str, change: bool):
+        for path in rsr.session_paths(self.cond, seed)["reparsed"]:
             self.files[path]["reparse_metadata"]["extractor_provenance"]["content_sha256"] = "0" * 64
 
-        def same(path, rows):
-            return self._published(path)
-
-        def changed(path, rows):
-            body = self._published(path)
-            key = next(k for k in body["summary"] if k.endswith("_correct"))
-            body["summary"][key] = 2
+        def build(path, rows):
+            body = self._published(path, seed)
+            if change:
+                key = next(k for k in body["summary"] if k.endswith("_correct"))
+                body["summary"][key] = 2
             return body
 
         with mock.patch.object(self.reparse_results, "reparse_file", lambda p: []), \
-             mock.patch.object(self.reparse_results, "build_reparsed_summary", same):
-            n, report = self._run()
-        self.assertEqual(n, 0, report)
-        self.assertIn("seed 42 was reparsed by extractor 000000000000", report)
+             mock.patch.object(self.reparse_results, "build_reparsed_summary", build):
+            return self._run()
 
-        with mock.patch.object(self.reparse_results, "reparse_file", lambda p: []), \
-             mock.patch.object(self.reparse_results, "build_reparsed_summary", changed):
-            n, report = self._run()
-        self.assertEqual(n, 2, report)
-        self.assertIn("seed 42 rescored with the current extractor:", report)
+    def test_old_extractor_on_either_seed_is_rescored(self):
+        for seed in ("42", "123"):
+            with self.subTest(seed=seed):
+                self.setUp()
+                n, report = self._rescore(seed, change=False)
+                self.assertEqual(n, 0, report)
+                self.assertIn(f"seed {seed} was reparsed by extractor 000000000000", report)
+                self.setUp()
+                n, report = self._rescore(seed, change=True)
+                self.assertEqual(n, 2, report)
+                self.assertIn(f"seed {seed} rescored with the current extractor:", report)
+
+    def test_provisional_sessions_leave_the_reference_and_are_cross_checked(self):
+        self.xsv = "condition\tdata_lang\tn_seeds\tprovisional\n" + f"{self.cond}\tALL\t2\tno\n"
+        n, report = self._run(provisional=[f"{self.cond}/seed123"])
+        self.assertEqual(n, 0, report)
+        self.assertIn(f"| {self.cond} | yes |", report)
+        self.assertIn("Same-stack reference (conditions where neither session is provisional): 0 cells", report)
+        self.assertIn("seed 123 matches --provisional but cross-seed-variance.tsv does not flag it", report)
+
+    def test_unlabelled_provisional_session_is_noted(self):
+        self.xsv = "condition\tdata_lang\tn_seeds\tprovisional\n" + f"{self.cond}\tALL\t2\t123\n"
+        folder = self.matrix[self.cond]["subfolder_template"].format(seed="123")
+        self.lora[f"{folder}/adapter_config.json"]["peft_version"] = "0.20.0"
+        n, report = self._run()
+        self.assertEqual(n, 0, report)
+        self.assertIn("flags seed 123 provisional but it matches no --provisional pattern", report)
+        self.assertIn("0 cells", report)
+
+    def test_peft_change_without_provisional_patterns_is_noted(self):
+        folder = self.matrix[self.cond]["subfolder_template"].format(seed="123")
+        self.lora[f"{folder}/adapter_config.json"]["peft_version"] = "0.20.0"
+        n, report = self._run()
+        self.assertEqual(n, 0, report)
+        self.assertIn("peft differs (0.18.1 vs 0.20.0) although neither session is provisional", report)
+
+    def test_unusable_selections_exit_with_an_error(self):
+        with self.assertRaises(SystemExit) as cm:
+            self._run(conditions=["condition-9-xx-1k"])
+        self.assertIn("not registered with seeds 42 and 123", str(cm.exception.code))
+        with self.assertRaises(SystemExit) as cm:
+            self._run(conditions=[], seed="999")
+        self.assertIn("no condition in EVAL_MATRIX registers both seed 42 and seed 999", str(cm.exception.code))
+        with self.assertRaises(SystemExit) as cm:
+            self._run(seed="42")
+        self.assertIn("--seed and --reference-seed are both 42", str(cm.exception.code))
 
 
 class AuditExitCodeTests(unittest.TestCase):
-    def _main(self, problems: int) -> int:
-        argv = ["refresh_seed_results.py", "audit", "--seed", "123", "--refresh-dir", tempfile.mkdtemp()]
-        with mock.patch.object(sys, "argv", argv), mock.patch.object(rsr.Refresh, "audit", return_value=problems), \
-             self.assertRaises(SystemExit) as cm:
-            rsr.main()
+    def _main(self, argv_tail: list[str], problems: int = 0):
+        with tempfile.TemporaryDirectory() as d:
+            argv = ["refresh_seed_results.py", "audit", "--refresh-dir", d, *argv_tail]
+            with mock.patch.object(sys, "argv", argv), mock.patch.object(rsr.Refresh, "audit", return_value=problems), \
+                 mock.patch("sys.stderr"), self.assertRaises(SystemExit) as cm:
+                rsr.main()
         return cm.exception.code
 
     def test_exit_code_is_non_zero_only_when_problems_are_found(self):
-        self.assertEqual(self._main(0), 0)
-        self.assertEqual(self._main(3), 1)
+        self.assertEqual(self._main(["--seed", "123"], 0), 0)
+        self.assertEqual(self._main(["--seed", "123"], 3), 1)
+
+    def test_audit_without_a_seed_is_a_usage_error(self):
+        self.assertEqual(self._main([]), 2)
 
 
 if __name__ == "__main__":
