@@ -27,7 +27,7 @@ done
 
 ## Configuration
 
-Set `MODEL_CONFIG_NAME`, `CONDITION_NAME`, `TRAIN_SEEDS`, `UPLOAD_TO_HF`, `OVERWRITE_HF_ADAPTER` and the `MODEL_CONFIG` dict in the notebook's config cell (the first cell after the install cell) before running; the script cells read them from the environment.
+The config cell is the notebook's first cell. **`CONDITION_NAME` and `TRAIN_SEEDS` must be set for every run:** they ship empty, with example values in comments, and the cell raises an error until both are filled in, so a notebook run as it is stops within seconds, before anything is installed or trained. The same cell holds `MODEL_CONFIG_NAME`, `UPLOAD_TO_HF`, `OVERWRITE_HF_ADAPTER` and the `MODEL_CONFIG` dict, which are usually left as they are; the script cells read all of them from the environment.
 
 `MODEL_CONFIG_NAME` names the adapter's top-level folder on the LoRA repo. It does not load any settings: the model and hyperparameters come from the config cell's `MODEL_CONFIG` dict. Model config names in use:
 
