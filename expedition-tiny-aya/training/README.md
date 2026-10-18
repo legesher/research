@@ -83,11 +83,11 @@ To train another model, add its YAML file here, copy its values into `MODEL_CONF
 
 ## Upload to Hugging Face
 
-With `UPLOAD_TO_HF = True` (the default), `train.py` uploads `adapter_*` and `training_metrics.json` to `legesher/language-decoded-lora` at `{MODEL_CONFIG_NAME}/{condition}-seed{seed}/`. The upload writes straight to the repo's `main` branch, not to a pull request, and needs a Kaggle secret named `HF_TOKEN` with write access to the `legesher` organization.
+With `UPLOAD_TO_HF = True` (the default), `train.py` ends by opening a **pull request** on `legesher/language-decoded-lora` that adds `adapter_*` and `training_metrics.json` under `{MODEL_CONFIG_NAME}/{condition}-seed{seed}/`. Nothing is written to `main` directly: a maintainer reviews the pull request and merges it. The run prints the pull request link. Its title is `{condition}-seed{seed}: trained adapter and metrics`, and its description lists the train loss, the step count and the package versions the run used. Opening it needs a Kaggle secret named `HF_TOKEN` holding a write-scope token.
 
-The folder name must match the evaluation notebook's `EVAL_MATRIX` subfolder template for the condition, or the evaluation cannot load the adapter; see the adapter naming rule in [`evaluation/README.md`](../evaluation/README.md).
+The evaluation notebook loads adapters from `main`, so merge the pull request before running the evaluation for that seed. The folder name must match the evaluation notebook's `EVAL_MATRIX` subfolder template for the condition; see the adapter naming rule in [`evaluation/README.md`](../evaluation/README.md).
 
-Before training starts, `train.py` checks that `HF_TOKEN` is valid and that the target folder does not already exist on `main`. If it exists, the run stops before using any GPU time, so a rerun cannot silently replace an adapter behind published numbers. Set `OVERWRITE_HF_ADAPTER = True` only to replace it on purpose. A token without write access still fails at the upload, after training; the weights are then in `/kaggle/working/output/` until the session ends.
+Before training starts, `train.py` checks that `HF_TOKEN` is valid, that the target folder does not already exist on `main`, and that no open pull request already carries the same run (same title). Either case stops the run before it uses any GPU time, so a rerun cannot replace a published adapter, and two people cannot train the same condition and seed by accident. Set `OVERWRITE_HF_ADAPTER = True` only to do that on purpose. A token without write access still fails at the upload, after training; the weights are then in `/kaggle/working/output/` until the session ends.
 
 Set `UPLOAD_TO_HF = False` for a test run. The adapter then stays in the Kaggle session's `/kaggle/working/output/`, which is discarded when the session ends.
 

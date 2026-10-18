@@ -7,9 +7,10 @@ commit 37f5a29 (April 2026) until October 2026 the ``api.upload_folder(...)``
 call sat inside a bare string, so a run trained an adapter and never
 published it, and the evaluation notebook could not load it. These pin: the
 upload is a live call on the main process, on by default and skipped only by
-the switch, it keeps the folder contract the evaluation template reads, the
-config cell's booleans survive the trip through the environment, a run stops
-before training rather than overwrite a published adapter, and each run
+the switch, it opens a pull request (never a direct write to main) under the
+folder the evaluation template reads, the config cell's booleans survive the
+trip through the environment, a run stops before training rather than
+overwrite a published adapter or duplicate an open pull request, and each run
 records the package versions it trained with.
 """
 
@@ -118,6 +119,15 @@ class TrainingUploadTests(unittest.TestCase):
         self.assertEqual(ast.unparse(self.names["UPLOAD_SUBFOLDER"]), "f'{MODEL_CONFIG_NAME}/{OUTPUT_NAME}'")
         self.assertEqual(ast.unparse(self.names["OUTPUT_NAME"]), "f'{CONDITION_NAME}-seed{TRAIN_SEED}'")
 
+    def test_upload_opens_a_pull_request_titled_by_the_run(self):
+        kw = {k.arg: k.value for k in self._upload_call().keywords}
+        self.assertIn("create_pr", kw, "the upload must open a pull request, not write to main")
+        self.assertIs(ast.literal_eval(kw["create_pr"]), True)
+        self.assertEqual(ast.unparse(kw["commit_message"]), "upload_title()")
+        self.assertIn("commit_description", kw)
+        ns = self._run_function("upload_title", {"OUTPUT_NAME": "condition-3-zh-5k-seed456"})
+        self.assertEqual(ns["upload_title"](), "condition-3-zh-5k-seed456: trained adapter and metrics")
+
     def test_switches_default_safely_and_are_exported(self):
         self.assertEqual(ast.unparse(self.names["UPLOAD_TO_HF"]), "read_bool_env('UPLOAD_TO_HF', True)")
         self.assertEqual(ast.unparse(self.names["OVERWRITE_HF_ADAPTER"]), "read_bool_env('OVERWRITE_HF_ADAPTER', False)")
@@ -149,9 +159,10 @@ class TrainingUploadTests(unittest.TestCase):
         self.assertEqual(len(trains), 1)
         self.assertLess(checks[0].lineno, trains[0].lineno)
 
-    def test_existing_adapter_stops_the_run_unless_overwrite_is_set(self):
+    def test_existing_adapter_or_open_pr_stops_the_run_unless_overwrite_is_set(self):
         class StubApi:
             exists = True
+            open_titles: list = []
             seen: list = []
 
             def whoami(self, token=None):
@@ -161,21 +172,38 @@ class TrainingUploadTests(unittest.TestCase):
                 self.seen.append((repo_id, filename))
                 return StubApi.exists
 
+            def get_repo_discussions(self, repo_id, discussion_type=None, discussion_status=None, token=None):
+                self.seen.append(("discussions", discussion_type, discussion_status))
+                return [types.SimpleNamespace(title=t, num=i + 30) for i, t in enumerate(StubApi.open_titles)]
+
         hub = types.ModuleType("huggingface_hub")
         hub.HfApi = StubApi  # type: ignore[attr-defined]
-        base = {"LORA_REPO": "legesher/language-decoded-lora", "UPLOAD_SUBFOLDER": "tiny-aya-base/condition-2-ur-5k-seed42"}
+        run = "condition-2-ur-5k-seed42"
+        base = {"LORA_REPO": "legesher/language-decoded-lora", "UPLOAD_SUBFOLDER": f"tiny-aya-base/{run}", "OUTPUT_NAME": run}
+        same_pr = [f"{run}: trained adapter and metrics"]
+        other_pr = ["condition-2-zh-5k-seed42: trained adapter and metrics"]
+        cases = (
+            (True, [], False, "already exists on main"),
+            (True, [], True, None),
+            (False, [], False, None),
+            (False, other_pr, False, None),
+            (False, same_pr, False, r"open pull request for condition-2-ur-5k-seed42 \(#30\)"),
+            (False, same_pr, True, None),
+        )
         with mock.patch.dict(sys.modules, {"huggingface_hub": hub}):
-            for exists, overwrite, should_raise in ((True, False, True), (True, True, False), (False, False, False)):
-                with self.subTest(exists=exists, overwrite=overwrite):
-                    StubApi.exists = exists
-                    ns = self._run_function("check_upload_target", {**base, "OVERWRITE_HF_ADAPTER": overwrite})
-                    if should_raise:
-                        with self.assertRaisesRegex(RuntimeError, "already exists"):
+            for exists, titles, overwrite, error in cases:
+                with self.subTest(exists=exists, titles=titles, overwrite=overwrite):
+                    StubApi.exists, StubApi.open_titles = exists, titles
+                    ns = self._run_function("upload_title", {**base})
+                    ns = self._run_function("check_upload_target", {**ns, "OVERWRITE_HF_ADAPTER": overwrite})
+                    if error:
+                        with self.assertRaisesRegex(RuntimeError, error):
                             ns["check_upload_target"]("tok")
                     else:
                         ns["check_upload_target"]("tok")
         self.assertIn(("whoami", "tok"), StubApi.seen)
-        self.assertIn(("legesher/language-decoded-lora", "tiny-aya-base/condition-2-ur-5k-seed42/adapter_config.json"), StubApi.seen)
+        self.assertIn(("legesher/language-decoded-lora", f"tiny-aya-base/{run}/adapter_config.json"), StubApi.seen)
+        self.assertIn(("discussions", "pull_request", "open"), StubApi.seen)
 
     def test_training_metrics_record_the_environment(self):
         payload = next(
