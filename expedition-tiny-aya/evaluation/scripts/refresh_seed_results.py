@@ -193,9 +193,9 @@ def hf_inventory() -> dict:
 
 
 def _condition_short(subfolder_template: str) -> str:
-    """``tiny-aya-base/condition-3-zh-5k-native-code-seed{seed}`` -> ``condition-3-zh-5k``:
-    the condition token the training notebook keeps when it names an adapter
-    folder after the data config instead of the eval template."""
+    """``tiny-aya-base/condition-5-zh-5k-c4ai-aya-expanse-32b-seed{seed}`` -> ``condition-5-zh-5k``:
+    the condition token every adapter folder keeps, whichever data config
+    name it was trained under."""
     cond_token = subfolder_template.split("/")[-1].split("-seed")[0]
     return "-".join(cond_token.split("-")[:4])
 
@@ -208,8 +208,9 @@ def adapter_state(entry: dict, seed: str, lora_files: set[str]) -> str:
     folder = tmpl.format(seed=seed) + "/"
     if any(f.startswith(folder) for f in lora_files):
         return "present"
-    # The training notebook names the folder after the data config; cond-3's
-    # config lives under a phase-2 prefix, so its adapter can arrive misnamed.
+    # The training notebook names the folder after the data config it trained
+    # on. A run under an alias config (cond-3 seed 123 used the phase-2-prefixed
+    # one) arrives under a different name, so look for the condition token.
     short = _condition_short(tmpl)
     for f in sorted(lora_files):
         parts = f.split("/")
@@ -281,8 +282,8 @@ def discover_hf_seeds(cond: str, entry: dict, inv: dict) -> set[str]:
     tmpl = entry.get("subfolder_template")
     if tmpl:
         apat = re.compile("^" + re.escape(tmpl).replace(re.escape("{seed}"), r"([0-9]+)") + "/")
-        # Misnamed folders (data-config name instead of the eval template) still
-        # carry the condition token and the seed suffix.
+        # Folders uploaded under an alias data config (cond-3 seed 123 used the
+        # phase-2-prefixed one) still carry the condition token and the seed suffix.
         mpat = re.compile(rf"^[^/]+/[^/]*{re.escape(_condition_short(tmpl))}[^/]*-seed([0-9]+)/")
         for f in inv["lora_main"]:
             m = apat.match(f) or mpat.match(f)
