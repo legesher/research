@@ -36,8 +36,6 @@ Set `MODEL_CONFIG_NAME`, `CONDITION_NAME`, `TRAIN_SEEDS`, `UPLOAD_TO_HF`, `OVERW
 - `gemma4-e4b`
 - `aya-expanse-8b`
 
-Available conditions:
-
 `CONDITION_NAME` must be a config of [`legesher/language-decoded-data`](https://huggingface.co/datasets/legesher/language-decoded-data); the dataset card lists them all. The Phase 3 paper conditions:
 
 | `CONDITION_NAME`                                  | Training data                                                  |

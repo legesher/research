@@ -3,7 +3,7 @@
 Stdlib unittest; no network, no GPU. The notebook writes ``train.py`` from a
 ``%%writefile`` cell; these tests parse that cell and the config cell with
 ``ast``, and run two of its small functions against a stub Hub client. From
-commit 6675d2e (May 2026) until October 2026 the ``api.upload_folder(...)``
+commit 37f5a29 (April 2026) until October 2026 the ``api.upload_folder(...)``
 call sat inside a bare string, so a run trained an adapter and never
 published it, and the evaluation notebook could not load it. These pin: the
 upload is a live call on the main process, on by default and skipped only by
