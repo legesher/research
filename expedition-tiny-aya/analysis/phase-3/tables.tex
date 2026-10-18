@@ -4,23 +4,23 @@
 % Requires: \usepackage{booktabs}
 %
 % ─── Accounting (P3 methodology note) ───────────────────────────────
-% 24 sessions total = 23 fine-tuned (condition × seed) + 1 baseline
+% 29 sessions total = 28 fine-tuned (condition × seed) + 1 baseline
 %   - condition-1-en-5k: 3 seeds (42, 123, 456) = 3 multi-seed sessions
 %   - condition-1-en-20k: 2 seeds (42, 123) = 2 multi-seed sessions
 %   - condition-2-es-5k: 3 seeds (42, 123, 456) = 3 multi-seed sessions
 %   - condition-2-es-20k: 2 seeds (42, 123) = 2 multi-seed sessions
 %   - condition-2-zh-5k: 3 seeds (42, 123, 456) = 3 multi-seed sessions
-%   - condition-2-zh-20k: 1 seed (42) = 1 single-seed session
+%   - condition-2-zh-20k: 2 seeds (42, 123) = 2 multi-seed sessions
 %   - condition-2-ur-5k: 3 seeds (42, 123, 456) = 3 multi-seed sessions
-%   - condition-2-ur-20k: 1 seed (42) = 1 single-seed session
-%   - condition-3-zh-5k: 1 seed (42) = 1 single-seed session
-%   - condition-5-es-5k: 1 seed (42) = 1 single-seed session
-%   - condition-5-ur-5k: 1 seed (42) = 1 single-seed session
+%   - condition-2-ur-20k: 2 seeds (42, 123) = 2 multi-seed sessions
+%   - condition-3-zh-5k: 2 seeds (42, 123) = 2 multi-seed sessions
+%   - condition-5-es-5k: 2 seeds (42, 123) = 2 multi-seed sessions
+%   - condition-5-ur-5k: 2 seeds (42, 123) = 2 multi-seed sessions
 %   - condition-5-zh-5k: 2 seeds (42, 123) = 2 multi-seed sessions
 %   - 1 baseline (seed=none)          = 1  un-fine-tuned reference
 %
-% 1,920 observations = 1,792 fine-tuned cells + 128 baseline cells
-%   - 1,792 from vs_baseline_cells.tsv (one row per fine-tuned
+% 2,240 observations = 2,112 fine-tuned cells + 128 baseline cells
+%   - 2,112 from vs_baseline_cells.tsv (one row per fine-tuned
 %     (cond × seed × template × benchmark × data × instr))
 %   - 128 baseline cells = 64 (benchmark × data × instr) cells
 %     × 2 templates (baseline runs without seed variation)
@@ -30,6 +30,11 @@
 % environments has been measured):
 %   - condition-1-en-20k/seed123
 %   - condition-2-es-20k/seed123
+%   - condition-2-ur-20k/seed123
+%   - condition-2-zh-20k/seed123
+%   - condition-3-zh-5k/seed123
+%   - condition-5-es-5k/seed123
+%   - condition-5-ur-5k/seed123
 %   - condition-5-zh-5k/seed123
 % Tables that include these sessions carry a '% provisional' comment.
 %
@@ -42,7 +47,7 @@
 
 % ─── Type 1: Refined-extractor accuracy, one per benchmark ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -56,12 +61,12 @@
     Cond 2 (es, 5k) & 3 & 70.7\% & 55.1\% & -- & -- \\
     Cond 2 (es, 20k) & 2 & 69.0\% & 56.1\% & -- & -- \\
     Cond 2 (zh, 5k) & 3 & 70.7\% & -- & 65.9\% & -- \\
-    Cond 2 (zh, 20k) & 1 & 70.3\% & -- & 63.4\% & -- \\
+    Cond 2 (zh, 20k) & 2 & 70.1\% & -- & 63.6\% & -- \\
     Cond 2 (ur, 5k) & 3 & 70.0\% & -- & -- & 59.1\% \\
-    Cond 2 (ur, 20k) & 1 & 68.4\% & -- & -- & 45.3\% \\
-    Cond 3 (zh, 5k) & 1 & 69.4\% & -- & 63.4\% & -- \\
-    Cond 5 (es, 5k) & 1 & 61.3\% & 45.9\% & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & 65.3\% & -- & -- & 51.8\% \\
+    Cond 2 (ur, 20k) & 2 & 67.9\% & -- & -- & 46.3\% \\
+    Cond 3 (zh, 5k) & 2 & 69.7\% & -- & 63.7\% & -- \\
+    Cond 5 (es, 5k) & 2 & 62.1\% & 44.2\% & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & 66.1\% & -- & -- & 50.2\% \\
     Cond 5 (zh, 5k) & 2 & 64.3\% & -- & 43.0\% & -- \\
     \bottomrule
   \end{tabular}
@@ -69,7 +74,7 @@
   \label{tab:t1-sib200}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -83,12 +88,12 @@
     Cond 2 (es, 5k) & 3 & 41.8\% & 41.0\% & -- & -- \\
     Cond 2 (es, 20k) & 2 & 42.3\% & 39.8\% & -- & -- \\
     Cond 2 (zh, 5k) & 3 & 42.0\% & -- & 33.1\% & -- \\
-    Cond 2 (zh, 20k) & 1 & 42.1\% & -- & 33.9\% & -- \\
+    Cond 2 (zh, 20k) & 2 & 42.3\% & -- & 34.3\% & -- \\
     Cond 2 (ur, 5k) & 3 & 43.5\% & -- & -- & 36.5\% \\
-    Cond 2 (ur, 20k) & 1 & 43.1\% & -- & -- & 38.3\% \\
-    Cond 3 (zh, 5k) & 1 & 44.3\% & -- & 32.7\% & -- \\
-    Cond 5 (es, 5k) & 1 & 38.9\% & 38.1\% & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & 41.3\% & -- & -- & 33.5\% \\
+    Cond 2 (ur, 20k) & 2 & 43.2\% & -- & -- & 39.0\% \\
+    Cond 3 (zh, 5k) & 2 & 44.6\% & -- & 32.9\% & -- \\
+    Cond 5 (es, 5k) & 2 & 39.4\% & 38.6\% & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & 40.9\% & -- & -- & 33.3\% \\
     Cond 5 (zh, 5k) & 2 & 38.6\% & -- & 31.1\% & -- \\
     \bottomrule
   \end{tabular}
@@ -96,7 +101,7 @@
   \label{tab:t1-xnli}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -110,12 +115,12 @@
     Cond 2 (es, 5k) & 3 & 52.5\% & 51.7\% & -- & -- \\
     Cond 2 (es, 20k) & 2 & 52.5\% & 52.2\% & -- & -- \\
     Cond 2 (zh, 5k) & 3 & 52.1\% & -- & 53.8\% & -- \\
-    Cond 2 (zh, 20k) & 1 & 52.7\% & -- & 54.1\% & -- \\
+    Cond 2 (zh, 20k) & 2 & 51.9\% & -- & 53.8\% & -- \\
     Cond 2 (ur, 5k) & 3 & 52.3\% & -- & -- & 49.1\% \\
-    Cond 2 (ur, 20k) & 1 & 51.3\% & -- & -- & 49.0\% \\
-    Cond 3 (zh, 5k) & 1 & 53.4\% & -- & 53.1\% & -- \\
-    Cond 5 (es, 5k) & 1 & 49.8\% & 50.4\% & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & 47.6\% & -- & -- & 43.9\% \\
+    Cond 2 (ur, 20k) & 2 & 51.0\% & -- & -- & 48.5\% \\
+    Cond 3 (zh, 5k) & 2 & 53.4\% & -- & 53.4\% & -- \\
+    Cond 5 (es, 5k) & 2 & 49.8\% & 50.5\% & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & 47.2\% & -- & -- & 44.0\% \\
     Cond 5 (zh, 5k) & 2 & 49.5\% & -- & 51.0\% & -- \\
     \bottomrule
   \end{tabular}
@@ -123,7 +128,7 @@
   \label{tab:t1-xcsqa}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -137,12 +142,12 @@
     Cond 2 (es, 5k) & 3 & 71.9\% & 69.6\% & -- & -- \\
     Cond 2 (es, 20k) & 2 & 71.8\% & 69.4\% & -- & -- \\
     Cond 2 (zh, 5k) & 3 & 72.2\% & -- & 73.9\% & -- \\
-    Cond 2 (zh, 20k) & 1 & 72.4\% & -- & 73.0\% & -- \\
+    Cond 2 (zh, 20k) & 2 & 71.7\% & -- & 72.8\% & -- \\
     Cond 2 (ur, 5k) & 3 & 73.3\% & -- & -- & 71.2\% \\
-    Cond 2 (ur, 20k) & 1 & 72.2\% & -- & -- & 67.9\% \\
-    Cond 3 (zh, 5k) & 1 & 72.3\% & -- & 72.7\% & -- \\
-    Cond 5 (es, 5k) & 1 & 71.2\% & 69.0\% & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & 72.8\% & -- & -- & 67.2\% \\
+    Cond 2 (ur, 20k) & 2 & 71.7\% & -- & -- & 67.8\% \\
+    Cond 3 (zh, 5k) & 2 & 72.0\% & -- & 72.8\% & -- \\
+    Cond 5 (es, 5k) & 2 & 71.4\% & 69.1\% & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & 72.7\% & -- & -- & 67.3\% \\
     Cond 5 (zh, 5k) & 2 & 72.5\% & -- & 73.9\% & -- \\
     \bottomrule
   \end{tabular}
@@ -152,7 +157,7 @@
 
 % ─── Type 2: Native vs English prompt ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table*}[t]
   \centering
   \scriptsize
@@ -168,12 +173,12 @@
     Cond 2 (es, 5k) & 3 & 73.0\% & 56.1\% & -- & -- & 44.3\% & 42.3\% & -- & -- & 60.6\% & 54.1\% & -- & -- & 78.5\% & 69.2\% & -- & -- \\
     Cond 2 (es, 20k) & 2 & 71.1\% & 58.5\% & -- & -- & 44.8\% & 40.1\% & -- & -- & 60.5\% & 54.5\% & -- & -- & 78.7\% & 68.8\% & -- & -- \\
     Cond 2 (zh, 5k) & 3 & 72.1\% & -- & 66.7\% & -- & 44.4\% & -- & 34.6\% & -- & 60.7\% & -- & 54.8\% & -- & 78.3\% & -- & 78.3\% & -- \\
-    Cond 2 (zh, 20k) & 1 & 72.8\% & -- & 64.7\% & -- & 44.4\% & -- & 35.3\% & -- & 61.1\% & -- & 54.0\% & -- & 79.1\% & -- & 77.4\% & -- \\
+    Cond 2 (zh, 20k) & 2 & 72.3\% & -- & 64.7\% & -- & 44.4\% & -- & 35.7\% & -- & 60.2\% & -- & 54.1\% & -- & 78.3\% & -- & 77.3\% & -- \\
     Cond 2 (ur, 5k) & 3 & 73.2\% & -- & -- & 46.2\% & 46.7\% & -- & -- & 35.1\% & 61.2\% & -- & -- & 37.5\% & 79.3\% & -- & -- & 56.7\% \\
-    Cond 2 (ur, 20k) & 1 & 72.8\% & -- & -- & 29.9\% & 45.0\% & -- & -- & 36.2\% & 61.3\% & -- & -- & 34.7\% & 79.3\% & -- & -- & 49.2\% \\
-    Cond 3 (zh, 5k) & 1 & 70.3\% & -- & 64.7\% & -- & 46.8\% & -- & 31.9\% & -- & 60.9\% & -- & 53.2\% & -- & 79.1\% & -- & 77.5\% & -- \\
-    Cond 5 (es, 5k) & 1 & 65.0\% & 43.1\% & -- & -- & 42.9\% & 40.6\% & -- & -- & 60.3\% & 52.6\% & -- & -- & 78.9\% & 68.6\% & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & 69.1\% & -- & -- & 52.2\% & 42.3\% & -- & -- & 33.0\% & 59.2\% & -- & -- & 32.4\% & 80.1\% & -- & -- & 54.7\% \\
+    Cond 2 (ur, 20k) & 2 & 72.1\% & -- & -- & 30.4\% & 44.8\% & -- & -- & 36.5\% & 60.8\% & -- & -- & 33.8\% & 78.9\% & -- & -- & 48.2\% \\
+    Cond 3 (zh, 5k) & 2 & 71.1\% & -- & 64.8\% & -- & 47.3\% & -- & 32.4\% & -- & 60.8\% & -- & 53.4\% & -- & 78.8\% & -- & 77.2\% & -- \\
+    Cond 5 (es, 5k) & 2 & 66.4\% & 42.0\% & -- & -- & 44.3\% & 41.1\% & -- & -- & 60.1\% & 53.0\% & -- & -- & 79.0\% & 68.8\% & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & 70.5\% & -- & -- & 50.9\% & 42.9\% & -- & -- & 32.6\% & 59.1\% & -- & -- & 32.9\% & 79.9\% & -- & -- & 54.5\% \\
     Cond 5 (zh, 5k) & 2 & 66.5\% & -- & 52.3\% & -- & 42.1\% & -- & 34.4\% & -- & 59.6\% & -- & 51.8\% & -- & 79.2\% & -- & 78.4\% & -- \\
     \bottomrule
   \end{tabular}
@@ -181,7 +186,7 @@
   \label{tab:t2-native}
 \end{table*}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table*}[t]
   \centering
   \scriptsize
@@ -197,12 +202,12 @@
     Cond 2 (es, 5k) & 3 & 73.0\% & 70.7\% & 71.1\% & 68.0\% & 44.3\% & 41.8\% & 42.1\% & 39.0\% & 60.6\% & 53.1\% & 54.6\% & 41.7\% & 78.5\% & 71.2\% & 76.2\% & 61.9\% \\
     Cond 2 (es, 20k) & 2 & 71.1\% & 69.2\% & 68.9\% & 66.7\% & 44.8\% & 42.2\% & 43.6\% & 38.6\% & 60.5\% & 53.1\% & 54.2\% & 42.1\% & 78.7\% & 71.2\% & 75.7\% & 61.5\% \\
     Cond 2 (zh, 5k) & 3 & 72.1\% & 70.8\% & 70.8\% & 69.0\% & 44.4\% & 41.6\% & 42.8\% & 39.0\% & 60.7\% & 52.5\% & 53.5\% & 41.8\% & 78.3\% & 71.3\% & 77.2\% & 62.1\% \\
-    Cond 2 (zh, 20k) & 1 & 72.8\% & 70.6\% & 70.6\% & 67.4\% & 44.4\% & 41.7\% & 42.7\% & 39.5\% & 61.1\% & 52.8\% & 54.5\% & 42.4\% & 79.1\% & 71.1\% & 77.3\% & 62.1\% \\
+    Cond 2 (zh, 20k) & 2 & 72.3\% & 69.7\% & 70.5\% & 67.8\% & 44.4\% & 42.3\% & 43.2\% & 39.5\% & 60.2\% & 52.0\% & 53.9\% & 41.5\% & 78.3\% & 70.2\% & 76.7\% & 61.5\% \\
     Cond 2 (ur, 5k) & 3 & 73.2\% & 69.0\% & 70.8\% & 67.1\% & 46.7\% & 44.0\% & 45.1\% & 38.3\% & 61.2\% & 53.5\% & 55.2\% & 39.5\% & 79.3\% & 73.2\% & 77.6\% & 63.4\% \\
-    Cond 2 (ur, 20k) & 1 & 72.8\% & 69.1\% & 69.1\% & 62.7\% & 45.0\% & 43.4\% & 45.0\% & 39.0\% & 61.3\% & 54.2\% & 53.8\% & 35.9\% & 79.3\% & 72.2\% & 77.1\% & 60.3\% \\
-    Cond 3 (zh, 5k) & 1 & 70.3\% & 68.9\% & 71.1\% & 67.4\% & 46.8\% & 44.9\% & 46.3\% & 39.3\% & 60.9\% & 54.4\% & 55.2\% & 43.2\% & 79.1\% & 71.4\% & 76.9\% & 61.9\% \\
-    Cond 5 (es, 5k) & 1 & 65.0\% & 60.1\% & 64.0\% & 56.4\% & 42.9\% & 37.1\% & 39.6\% & 36.0\% & 60.3\% & 49.7\% & 50.8\% & 38.4\% & 78.9\% & 70.2\% & 75.0\% & 60.7\% \\
-    Cond 5 (ur, 5k) & 1 & 69.1\% & 67.7\% & 68.9\% & 55.4\% & 42.3\% & 40.5\% & 45.5\% & 37.0\% & 59.2\% & 49.0\% & 49.7\% & 32.6\% & 80.1\% & 73.2\% & 76.7\% & 61.2\% \\
+    Cond 2 (ur, 20k) & 2 & 72.1\% & 68.6\% & 69.0\% & 61.8\% & 44.8\% & 43.8\% & 45.2\% & 39.1\% & 60.8\% & 53.5\% & 54.1\% & 35.5\% & 78.9\% & 71.8\% & 76.9\% & 59.3\% \\
+    Cond 3 (zh, 5k) & 2 & 71.1\% & 69.6\% & 70.8\% & 67.4\% & 47.3\% & 45.8\% & 46.0\% & 39.5\% & 60.8\% & 54.3\% & 55.3\% & 43.3\% & 78.8\% & 71.1\% & 76.5\% & 61.8\% \\
+    Cond 5 (es, 5k) & 2 & 66.4\% & 60.7\% & 64.0\% & 57.5\% & 44.3\% & 37.3\% & 39.6\% & 36.4\% & 60.1\% & 49.4\% & 51.2\% & 38.5\% & 79.0\% & 70.5\% & 74.9\% & 61.0\% \\
+    Cond 5 (ur, 5k) & 2 & 70.5\% & 67.3\% & 69.6\% & 56.9\% & 42.9\% & 39.9\% & 44.4\% & 36.6\% & 59.1\% & 48.9\% & 49.0\% & 32.0\% & 79.9\% & 73.0\% & 76.7\% & 61.3\% \\
     Cond 5 (zh, 5k) & 2 & 66.5\% & 67.0\% & 66.1\% & 57.6\% & 42.1\% & 38.4\% & 37.0\% & 36.7\% & 59.6\% & 51.3\% & 50.8\% & 36.5\% & 79.2\% & 71.9\% & 77.1\% & 62.0\% \\
     \bottomrule
   \end{tabular}
@@ -210,7 +215,7 @@
   \label{tab:t2-english}
 \end{table*}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table*}[t]
   \centering
   \scriptsize
@@ -225,12 +230,12 @@
     Cond 2 (es, 5k) & 3 & $-$0.7 & $-$2.2 & -- & -- & +0.4 & +0.7 & -- & -- & $-$0.1 & +1.0 & -- & -- & +1.0 & +0.6 & -- & -- \\
     Cond 2 (es, 20k) & 2 & $-$2.7 & +0.1 & -- & -- & +0.9 & $-$1.5 & -- & -- & $-$0.2 & +1.4 & -- & -- & +1.2 & +0.3 & -- & -- \\
     Cond 2 (zh, 5k) & 3 & $-$1.6 & -- & +2.2 & -- & +0.4 & -- & +5.5 & -- & +0.0 & -- & +1.4 & -- & +0.8 & -- & +1.5 & -- \\
-    Cond 2 (zh, 20k) & 1 & $-$1.0 & -- & +0.2 & -- & +0.4 & -- & +6.2 & -- & +0.4 & -- & +0.8 & -- & +1.6 & -- & +0.6 & -- \\
+    Cond 2 (zh, 20k) & 2 & $-$1.5 & -- & +0.2 & -- & +0.4 & -- & +6.6 & -- & $-$0.5 & -- & +0.8 & -- & +0.8 & -- & +0.4 & -- \\
     Cond 2 (ur, 5k) & 3 & $-$0.6 & -- & -- & $-$9.0 & +2.7 & -- & -- & +2.3 & +0.5 & -- & -- & $-$2.3 & +1.8 & -- & -- & +4.1 \\
-    Cond 2 (ur, 20k) & 1 & $-$1.0 & -- & -- & $-$25.2 & +1.0 & -- & -- & +3.5 & +0.5 & -- & -- & $-$5.2 & +1.8 & -- & -- & $-$3.4 \\
-    Cond 3 (zh, 5k) & 1 & $-$3.4 & -- & +0.2 & -- & +2.8 & -- & +2.8 & -- & +0.2 & -- & $-$0.2 & -- & +1.6 & -- & +0.7 & -- \\
-    Cond 5 (es, 5k) & 1 & $-$8.8 & $-$15.2 & -- & -- & $-$1.0 & $-$1.0 & -- & -- & $-$0.4 & $-$0.4 & -- & -- & +1.4 & +0.1 & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & $-$4.7 & -- & -- & $-$2.9 & $-$1.6 & -- & -- & +0.2 & $-$1.5 & -- & -- & $-$7.4 & +2.6 & -- & -- & +2.1 \\
+    Cond 2 (ur, 20k) & 2 & $-$1.7 & -- & -- & $-$24.8 & +0.8 & -- & -- & +3.7 & +0.1 & -- & -- & $-$6.0 & +1.4 & -- & -- & $-$4.4 \\
+    Cond 3 (zh, 5k) & 2 & $-$2.7 & -- & +0.4 & -- & +3.4 & -- & +3.3 & -- & +0.1 & -- & +0.1 & -- & +1.3 & -- & +0.4 & -- \\
+    Cond 5 (es, 5k) & 2 & $-$7.4 & $-$16.3 & -- & -- & +0.3 & $-$0.5 & -- & -- & $-$0.6 & +0.0 & -- & -- & +1.5 & +0.3 & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & $-$3.3 & -- & -- & $-$4.3 & $-$1.1 & -- & -- & $-$0.1 & $-$1.6 & -- & -- & $-$6.9 & +2.4 & -- & -- & +1.9 \\
     Cond 5 (zh, 5k) & 2 & $-$7.2 & -- & $-$12.1 & -- & $-$1.8 & -- & +5.3 & -- & $-$1.1 & -- & $-$1.6 & -- & +1.7 & -- & +1.6 & -- \\
     \bottomrule
   \end{tabular}
@@ -240,7 +245,7 @@
 
 % ─── Type 3: Orig vs refined side-by-side, one per benchmark ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table*}[t]
   \centering
   \small
@@ -256,12 +261,12 @@
     Cond 2 (es, 5k) & 71.1\% & 70.7\% & 54.7\% & \textbf{55.1\%} & -- & -- & -- & -- \\
     Cond 2 (es, 20k) & 69.3\% & 69.0\% & 56.1\% & \textbf{56.1\%} & -- & -- & -- & -- \\
     Cond 2 (zh, 5k) & 71.0\% & 70.7\% & -- & -- & 65.7\% & 65.9\% & -- & -- \\
-    Cond 2 (zh, 20k) & 70.7\% & 70.3\% & -- & -- & 62.4\% & 63.4\% & -- & -- \\
+    Cond 2 (zh, 20k) & 70.4\% & 70.1\% & -- & -- & 62.9\% & 63.6\% & -- & -- \\
     Cond 2 (ur, 5k) & 71.5\% & 70.0\% & -- & -- & -- & -- & 63.2\% & 59.1\% \\
-    Cond 2 (ur, 20k) & 70.0\% & 68.4\% & -- & -- & -- & -- & 51.4\% & \textbf{45.3\%} \\
-    Cond 3 (zh, 5k) & 69.9\% & 69.4\% & -- & -- & 63.8\% & 63.4\% & -- & -- \\
-    Cond 5 (es, 5k) & 61.0\% & 61.3\% & 24.9\% & 45.9\% & -- & -- & -- & -- \\
-    Cond 5 (ur, 5k) & 65.0\% & 65.3\% & -- & -- & -- & -- & 15.5\% & \textbf{51.8\%} \\
+    Cond 2 (ur, 20k) & 69.1\% & 67.9\% & -- & -- & -- & -- & 50.9\% & 46.3\% \\
+    Cond 3 (zh, 5k) & 70.4\% & 69.7\% & -- & -- & 64.3\% & 63.7\% & -- & -- \\
+    Cond 5 (es, 5k) & 61.5\% & 62.1\% & 24.9\% & 44.2\% & -- & -- & -- & -- \\
+    Cond 5 (ur, 5k) & 66.4\% & 66.1\% & -- & -- & -- & -- & 15.2\% & \textbf{50.2\%} \\
     Cond 5 (zh, 5k) & 57.6\% & 64.3\% & -- & -- & 22.8\% & 43.0\% & -- & -- \\
     \bottomrule
   \end{tabular}
@@ -269,7 +274,7 @@
   \label{tab:t3-sib200}
 \end{table*}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table*}[t]
   \centering
   \small
@@ -285,12 +290,12 @@
     Cond 2 (es, 5k) & 41.8\% & 41.8\% & 41.0\% & 41.0\% & -- & -- & -- & -- \\
     Cond 2 (es, 20k) & 42.3\% & 42.3\% & 39.8\% & 39.8\% & -- & -- & -- & -- \\
     Cond 2 (zh, 5k) & 42.0\% & 42.0\% & -- & -- & 32.8\% & 33.1\% & -- & -- \\
-    Cond 2 (zh, 20k) & 42.1\% & 42.1\% & -- & -- & 33.8\% & 33.9\% & -- & -- \\
+    Cond 2 (zh, 20k) & 42.3\% & 42.3\% & -- & -- & 34.1\% & 34.3\% & -- & -- \\
     Cond 2 (ur, 5k) & 43.5\% & 43.5\% & -- & -- & -- & -- & 36.5\% & 36.5\% \\
-    Cond 2 (ur, 20k) & 43.1\% & 43.1\% & -- & -- & -- & -- & 38.3\% & 38.3\% \\
-    Cond 3 (zh, 5k) & 44.3\% & 44.3\% & -- & -- & 32.7\% & 32.7\% & -- & -- \\
-    Cond 5 (es, 5k) & 38.9\% & 38.9\% & 38.1\% & 38.1\% & -- & -- & -- & -- \\
-    Cond 5 (ur, 5k) & 41.3\% & 41.3\% & -- & -- & -- & -- & 33.5\% & 33.5\% \\
+    Cond 2 (ur, 20k) & 43.2\% & 43.2\% & -- & -- & -- & -- & 39.0\% & 39.0\% \\
+    Cond 3 (zh, 5k) & 44.6\% & 44.6\% & -- & -- & 32.9\% & 32.9\% & -- & -- \\
+    Cond 5 (es, 5k) & 39.4\% & 39.4\% & 38.6\% & 38.6\% & -- & -- & -- & -- \\
+    Cond 5 (ur, 5k) & 40.9\% & 40.9\% & -- & -- & -- & -- & 33.3\% & 33.3\% \\
     Cond 5 (zh, 5k) & 38.6\% & 38.6\% & -- & -- & 25.3\% & 31.1\% & -- & -- \\
     \bottomrule
   \end{tabular}
@@ -298,7 +303,7 @@
   \label{tab:t3-xnli}
 \end{table*}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table*}[t]
   \centering
   \small
@@ -314,12 +319,12 @@
     Cond 2 (es, 5k) & 52.5\% & 52.5\% & 51.7\% & 51.7\% & -- & -- & -- & -- \\
     Cond 2 (es, 20k) & 52.5\% & 52.5\% & 52.2\% & 52.2\% & -- & -- & -- & -- \\
     Cond 2 (zh, 5k) & 52.1\% & 52.1\% & -- & -- & 53.8\% & 53.8\% & -- & -- \\
-    Cond 2 (zh, 20k) & 52.7\% & 52.7\% & -- & -- & 54.1\% & 54.1\% & -- & -- \\
+    Cond 2 (zh, 20k) & 51.9\% & 51.9\% & -- & -- & 53.8\% & 53.8\% & -- & -- \\
     Cond 2 (ur, 5k) & 52.3\% & 52.3\% & -- & -- & -- & -- & 49.1\% & 49.1\% \\
-    Cond 2 (ur, 20k) & 51.3\% & 51.3\% & -- & -- & -- & -- & 49.0\% & 49.0\% \\
-    Cond 3 (zh, 5k) & 53.4\% & 53.4\% & -- & -- & 53.1\% & 53.1\% & -- & -- \\
-    Cond 5 (es, 5k) & 49.8\% & 49.8\% & 50.4\% & 50.4\% & -- & -- & -- & -- \\
-    Cond 5 (ur, 5k) & 47.6\% & 47.6\% & -- & -- & -- & -- & 43.9\% & 43.9\% \\
+    Cond 2 (ur, 20k) & 51.0\% & 51.0\% & -- & -- & -- & -- & 48.5\% & 48.5\% \\
+    Cond 3 (zh, 5k) & 53.4\% & 53.4\% & -- & -- & 53.4\% & 53.4\% & -- & -- \\
+    Cond 5 (es, 5k) & 49.8\% & 49.8\% & 50.5\% & 50.5\% & -- & -- & -- & -- \\
+    Cond 5 (ur, 5k) & 47.2\% & 47.2\% & -- & -- & -- & -- & 44.0\% & 44.0\% \\
     Cond 5 (zh, 5k) & 49.5\% & 49.5\% & -- & -- & 51.0\% & 51.0\% & -- & -- \\
     \bottomrule
   \end{tabular}
@@ -327,7 +332,7 @@
   \label{tab:t3-xcsqa}
 \end{table*}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table*}[t]
   \centering
   \small
@@ -343,12 +348,12 @@
     Cond 2 (es, 5k) & 71.9\% & 71.9\% & 69.6\% & 69.6\% & -- & -- & -- & -- \\
     Cond 2 (es, 20k) & 71.8\% & 71.8\% & 69.4\% & 69.4\% & -- & -- & -- & -- \\
     Cond 2 (zh, 5k) & 72.2\% & 72.2\% & -- & -- & 73.9\% & 73.9\% & -- & -- \\
-    Cond 2 (zh, 20k) & 72.4\% & 72.4\% & -- & -- & 73.0\% & 73.0\% & -- & -- \\
+    Cond 2 (zh, 20k) & 71.7\% & 71.7\% & -- & -- & 72.8\% & 72.8\% & -- & -- \\
     Cond 2 (ur, 5k) & 73.3\% & 73.3\% & -- & -- & -- & -- & 71.2\% & 71.2\% \\
-    Cond 2 (ur, 20k) & 72.2\% & 72.2\% & -- & -- & -- & -- & 67.9\% & 67.9\% \\
-    Cond 3 (zh, 5k) & 72.3\% & 72.3\% & -- & -- & 72.7\% & 72.7\% & -- & -- \\
-    Cond 5 (es, 5k) & 71.2\% & 71.2\% & 69.0\% & 69.0\% & -- & -- & -- & -- \\
-    Cond 5 (ur, 5k) & 72.8\% & 72.8\% & -- & -- & -- & -- & 67.2\% & 67.2\% \\
+    Cond 2 (ur, 20k) & 71.7\% & 71.7\% & -- & -- & -- & -- & 67.8\% & 67.8\% \\
+    Cond 3 (zh, 5k) & 72.0\% & 72.0\% & -- & -- & 72.8\% & 72.8\% & -- & -- \\
+    Cond 5 (es, 5k) & 71.4\% & 71.4\% & 69.1\% & 69.1\% & -- & -- & -- & -- \\
+    Cond 5 (ur, 5k) & 72.7\% & 72.7\% & -- & -- & -- & -- & 67.3\% & 67.3\% \\
     Cond 5 (zh, 5k) & 72.5\% & 72.5\% & -- & -- & 73.9\% & 73.9\% & -- & -- \\
     \bottomrule
   \end{tabular}
@@ -358,7 +363,7 @@
 
 % ─── Type 4: Δ-vs-baseline (refined), one per benchmark ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -371,12 +376,12 @@
     Cond 2 (es, 5k) & 3 & $-$2.0 & $-$3.3 & -- & -- \\
     Cond 2 (es, 20k) & 2 & $-$3.8 & $-$2.3 & -- & -- \\
     Cond 2 (zh, 5k) & 3 & $-$2.0 & -- & +3.5 & -- \\
-    Cond 2 (zh, 20k) & 1 & $-$2.4 & -- & +0.9 & -- \\
+    Cond 2 (zh, 20k) & 2 & $-$2.7 & -- & +1.2 & -- \\
     Cond 2 (ur, 5k) & 3 & $-$2.7 & -- & -- & \textbf{+12.0} \\
-    Cond 2 (ur, 20k) & 1 & $-$4.3 & -- & -- & $-$1.7 \\
-    Cond 3 (zh, 5k) & 1 & $-$3.3 & -- & +1.0 & -- \\
-    Cond 5 (es, 5k) & 1 & \textbf{$-$11.4} & \textbf{$-$12.6} & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & $-$7.5 & -- & -- & +4.8 \\
+    Cond 2 (ur, 20k) & 2 & $-$4.9 & -- & -- & $-$0.8 \\
+    Cond 3 (zh, 5k) & 2 & $-$3.0 & -- & +1.3 & -- \\
+    Cond 5 (es, 5k) & 2 & \textbf{$-$10.6} & \textbf{$-$14.2} & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & $-$6.7 & -- & -- & +3.2 \\
     Cond 5 (zh, 5k) & 2 & \textbf{$-$8.4} & -- & \textbf{$-$19.5} & -- \\
     \bottomrule
   \end{tabular}
@@ -384,7 +389,7 @@
   \label{tab:t4-sib200-delta}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -397,12 +402,12 @@
     Cond 2 (es, 5k) & 3 & +0.3 & \textbf{+4.4} & -- & -- \\
     Cond 2 (es, 20k) & 2 & +0.8 & +3.2 & -- & -- \\
     Cond 2 (zh, 5k) & 3 & +0.4 & -- & +3.6 & -- \\
-    Cond 2 (zh, 20k) & 1 & +0.5 & -- & \textbf{+4.4} & -- \\
+    Cond 2 (zh, 20k) & 2 & +0.8 & -- & \textbf{+4.8} & -- \\
     Cond 2 (ur, 5k) & 3 & +2.0 & -- & -- & +3.5 \\
-    Cond 2 (ur, 20k) & 1 & +1.6 & -- & -- & \textbf{+5.3} \\
-    Cond 3 (zh, 5k) & 1 & +2.8 & -- & +3.3 & -- \\
-    Cond 5 (es, 5k) & 1 & $-$2.6 & +1.5 & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & $-$0.2 & -- & -- & +0.5 \\
+    Cond 2 (ur, 20k) & 2 & +1.7 & -- & -- & \textbf{+6.0} \\
+    Cond 3 (zh, 5k) & 2 & +3.1 & -- & +3.4 & -- \\
+    Cond 5 (es, 5k) & 2 & $-$2.2 & +2.0 & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & $-$0.6 & -- & -- & +0.3 \\
     Cond 5 (zh, 5k) & 2 & $-$3.0 & -- & +1.6 & -- \\
     \bottomrule
   \end{tabular}
@@ -410,7 +415,7 @@
   \label{tab:t4-xnli-delta}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -423,12 +428,12 @@
     Cond 2 (es, 5k) & 3 & +0.3 & +0.6 & -- & -- \\
     Cond 2 (es, 20k) & 2 & +0.3 & +1.1 & -- & -- \\
     Cond 2 (zh, 5k) & 3 & +0.0 & -- & +1.4 & -- \\
-    Cond 2 (zh, 20k) & 1 & +0.6 & -- & +1.7 & -- \\
+    Cond 2 (zh, 20k) & 2 & $-$0.2 & -- & +1.4 & -- \\
     Cond 2 (ur, 5k) & 3 & +0.2 & -- & -- & +0.9 \\
-    Cond 2 (ur, 20k) & 1 & $-$0.9 & -- & -- & +0.8 \\
-    Cond 3 (zh, 5k) & 1 & +1.3 & -- & +0.7 & -- \\
-    Cond 5 (es, 5k) & 1 & $-$2.4 & $-$0.7 & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & \textbf{$-$4.5} & -- & -- & \textbf{$-$4.4} \\
+    Cond 2 (ur, 20k) & 2 & $-$1.2 & -- & -- & +0.2 \\
+    Cond 3 (zh, 5k) & 2 & +1.3 & -- & +1.0 & -- \\
+    Cond 5 (es, 5k) & 2 & $-$2.4 & $-$0.6 & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & \textbf{$-$4.9} & -- & -- & \textbf{$-$4.2} \\
     Cond 5 (zh, 5k) & 2 & $-$2.6 & -- & $-$1.4 & -- \\
     \bottomrule
   \end{tabular}
@@ -436,7 +441,7 @@
   \label{tab:t4-xcsqa-delta}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -449,12 +454,12 @@
     Cond 2 (es, 5k) & 3 & +1.1 & +1.6 & -- & -- \\
     Cond 2 (es, 20k) & 2 & +0.9 & +1.4 & -- & -- \\
     Cond 2 (zh, 5k) & 3 & +1.4 & -- & +2.2 & -- \\
-    Cond 2 (zh, 20k) & 1 & +1.5 & -- & +1.3 & -- \\
+    Cond 2 (zh, 20k) & 2 & +0.8 & -- & +1.1 & -- \\
     Cond 2 (ur, 5k) & 3 & +2.5 & -- & -- & \textbf{+5.9} \\
-    Cond 2 (ur, 20k) & 1 & +1.4 & -- & -- & +2.6 \\
-    Cond 3 (zh, 5k) & 1 & +1.5 & -- & +1.0 & -- \\
-    Cond 5 (es, 5k) & 1 & +0.3 & +1.0 & -- & -- \\
-    Cond 5 (ur, 5k) & 1 & +1.9 & -- & -- & +1.9 \\
+    Cond 2 (ur, 20k) & 2 & +0.8 & -- & -- & +2.6 \\
+    Cond 3 (zh, 5k) & 2 & +1.2 & -- & +1.1 & -- \\
+    Cond 5 (es, 5k) & 2 & +0.5 & +1.1 & -- & -- \\
+    Cond 5 (ur, 5k) & 2 & +1.8 & -- & -- & +2.0 \\
     Cond 5 (zh, 5k) & 2 & +1.7 & -- & +2.2 & -- \\
     \bottomrule
   \end{tabular}
@@ -464,7 +469,7 @@
 
 % ─── §4.1 Baseline-accuracy headroom ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -484,7 +489,7 @@
 
 % ─── §4.3 Per-language matched-language ladder ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -497,14 +502,14 @@
     Cond 1 (en, 20k) & $-$4.3 ($-$5.2/$-$3.4) & +0.6 (+0.2/+1.0) & $-$0.4 ($-$0.1/$-$0.6) & $-$1.3 ($-$1.1/$-$1.6) \\
     Cond 2 (es, 5k) & $-$2.2\,$\pm$\,0.6 & +0.7\,$\pm$\,1.7 & +1.0\,$\pm$\,0.2 & +0.6\,$\pm$\,0.3 \\
     Cond 2 (es, 20k) & +0.1 (+0.5/$-$0.2) & $-$1.5 ($-$1.4/$-$1.5) & +1.4 (+1.6/+1.3) & +0.3 ($-$0.3/+0.8) \\
-    Cond 5 (es, 5k) & $-$15.2 & $-$1.0 & $-$0.4 & +0.1 \\
+    Cond 5 (es, 5k) & $-$16.3 ($-$15.2/$-$17.4) & $-$0.5 ($-$1.0/+0.0) & +0.0 ($-$0.4/+0.4) & +0.3 (+0.1/+0.5) \\
     \bottomrule
   \end{tabular}
   \caption{Matched-language ladder for Spanish: each non-baseline row is the condition's mean $\Delta$ accuracy vs baseline on matched-diagonal cells (data $=$ instr $=$ es), under refined extractor. Three-seed conditions show mean $\pm$ std across seeds; two-seed conditions show the mean followed by the two per-seed values in parentheses (seed order); single-seed conditions are point estimates. Baseline row shows absolute accuracy (no $\Delta$).}
   \label{tab:matched-ladder-es}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -516,8 +521,8 @@
     Cond 1 (en, 5k) & +0.0\,$\pm$\,0.4 & +2.2\,$\pm$\,0.6 & $-$0.2\,$\pm$\,0.1 & $-$0.2\,$\pm$\,0.2 \\
     Cond 1 (en, 20k) & $-$0.5 ($-$1.2/+0.2) & +1.8 (+1.9/+1.8) & +0.0 (+0.3/$-$0.4) & $-$0.2 ($-$0.4/$-$0.1) \\
     Cond 2 (zh, 5k) & +2.2\,$\pm$\,1.1 & +5.5\,$\pm$\,0.5 & +1.4\,$\pm$\,0.1 & +1.5\,$\pm$\,0.3 \\
-    Cond 2 (zh, 20k) & +0.2 & +6.2 & +0.7 & +0.6 \\
-    Cond 3 (zh, 5k) & +0.2 & +2.8 & $-$0.1 & +0.7 \\
+    Cond 2 (zh, 20k) & +0.2 (+0.2/+0.2) & +6.6 (+6.2/+7.0) & +0.8 (+0.7/+0.8) & +0.4 (+0.6/+0.3) \\
+    Cond 3 (zh, 5k) & +0.4 (+0.2/+0.5) & +3.3 (+2.8/+3.7) & +0.1 ($-$0.1/+0.3) & +0.4 (+0.7/+0.1) \\
     Cond 5 (zh, 5k) & $-$12.1 ($-$10.8/$-$13.5) & +5.3 (+5.9/+4.6) & $-$1.6 ($-$1.7/$-$1.5) & +1.6 (+1.2/+1.9) \\
     \bottomrule
   \end{tabular}
@@ -525,7 +530,7 @@
   \label{tab:matched-ladder-zh}
 \end{table}
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -537,8 +542,8 @@
     Cond 1 (en, 5k) & +0.0\,$\pm$\,0.4 & +0.1\,$\pm$\,0.1 & +0.3\,$\pm$\,0.5 & +0.5\,$\pm$\,0.4 \\
     Cond 1 (en, 20k) & +0.5 (+1.5/$-$0.5) & +0.4 (+0.5/+0.2) & +0.2 (+0.3/+0.0) & $-$1.1 ($-$0.7/$-$1.5) \\
     Cond 2 (ur, 5k) & $-$9.0\,$\pm$\,4.3 & +2.3\,$\pm$\,0.9 & $-$2.3\,$\pm$\,1.6 & +4.1\,$\pm$\,1.9 \\
-    Cond 2 (ur, 20k) & $-$25.2 & +3.5 & $-$5.1 & $-$3.4 \\
-    Cond 5 (ur, 5k) & $-$2.9 & +0.2 & $-$7.4 & +2.1 \\
+    Cond 2 (ur, 20k) & $-$24.8 ($-$25.2/$-$24.3) & +3.7 (+3.5/+3.9) & $-$6.0 ($-$5.1/$-$7.0) & $-$4.4 ($-$3.4/$-$5.4) \\
+    Cond 5 (ur, 5k) & $-$4.3 ($-$2.9/$-$5.6) & $-$0.1 (+0.2/$-$0.4) & $-$6.9 ($-$7.4/$-$6.4) & +1.9 (+2.1/+1.7) \\
     \bottomrule
   \end{tabular}
   \caption{Matched-language ladder for Urdu: each non-baseline row is the condition's mean $\Delta$ accuracy vs baseline on matched-diagonal cells (data $=$ instr $=$ ur), under refined extractor. Three-seed conditions show mean $\pm$ std across seeds; two-seed conditions show the mean followed by the two per-seed values in parentheses (seed order); single-seed conditions are point estimates. Baseline row shows absolute accuracy (no $\Delta$).}
@@ -547,7 +552,7 @@
 
 % ─── §4.4 Cond-2 vs Cond-5 head-to-head ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -555,18 +560,18 @@
     \toprule
     Lang & Benchmark & Cond 2 (5k) $\Delta$ & Cond 5 (5k) $\Delta$ & Gap (C2$-$C5) \\
     \midrule
-    es & \textsc{SIB-200} & $-$3.3 & $-$12.6 & \textbf{+9.2} \\
-     & \textsc{XNLI} & +4.4 & +1.5 & +2.9 \\
-     & \textsc{X-CSQA} & +0.6 & $-$0.7 & +1.3 \\
-     & \textsc{Belebele} & +1.6 & +1.0 & +0.5 \\
+    es & \textsc{SIB-200} & $-$3.3 & $-$14.2 & \textbf{+10.9} \\
+     & \textsc{XNLI} & +4.4 & +2.0 & +2.4 \\
+     & \textsc{X-CSQA} & +0.6 & $-$0.6 & +1.2 \\
+     & \textsc{Belebele} & +1.6 & +1.1 & +0.5 \\
     zh & \textsc{SIB-200} & +3.5 & $-$19.5 & \textbf{+22.9} \\
      & \textsc{XNLI} & +3.6 & +1.6 & +2.0 \\
      & \textsc{X-CSQA} & +1.4 & $-$1.4 & +2.8 \\
      & \textsc{Belebele} & +2.2 & +2.2 & $-$0.1 \\
-    ur & \textsc{SIB-200} & +12.0 & +4.8 & \textbf{+7.3} \\
-     & \textsc{XNLI} & +3.5 & +0.5 & +3.0 \\
-     & \textsc{X-CSQA} & +0.9 & $-$4.4 & \textbf{+5.3} \\
-     & \textsc{Belebele} & +5.9 & +1.9 & +4.0 \\
+    ur & \textsc{SIB-200} & +12.0 & +3.2 & \textbf{+8.9} \\
+     & \textsc{XNLI} & +3.5 & +0.3 & +3.2 \\
+     & \textsc{X-CSQA} & +0.9 & $-$4.2 & \textbf{+5.1} \\
+     & \textsc{Belebele} & +5.9 & +2.0 & +3.9 \\
     \bottomrule
   \end{tabular}
   \caption{Translation-aggressiveness controlled comparison: \textbf{Cond 2} (keyword-only translation) vs \textbf{Cond 5} (combined keyword + LLM natural-language translation) at matched-instruction grain (instr $=$ target language). Both conditions train on the same 5{,}000 source files from \texttt{bigcode/the-stack-v2-dedup}; only the translation pipeline differs. Values are mean $\Delta$ accuracy vs baseline under refined extractor, in percentage points (mean across seed, template, data\_lang). Bold gap marks $|$gap$| > 5$\,pp.}
@@ -575,7 +580,7 @@
 
 % ─── §4.6 Cross-lingual transfer ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -587,9 +592,9 @@
     Cond 2 (es, 5k) & \textit{$-$2.0} & +0.3 & +0.3 & +1.1 \\
     Cond 2 (zh, 5k) & \textit{$-$2.0} & +0.4 & +0.0 & +1.4 \\
     Cond 2 (ur, 5k) & \textit{$-$2.7} & \textbf{+2.0} & +0.2 & \textbf{+2.5} \\
-    Cond 5 (es, 5k) & \textit{$-$11.4} & \textit{$-$2.6} & \textit{$-$2.4} & +0.3 \\
+    Cond 5 (es, 5k) & \textit{$-$10.6} & \textit{$-$2.2} & \textit{$-$2.4} & +0.5 \\
     Cond 5 (zh, 5k) & \textit{$-$8.4} & \textit{$-$3.0} & \textit{$-$2.6} & +1.7 \\
-    Cond 5 (ur, 5k) & \textit{$-$7.5} & $-$0.2 & \textit{$-$4.5} & +1.9 \\
+    Cond 5 (ur, 5k) & \textit{$-$6.7} & $-$0.6 & \textit{$-$4.9} & +1.8 \\
     \bottomrule
   \end{tabular}
   \caption{Cross-lingual transfer: effect of fine-tuning conditions on English evaluation (instr $=$ en cells), under refined extractor. Cond-2-ur-5k improves English Belebele and English XNLI more than Cond-1-en-5k does --- a surprising secondary finding suggesting that low-resource code fine-tuning provides representational signal beyond the matched language. Values are mean $\Delta$ accuracy vs baseline in percentage points; bold marks $\Delta > +2$\,pp, italic marks $\Delta < -2$\,pp.}
@@ -598,7 +603,7 @@
 
 % ─── §4.7 SIB-200 sign-flip catalogue ───
 
-% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
+% provisional: includes condition-1-en-20k/seed123, condition-2-es-20k/seed123, condition-2-ur-20k/seed123, condition-2-zh-20k/seed123, condition-3-zh-5k/seed123, condition-5-es-5k/seed123, condition-5-ur-5k/seed123, condition-5-zh-5k/seed123; not final until the evaluation drift check is resolved
 \begin{table}[t]
   \centering
   \small
@@ -607,10 +612,10 @@
     Condition & n cells & $\Delta_{\text{orig}}$ & $\Delta_{\text{refined}}$ & $|\text{shift}|$ \\
     \midrule
     Cond 2 (es, 20k) & 32 & +0.0115 & $-$0.0305 & 0.0420 \\
-    Cond 2 (ur, 20k) & 16 & +0.1388 & $-$0.0300 & 0.1688 \\
+    Cond 2 (ur, 20k) & 32 & +0.1317 & $-$0.0283 & 0.1601 \\
     Cond 2 (es, 5k) & 48 & +0.0133 & $-$0.0269 & 0.0401 \\
-    Cond 3 (zh, 5k) & 16 & +0.0202 & $-$0.0116 & 0.0319 \\
-    Cond 2 (zh, 20k) & 16 & +0.0175 & $-$0.0074 & 0.0248 \\
+    Cond 3 (zh, 5k) & 32 & +0.0253 & $-$0.0086 & 0.0339 \\
+    Cond 2 (zh, 20k) & 32 & +0.0181 & $-$0.0073 & 0.0254 \\
     \bottomrule
   \end{tabular}
   \caption{\textsc{SIB-200} sign-flip catalogue. Five (condition $\times$ benchmark) aggregates where the original extractor reported a positive $\Delta$ vs baseline but the refined extractor reports a negative $\Delta$ --- i.e. cells where the refinement removed Rule-A over-credit. Aggregation grain: mean across (instr $\times$ seed $\times$ template $\times$ data) within each (condition, benchmark); flip requires $|\Delta_{\text{refined}}| > 0.005$ to exclude noise-floor wobble. The $|\text{shift}|$ column reports the absolute distance between the two extractors' aggregate estimates.}
