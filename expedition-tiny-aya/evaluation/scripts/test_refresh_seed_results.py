@@ -287,5 +287,217 @@ class VerifySessionTests(unittest.TestCase):
         self.assertEqual(problems, [f"{self.CELL2}: no accuracy in reparsed summary"])
 
 
+class AuditCheckTests(unittest.TestCase):
+    """The pure checks behind ``refresh_seed_results.py audit``."""
+
+    CELL = "template1_sib200_data=ur_instr=zh"
+
+    def _results(self, n=3):
+        return {"template1": {self.CELL: [{"text": "یہ ایک جملہ ہے۔", "gold": "سائنس/ٹیکنالوجی", "raw_output": "科学"}] * n}}
+
+    def _reparsed(self, correct=2, count=3, acc=None, fail=0.0, sha="a" * 64):
+        return {"template1": {
+            "summary": {f"{self.CELL}_count": count, f"{self.CELL}_correct": correct, f"{self.CELL}_acc": correct / count if acc is None else acc},
+            "parse_failure_rates": {self.CELL: fail},
+            "reparse_metadata": {"extractor_provenance": {"content_sha256": sha}},
+        }}
+
+    def test_counts_pass_when_consistent(self):
+        self.assertEqual(rsr.audit_counts(self._results(), self._reparsed()), [])
+
+    def test_count_against_rows_is_checked(self):
+        self.assertEqual(
+            rsr.audit_counts(self._results(n=4), self._reparsed()),
+            [f"{self.CELL}: reparsed count 3 vs 4 rows in the results file"],
+        )
+
+    def test_accuracy_against_correct_over_count_is_checked(self):
+        problems = rsr.audit_counts(self._results(), self._reparsed(acc=0.9))
+        self.assertEqual(problems, [f"{self.CELL}: accuracy 0.9 does not equal correct/count 2/3"])
+
+    def _adapter(self, **over):
+        cfg = {"r": 16, "lora_alpha": 32, "lora_dropout": 0.0, "bias": "none", "base_model_name_or_path": "CohereLabs/tiny-aya-base",
+               "target_modules": ["q_proj", "v_proj"], "peft_version": "0.18.1"}
+        return {**cfg, **over}
+
+    def _metrics(self, step=1125, loss=1.0861):
+        return {"train_result": {"train_loss": loss}, "log_history": [{"loss": 1.2}, {"step": step}]}
+
+    def test_adapter_passes_with_only_the_stack_changed(self):
+        problems, info = rsr.audit_adapter(
+            self._adapter(), self._adapter(peft_version="0.20.0", target_modules=["v_proj", "q_proj"]),
+            self._metrics(), self._metrics(loss=1.0864),
+        )
+        self.assertEqual(problems, [])
+        self.assertEqual(info, {"loss": (1.0861, 1.0864), "peft": ("0.18.1", "0.20.0")})
+
+    def test_adapter_setting_and_step_differences_are_problems(self):
+        problems, _ = rsr.audit_adapter(self._adapter(), self._adapter(r=8), self._metrics(), self._metrics(step=1124))
+        self.assertEqual(problems, ["adapter r: 8 vs 16 in the reference adapter", "training steps: 1124 vs 1125 in the reference adapter"])
+
+    def test_deltas_spread_and_parse_failure_rises(self):
+        new = self._reparsed(correct=3, fail=0.40)
+        ref = self._reparsed(correct=2, fail=0.10)
+        d = rsr.refined_deltas(new, ref)
+        self.assertEqual(len(d), 1)
+        self.assertAlmostEqual(d[0], 100 / 3)
+        self.assertEqual(rsr.spread([1.0, -3.0])["sd"], 2.0)
+        self.assertEqual(rsr.spread([1.0, -3.0])["max_abs"], 3.0)
+        self.assertEqual(rsr.spread([])["n"], 0)
+        rises = rsr.parse_failure_rises(new, ref, 0.05)
+        self.assertEqual([c for c, _ in rises], [self.CELL])
+        self.assertAlmostEqual(rises[0][1], 0.30)
+        self.assertEqual(rsr.parse_failure_rises(new, ref, 0.35), [])
+
+    def test_extractor_sha_and_rescore_differences(self):
+        self.assertEqual(rsr.extractor_shas(self._reparsed(sha="b" * 64)), {"b" * 64})
+        pub = self._reparsed()["template1"]
+        self.assertEqual(rsr.rescore_differences(pub, json.loads(json.dumps(pub))), [])
+        changed = json.loads(json.dumps(pub))
+        changed["summary"][f"{self.CELL}_correct"] = 1
+        changed["parse_failure_rates"][self.CELL] = 0.5
+        diffs = rsr.rescore_differences(pub, changed)
+        self.assertEqual(len(diffs), 2)
+        self.assertTrue(diffs[0].startswith(f"{self.CELL}_correct: published 2"))
+        self.assertTrue(diffs[1].startswith(f"{self.CELL} parse-failure rate"))
+
+
+class AuditWiringTests(unittest.TestCase):
+    """``Refresh.audit`` end to end against a stubbed Hub: one real ladder
+    condition, its expected cells built from the real eval matrix."""
+
+    COND = "condition-2-ur-20k"
+
+    def setUp(self):
+        import reparse_results
+
+        self.reparse_results = reparse_results
+        self.sha = reparse_results._extractor_provenance()["content_sha256"]
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.matrix = rsr.load_eval_matrix()
+        self.cells = sorted(rsr.expected_cells(self.matrix[self.COND]))
+        self.files: dict = {}
+        for seed in ("42", "123"):
+            sp = rsr.session_paths(self.COND, seed)
+            for path, t in zip(sp["results"], rsr.TEMPLATES):
+                self.files[path] = {c: [{"text": "یہ ایک جملہ ہے۔", "gold": "سائنس/ٹیکنالوجی", "raw_output": "سائنس"}] * 2
+                                    for c in self.cells if c.startswith(t + "_")}
+            for path in sp["summary"]:
+                self.files[path] = {"summary": {}, "parse_failure_rates": {}}
+            for path, t in zip(sp["reparsed"], rsr.TEMPLATES):
+                cells = [c for c in self.cells if c.startswith(t + "_")]
+                summary = {}
+                for c in cells:
+                    summary.update({f"{c}_acc": 0.5, f"{c}_count": 2, f"{c}_correct": 1})
+                self.files[path] = {"summary": summary, "parse_failure_rates": {c: 0.0 for c in cells},
+                                    "reparse_metadata": {"extractor_provenance": {"content_sha256": self.sha}}}
+        self.lora: dict = {}
+        for seed in ("42", "123"):
+            folder = self.matrix[self.COND]["subfolder_template"].format(seed=seed)
+            self.lora[f"{folder}/adapter_config.json"] = {"r": 16, "lora_alpha": 32, "target_modules": ["q_proj"], "peft_version": "0.18.1"}
+            self.lora[f"{folder}/training_metrics.json"] = {"train_result": {"train_loss": 1.07}, "log_history": [{"step": 1125}]}
+        self.cells_rows = len(self.cells)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _write(self, base: Path, path: str, body) -> Path:
+        p = base / path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body if isinstance(body, str) else json.dumps(body, ensure_ascii=False), encoding="utf-8")
+        return p
+
+    def _run(self, drop: str | None = None) -> tuple[int, str]:
+        import argparse
+
+        args = argparse.Namespace(refresh_dir=str(self.root / "refresh"), provisional=[], seed="123", reference_seed="42",
+                                  conditions=[self.COND], parse_failure_threshold=0.05)
+        r = rsr.Refresh(args)
+        exp_main = set(self.files) | {f"{rsr.TABLES_PREFIX}/cells.tsv"}
+        exp_main.discard(drop)
+        r._inv = {"experiments_main": exp_main, "lora_main": set(self.lora), "open_prs": {}}
+        cells_tsv = "condition\tseed\tcell\n" + "".join(f"{self.COND}\t123\t{i}\n" for i in range(self.cells_rows))
+        files = {**self.files, f"{rsr.TABLES_PREFIX}/cells.tsv": cells_tsv}
+        r._download = lambda p, revision=None: self._write(self.root / "exp", p, files[p])  # type: ignore[method-assign]
+        r._download_lora = lambda p: self._write(self.root / "lora", p, self.lora[p])  # type: ignore[method-assign]
+        with mock.patch("sys.stdout"):
+            n = r.audit()
+        return n, (self.root / "refresh" / "audit-seed123.md").read_text(encoding="utf-8")
+
+    def _published(self, results_path: Path) -> dict:
+        """The seed-42 reparsed summary matching a downloaded results file."""
+        template = results_path.name.rsplit("_results_", 1)[1].removesuffix(".json")
+        path = next(p for p in rsr.session_paths(self.COND, "42")["reparsed"] if p.endswith(f"_{template}.json"))
+        return json.loads(json.dumps(self.files[path]))
+
+    def test_clean_batch_has_no_problems(self):
+        n, report = self._run()
+        self.assertEqual(n, 0, report)
+        self.assertIn(f"| {self.COND} | no | {len(self.cells)} |", report)
+        self.assertIn("0 problem(s) across 1 condition(s).", report)
+
+    def test_missing_session_file_fails(self):
+        dropped = rsr.session_paths(self.COND, "123")["reparsed"][1]
+        n, report = self._run(drop=dropped)
+        self.assertEqual(n, 1)
+        self.assertIn(f"missing on the experiments repo: {dropped}", report)
+
+    def test_short_cells_table_fails(self):
+        self.cells_rows -= 1
+        n, report = self._run()
+        self.assertEqual(n, 1)
+        self.assertIn(f"refined cells.tsv has {len(self.cells) - 1} rows for seed 123", report)
+
+    def test_changed_gold_and_adapter_settings_fail(self):
+        first = rsr.session_paths(self.COND, "123")["results"][0]
+        cell = next(iter(self.files[first]))
+        self.files[first][cell] = [{"text": "یہ ایک جملہ ہے۔", "gold": "سیاست", "raw_output": "سائنس"}] * 2
+        folder = self.matrix[self.COND]["subfolder_template"].format(seed="123")
+        self.lora[f"{folder}/adapter_config.json"] = {"r": 8, "lora_alpha": 32, "target_modules": ["q_proj"], "peft_version": "0.20.0"}
+        n, report = self._run()
+        self.assertEqual(n, 2, report)
+        self.assertIn(f"{cell}: gold labels differ from reference", report)
+        self.assertIn("adapter r: 8 vs 16 in the reference adapter", report)
+
+    def test_old_extractor_is_rescored_and_fails_only_on_a_changed_number(self):
+        for path in rsr.session_paths(self.COND, "42")["reparsed"]:
+            self.files[path]["reparse_metadata"]["extractor_provenance"]["content_sha256"] = "0" * 64
+
+        def same(path, rows):
+            return self._published(path)
+
+        def changed(path, rows):
+            body = self._published(path)
+            key = next(k for k in body["summary"] if k.endswith("_correct"))
+            body["summary"][key] = 2
+            return body
+
+        with mock.patch.object(self.reparse_results, "reparse_file", lambda p: []), \
+             mock.patch.object(self.reparse_results, "build_reparsed_summary", same):
+            n, report = self._run()
+        self.assertEqual(n, 0, report)
+        self.assertIn("seed 42 was reparsed by extractor 000000000000", report)
+
+        with mock.patch.object(self.reparse_results, "reparse_file", lambda p: []), \
+             mock.patch.object(self.reparse_results, "build_reparsed_summary", changed):
+            n, report = self._run()
+        self.assertEqual(n, 2, report)
+        self.assertIn("seed 42 rescored with the current extractor:", report)
+
+
+class AuditExitCodeTests(unittest.TestCase):
+    def _main(self, problems: int) -> int:
+        argv = ["refresh_seed_results.py", "audit", "--seed", "123", "--refresh-dir", tempfile.mkdtemp()]
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(rsr.Refresh, "audit", return_value=problems), \
+             self.assertRaises(SystemExit) as cm:
+            rsr.main()
+        return cm.exception.code
+
+    def test_exit_code_is_non_zero_only_when_problems_are_found(self):
+        self.assertEqual(self._main(0), 0)
+        self.assertEqual(self._main(3), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

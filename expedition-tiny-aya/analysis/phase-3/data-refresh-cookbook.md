@@ -33,6 +33,20 @@ python expedition-tiny-aya/evaluation/scripts/refresh_seed_results.py all --prov
 - The eval ladder is read from `EVAL_MATRIX` in `evaluate.ipynb`; a seed present on Hugging Face but not registered there is reported as `(unregistered)` and not processed further.
 - It needs `scipy` (for `build_significance.py`) in addition to the packages in step 0.
 
+### Audit a finished seed batch
+
+Once every session of a seed batch is merged and the tables are rebuilt, check the batch as a whole. The audit is read-only and is not part of `all`:
+
+```bash
+python expedition-tiny-aya/evaluation/scripts/refresh_seed_results.py audit --seed 123 \
+  --provisional '*-20k/seed123' 'condition-3-*/seed123' 'condition-5-*/seed123'
+```
+
+- For every condition that registers both `--seed` and `--reference-seed` (default `42`), it fails (exit code 1) on: a missing session file on the experiments repo; a session that differs from the reference in cells, row counts, inputs or gold labels, or lacks a reparsed accuracy for a cell; a reparsed `_count` that differs from the results file, or `_acc` that differs from `_correct / _count`; LoRA settings or a training step count that differ from the reference adapter; and the wrong number of rows for the session in the refined `cells.tsv`.
+- When a session was reparsed by an older extractor than the current `reparse_results.py`, it rescores the session with the current extractor and fails only if a published number changes.
+- It reports, without failing: per-cell refined accuracy deltas against the reference seed, next to a same-stack reference built from the conditions where neither session matches `--provisional`; training loss and peft version of both adapters; and cells whose parse-failure rate rose by more than `--parse-failure-threshold` (default `0.05`, 5pp).
+- The report is printed and written to `audit-seed<N>.md` under `--refresh-dir`. `--conditions` limits it to named conditions.
+
 ## 0. Pre-flight
 
 - [ ] Active worktree off `origin/main` (per repo convention; don't run from a worktree that's on an unrelated feature branch).

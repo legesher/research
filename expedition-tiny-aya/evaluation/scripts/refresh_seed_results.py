@@ -30,6 +30,19 @@ Subcommands (run from the repository root; ``all`` runs them in order):
            one Hugging Face PR carrying the changed TSVs.
   render   Rerun the five figure scripts and build_phase3_tables.py against
            the rebuilt tables.
+  audit    Read-only check of a finished seed batch (not part of ``all``):
+           for every registered condition carrying --seed and
+           --reference-seed, the six session files on main, the session
+           against the reference (cells, rows, inputs, gold, a reparsed
+           accuracy for every cell), reparsed counts against the results
+           file, the extractor version (rescoring with the current extractor
+           when it differs), LoRA settings and training steps against the
+           reference adapter, and the session's rows in the refined
+           cells.tsv. Exits non-zero on any of those. Also reports per-cell
+           accuracy deltas against a same-stack reference (conditions where
+           neither session is --provisional), training loss, peft version and
+           cells whose parse-failure rate rose. Writes audit-seedN.md under
+           --refresh-dir.
 
 Nothing is merged on Hugging Face by this script; --upload only opens PRs.
 Sessions matching a --provisional pattern (``condition/seedN``, shell-style
@@ -44,6 +57,8 @@ Usage:
         --provisional '*-20k/seed123' 'condition-3-*/seed123' 'condition-5-*/seed123'
     python expedition-tiny-aya/evaluation/scripts/refresh_seed_results.py all \\
         --provisional '*-20k/seed123' --upload      # also opens the Hugging Face PRs
+    python expedition-tiny-aya/evaluation/scripts/refresh_seed_results.py audit --seed 123 \\
+        --provisional '*-20k/seed123' 'condition-3-*/seed123' 'condition-5-*/seed123'
 
 The eval ladder is read from ``EVAL_MATRIX`` in evaluate.ipynb, so a seed that
 is registered there is expected here. Seeds found on Hugging Face but not
@@ -417,6 +432,116 @@ def verify_session(
                 for c in sorted(want - have):
                     problems.append(f"{c}: no accuracy in reparsed summary")
     return problems
+
+
+# ─── Audit of a finished seed batch ──────────────────────────────────────────
+
+# LoRA settings that must match between two seeds of one condition; anything
+# else in adapter_config.json (peft_version, auto_mapping) may legitimately
+# differ with the software stack.
+LORA_SETTINGS = ("r", "lora_alpha", "lora_dropout", "bias", "base_model_name_or_path", "target_modules")
+
+
+def audit_counts(results: dict[str, dict], reparsed: dict[str, dict]) -> list[str]:
+    """Each reparsed ``_count`` equals the cell's row count in the results
+    file, and ``_correct / _count`` equals ``_acc``."""
+    problems = []
+    for template, rep in reparsed.items():
+        summary = rep.get("summary", {})
+        rows = results.get(template, {})
+        for key, n in summary.items():
+            if not key.endswith("_count"):
+                continue
+            cell = key[: -len("_count")]
+            if n != len(rows.get(cell, [])):
+                problems.append(f"{cell}: reparsed count {n} vs {len(rows.get(cell, []))} rows in the results file")
+            correct, acc = summary.get(f"{cell}_correct"), summary.get(f"{cell}_acc")
+            if correct is None or acc is None or (n and abs(correct / n - acc) > 1e-9):
+                problems.append(f"{cell}: accuracy {acc} does not equal correct/count {correct}/{n}")
+    return problems
+
+
+def audit_adapter(ref_config: dict, new_config: dict, ref_metrics: dict, new_metrics: dict) -> tuple[list[str], dict]:
+    """Problems if the LoRA settings or the training step count differ from the
+    reference seed's adapter; info carries the loss and peft version of both."""
+    problems = []
+    for key in LORA_SETTINGS:
+        a, b = ref_config.get(key), new_config.get(key)
+        if key == "target_modules":
+            a, b = sorted(a or []), sorted(b or [])
+        if a != b:
+            problems.append(f"adapter {key}: {b!r} vs {a!r} in the reference adapter")
+
+    def steps(m: dict):
+        return (m.get("log_history") or [{}])[-1].get("step")
+
+    if steps(ref_metrics) != steps(new_metrics):
+        problems.append(f"training steps: {steps(new_metrics)} vs {steps(ref_metrics)} in the reference adapter")
+    info = {
+        "loss": (ref_metrics.get("train_result", {}).get("train_loss"), new_metrics.get("train_result", {}).get("train_loss")),
+        "peft": (ref_config.get("peft_version"), new_config.get("peft_version")),
+    }
+    return problems, info
+
+
+def refined_deltas(new_reparsed: dict[str, dict], ref_reparsed: dict[str, dict]) -> list[float]:
+    """Per-cell refined accuracy, new minus reference, in percentage points."""
+
+    def acc(rep: dict[str, dict]) -> dict[str, float]:
+        return {k[: -len("_acc")]: v for r in rep.values() for k, v in r.get("summary", {}).items() if k.endswith("_acc")}
+
+    a, b = acc(new_reparsed), acc(ref_reparsed)
+    return [100 * (a[c] - b[c]) for c in sorted(a) if c in b]
+
+
+def spread(deltas: list[float]) -> dict:
+    """Population SD, mean absolute, max absolute and mean of the deltas."""
+    if not deltas:
+        return {"n": 0, "sd": None, "mean_abs": None, "max_abs": None, "mean": None}
+    mean = sum(deltas) / len(deltas)
+    return {
+        "n": len(deltas),
+        "sd": (sum((d - mean) ** 2 for d in deltas) / len(deltas)) ** 0.5,
+        "mean_abs": sum(abs(d) for d in deltas) / len(deltas),
+        "max_abs": max(abs(d) for d in deltas),
+        "mean": mean,
+    }
+
+
+def parse_failure_rises(new_reparsed: dict[str, dict], ref_reparsed: dict[str, dict], threshold: float) -> list[tuple[str, float]]:
+    """Cells whose parse-failure rate rose by more than ``threshold`` (a
+    fraction, 0.05 = 5pp) against the reference seed, largest rise first."""
+
+    def rates(rep: dict[str, dict]) -> dict[str, float]:
+        return {k: v for r in rep.values() for k, v in r.get("parse_failure_rates", {}).items()}
+
+    a, b = rates(new_reparsed), rates(ref_reparsed)
+    rises = [(cell, a[cell] - b.get(cell, 0.0)) for cell in a if a[cell] - b.get(cell, 0.0) > threshold]
+    return sorted(rises, key=lambda kv: -kv[1])
+
+
+def extractor_shas(reparsed: dict[str, dict]) -> set[str]:
+    return {
+        r.get("reparse_metadata", {}).get("extractor_provenance", {}).get("content_sha256", "missing")
+        for r in reparsed.values()
+    }
+
+
+def rescore_differences(published: dict, rescored: dict) -> list[str]:
+    """Summary values and parse-failure rates that differ between a published
+    reparsed summary and a fresh rescore of the same results file."""
+    out = []
+    for key, value in published.get("summary", {}).items():
+        if rescored.get("summary", {}).get(key) != value:
+            out.append(f"{key}: published {value} vs rescored {rescored.get('summary', {}).get(key)}")
+    for key, value in published.get("parse_failure_rates", {}).items():
+        if rescored.get("parse_failure_rates", {}).get(key) != value:
+            out.append(f"{key} parse-failure rate: published {value} vs rescored {rescored.get('parse_failure_rates', {}).get(key)}")
+    return out
+
+
+def _fmt(x: float | None, spec: str = ".2f") -> str:
+    return "n/a" if x is None else format(x, spec)
 
 
 def reference_seed(cond: str, seed: str, rows: list[dict], entry: dict) -> str | None:
@@ -808,10 +933,141 @@ class Refresh:
         if stat.strip():
             self.changes.append("render: " + stat.strip().splitlines()[-1].strip())
 
+    # -- audit --
+    def _download_lora(self, path_in_repo: str) -> Path:
+        from huggingface_hub import hf_hub_download
+
+        return Path(hf_hub_download(LORA_REPO, path_in_repo, local_dir=str(self.downloads / "lora")))
+
+    def _session_files(self, cond: str, seed: str) -> tuple[dict, dict, dict[str, Path]]:
+        sp = session_paths(cond, seed)
+        local = {p: self._download(p) for p in sp["results"] + sp["reparsed"]}
+        results = {t: load_results(local[p]) for p, t in zip(sp["results"], TEMPLATES)}
+        reparsed = {t: json.loads(local[p].read_text(encoding="utf-8")) for p, t in zip(sp["reparsed"], TEMPLATES)}
+        return results, reparsed, {t: local[p] for p, t in zip(sp["results"], TEMPLATES)}
+
+    def audit(self) -> int:
+        """Read-only audit of every registered condition carrying both
+        --seed and --reference-seed. Returns the number of hard problems."""
+        sys.path.insert(0, str(SCRIPTS_DIR))
+        from reparse_results import _extractor_provenance, build_reparsed_summary, reparse_file
+
+        seed, ref = str(self.args.seed), str(self.args.reference_seed)
+        current_sha = _extractor_provenance()["content_sha256"]
+        exp_main = self.inv["experiments_main"]
+        wanted = set(self.args.conditions or [])
+        conds = [
+            c for c, e in self.matrix.items()
+            if e["subfolder_template"] and seed in e["seeds"] and ref in e["seeds"] and (not wanted or c in wanted)
+        ]
+        if wanted - set(conds):
+            raise SystemExit(f"not registered with seeds {ref} and {seed}: {', '.join(sorted(wanted - set(conds)))}")
+        cells_tsv = self._download(f"{TABLES_PREFIX}/cells.tsv").read_text(encoding="utf-8").splitlines()
+        header = cells_tsv[0].split("\t")
+        ci, si = header.index("condition"), header.index("seed")
+        cells_rows: dict[tuple[str, str], int] = {}
+        for line in cells_tsv[1:]:
+            parts = line.split("\t")
+            cells_rows[(parts[ci], parts[si])] = cells_rows.get((parts[ci], parts[si]), 0) + 1
+        xsv_path = PHASE3_ANALYSIS / "cross-seed-variance.tsv"
+        xsv = xsv_path.read_text(encoding="utf-8").splitlines() if xsv_path.exists() else []
+
+        report, problems_total, reference_deltas = [], 0, []
+        rows = []
+        for cond in conds:
+            entry = self.matrix[cond]
+            problems: list[str] = []
+            notes: list[str] = []
+            missing = [p for s in (seed, ref) for k in ("results", "summary", "reparsed") for p in session_paths(cond, s)[k] if p not in exp_main]
+            if missing:
+                rows.append({"condition": cond, "problems": [f"missing on the experiments repo: {p}" for p in missing]})
+                problems_total += len(missing)
+                continue
+            print(f"[audit] {cond}: seed {seed} against seed {ref}")
+            new_res, new_rep, new_paths = self._session_files(cond, seed)
+            ref_res, ref_rep, ref_paths = self._session_files(cond, ref)
+            problems += verify_session(new_res, ref_res, expected_cells(entry), reparsed=new_rep)
+            problems += audit_counts(new_res, new_rep)
+            for label, reps, paths in ((seed, new_rep, new_paths), (ref, ref_rep, ref_paths)):
+                shas = extractor_shas(reps)
+                if shas == {current_sha}:
+                    continue
+                diffs = []
+                for t in TEMPLATES:
+                    rescored = build_reparsed_summary(paths[t], reparse_file(paths[t]))
+                    diffs += rescore_differences(reps[t], rescored)
+                if diffs:
+                    problems += [f"seed {label} rescored with the current extractor: {d}" for d in diffs]
+                else:
+                    notes.append(
+                        f"seed {label} was reparsed by extractor {', '.join(s[:12] for s in sorted(shas))} (current {current_sha[:12]}); "
+                        "rescoring with the current extractor reproduces every published value"
+                    )
+            folders = {s: entry["subfolder_template"].format(seed=s) for s in (seed, ref)}
+            lora_main = self.inv["lora_main"]
+            lora_missing = [f"{folders[s]}/{f}" for s in (seed, ref) for f in ("adapter_config.json", "training_metrics.json") if f"{folders[s]}/{f}" not in lora_main]
+            info = {"loss": (None, None), "peft": (None, None)}
+            if lora_missing:
+                problems += [f"missing on the LoRA repo: {p}" for p in lora_missing]
+            else:
+                cfg = {s: json.loads(self._download_lora(f"{folders[s]}/adapter_config.json").read_text(encoding="utf-8")) for s in (seed, ref)}
+                met = {s: json.loads(self._download_lora(f"{folders[s]}/training_metrics.json").read_text(encoding="utf-8")) for s in (seed, ref)}
+                adapter_problems, info = audit_adapter(cfg[ref], cfg[seed], met[ref], met[seed])
+                problems += adapter_problems
+            n_cells = cells_rows.get((cond, seed), 0)
+            if n_cells != len(expected_cells(entry)):
+                problems.append(f"refined cells.tsv has {n_cells} rows for seed {seed}, expected {len(expected_cells(entry))}")
+            provisional = is_provisional(cond, seed, self.provisional) or is_provisional(cond, ref, self.provisional)
+            if provisional and xsv:
+                xh = xsv[0].split("\t")
+                xc, xp = xh.index("condition"), xh.index("provisional")
+                flagged = [p for p in (line.split("\t") for line in xsv[1:]) if p[xc] == cond and seed in p[xp].split(",")]
+                if not flagged:
+                    notes.append(f"seed {seed} matches --provisional but cross-seed-variance.tsv does not flag it")
+            deltas = refined_deltas(new_rep, ref_rep)
+            if not provisional:
+                reference_deltas += deltas
+            rows.append({
+                "condition": cond, "cells": len(expected_cells(entry)), "spread": spread(deltas), "provisional": provisional,
+                "loss": info["loss"], "peft": info["peft"], "problems": problems, "notes": notes,
+                "rises": parse_failure_rises(new_rep, ref_rep, self.args.parse_failure_threshold),
+            })
+            problems_total += len(problems)
+
+        ref_spread = spread(reference_deltas)
+        report.append(f"# Seed {seed} audit against seed {ref} ({_dt.datetime.now(_dt.timezone.utc):%Y-%m-%d %H:%M} UTC)\n")
+        report.append(
+            f"Same-stack reference (conditions where neither session is provisional): {ref_spread['n']} cells, "
+            f"SD {_fmt(ref_spread['sd'])}pp, mean |d| {_fmt(ref_spread['mean_abs'])}pp, max |d| {_fmt(ref_spread['max_abs'])}pp.\n"
+        )
+        report.append(f"| condition | provisional | cells | SD d | mean abs d | max abs d | mean d | loss {ref} / {seed} | peft {ref} / {seed} | verdict |")
+        report.append("|---|---|---|---|---|---|---|---|---|---|")
+        for r in rows:
+            if "spread" not in r:
+                report.append(f"| {r['condition']} | | | | | | | | | FAIL |")
+                continue
+            s, (l0, l1), (p0, p1) = r["spread"], r["loss"], r["peft"]
+            report.append(
+                f"| {r['condition']} | {'yes' if r['provisional'] else 'no'} | {r['cells']} | {_fmt(s['sd'])} | {_fmt(s['mean_abs'])} | "
+                f"{_fmt(s['max_abs'])} | {_fmt(s['mean'], '+.2f')} | {_fmt(l0, '.4f')} / {_fmt(l1, '.4f')} | {p0} / {p1} | "
+                f"{'PASS' if not r['problems'] else 'FAIL'} |"
+            )
+        for r in rows:
+            lines = [f"- problem: {p}" for p in r["problems"]] + [f"- note: {n}" for n in r.get("notes", [])]
+            lines += [f"- parse failures up {100 * v:.1f}pp: {c}" for c, v in r.get("rises", [])]
+            if lines:
+                report.append(f"\n## {r['condition']}\n" + "\n".join(lines))
+        report.append(f"\n{problems_total} problem(s) across {len(rows)} condition(s).")
+        text = "\n".join(report) + "\n"
+        print("\n" + text)
+        (self.dir / f"audit-seed{seed}.md").write_text(text, encoding="utf-8")
+        self.changes.append(f"audit: seed {seed}, {len(rows)} conditions, {problems_total} problem(s)")
+        return problems_total
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("step", choices=["status", "reparse", "build", "render", "all"])
+    parser.add_argument("step", choices=["status", "reparse", "build", "render", "all", "audit"])
     parser.add_argument("--refresh-dir", default=os.environ.get("PHASE3_REFRESH_DIR", "/tmp/phase3_refresh"))
     parser.add_argument(
         "--provisional",
@@ -821,8 +1077,22 @@ def main() -> None:
         help="Sessions to label provisional, as condition/seedN with shell wildcards.",
     )
     parser.add_argument("--upload", action="store_true", help="Open Hugging Face PRs (never merges).")
+    parser.add_argument("--seed", help="audit: the seed batch to audit, e.g. 123.")
+    parser.add_argument("--reference-seed", default="42", help="audit: the seed to compare against (default 42).")
+    parser.add_argument("--conditions", nargs="*", default=[], help="audit: limit to these conditions.")
+    parser.add_argument(
+        "--parse-failure-threshold",
+        type=float,
+        default=0.05,
+        help="audit: report cells whose parse-failure rate rose by more than this fraction (default 0.05).",
+    )
     args = parser.parse_args()
     r = Refresh(args)
+    if args.step == "audit":
+        if not args.seed:
+            parser.error("audit needs --seed")
+        problems = r.audit()
+        raise SystemExit(1 if problems else 0)
     if args.step in ("status", "all", "reparse"):
         rows = r.status()
     if args.step in ("reparse", "all"):
