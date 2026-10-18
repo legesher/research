@@ -31,19 +31,19 @@ The preprocessing notebook caches all 4 dataset languages × 4 instruction-langu
 | condition-1-en-5k  | 42, 123, 456 | en, zh, es, ur | en, zh, es, ur    | **128**                     | ✅ all seeds     |
 | condition-1-en-20k | 42, 123      | en, zh, es, ur | en, zh, es, ur    | **128**                     | ✅ all seeds     |
 | condition-2-zh-5k  | 42, 123, 456 | en, zh, es, ur | en, zh            | **64**                      | ✅ all seeds     |
-| condition-2-zh-20k | 42, 123      | en, zh, es, ur | en, zh            | **64**                      | ✅ 42, ⏳ 123    |
+| condition-2-zh-20k | 42, 123      | en, zh, es, ur | en, zh            | **64**                      | ✅ all seeds     |
 | condition-2-es-5k  | 42, 123, 456 | en, zh, es, ur | en, es            | **64**                      | ✅ all seeds     |
 | condition-2-es-20k | 42, 123      | en, zh, es, ur | en, es            | **64**                      | ✅ all seeds     |
 | condition-2-ur-5k  | 42, 123, 456 | en, zh, es, ur | en, ur            | **64**                      | ✅ all seeds     |
-| condition-2-ur-20k | 42, 123      | en, zh, es, ur | en, ur            | **64**                      | ✅ 42, ⏳ 123    |
+| condition-2-ur-20k | 42, 123      | en, zh, es, ur | en, ur            | **64**                      | ✅ all seeds     |
 | condition-3-zh-5k  | 42, 123      | en, zh, es, ur | en, zh            | **64**                      | ✅ all seeds     |
 | condition-5-zh-5k  | 42, 123      | en, zh, es, ur | en, zh            | **64**                      | ✅ all seeds     |
-| condition-5-es-5k  | 42, 123      | en, zh, es, ur | en, es            | **64**                      | ✅ 42, ⏳ 123    |
+| condition-5-es-5k  | 42, 123      | en, zh, es, ur | en, es            | **64**                      | ✅ all seeds     |
 | condition-5-ur-5k  | 42, 123      | en, zh, es, ur | en, ur            | **64**                      | ✅ all seeds     |
 
 Cells per `(condition, seed)` = 4 benchmarks × 2 templates × dataset-langs × instruction-langs.
 
-⏳ in the last column marks a registered seed whose adapter is still training (October 2026 seed-123 batch for the 20k and condition-5 runs). The eval notebook will fail to load that adapter until it is pushed to Hugging Face.
+Every registered seed's adapter is on Hugging Face (the October 2026 seed-123 batch completed on 2026-10-13). A seed added to `EVAL_MATRIX` before its adapter is uploaded fails to load in the eval notebook.
 
 **Rule for condition-2/3/5:** instruction language is always English OR the model's trained-on language, regardless of which dataset language we're evaluating against. A condition-2-ur model evaluated on `xnli_zh` gets either English or Urdu instructions, never Chinese — the model wasn't trained to follow Chinese instructions in that condition.
 
@@ -55,10 +55,12 @@ legesher/language-decoded-lora/
     ├── condition-1-en-5k-seed{42,123,456}/
     ├── condition-1-en-20k-seed{42,123}/
     ├── condition-2-{zh,es,ur}-5k-seed{42,123,456}/
-    ├── condition-2-{zh,es,ur}-20k-seed{42,123}/  (zh, ur seed 123 pending)
-    ├── condition-3-zh-5k-native-code-seed{42,123}/
-    └── condition-5-{es,zh,ur}-5k-c4ai-aya-expanse-32b-seed{42,123}/  (es seed 123 pending)
+    ├── condition-2-{zh,es,ur}-20k-seed{42,123}/
+    ├── condition-3-zh-5k-seed{42,123}/
+    └── condition-5-{es,zh,ur}-5k-c4ai-aya-expanse-32b-seed{42,123}/
 ```
+
+**Naming rule.** An adapter folder is `{data config}-seed{seed}`, where `{data config}` is the `legesher/language-decoded-data` config the adapter was trained on. That is the name the training notebook uploads under (`{CONDITION_NAME}-seed{seed}`), so the eval template finds a new seed without a rename. The data config is the condition key itself, except for condition 5, whose configs carry the generator model (`-c4ai-aya-expanse-32b`). Folders under `legesher/language-decoded-experiments` use the condition key alone (`phase3/conditions/condition-5-zh-5k/`). The cond-3 folders were named `condition-3-zh-5k-native-code-seed{42,123}` until October 2026; the LoRA repo's `MANIFEST.md` records the rename. `test_refresh_seed_results.py` checks every registered template against this rule.
 
 The eval script loads each adapter via `FastLanguageModel.from_pretrained(model_name=LORA_REPO, subfolder=<path>)`. For `baseline`, no subfolder; it loads `CohereLabs/tiny-aya-base` directly.
 
@@ -127,7 +129,7 @@ From the saved preprocess notebook version, use **Output → New Dataset** (or *
    - 2 cond-3-zh-5k (seeds 42, 123)
    - 6 cond-5-{zh,es,ur}-5k (3 langs × 2 seeds)
 
-   Today, **26 of 29** can run. The seed-123 adapters for `condition-2-zh-20k`, `condition-2-ur-20k` and `condition-5-es-5k` are still training (see the ⏳ marks in the matrix); run those three sessions once the adapters land on HF.
+   All 29 can run: every registered adapter is on HF.
 
 > **Schema note:** if you have cached JSONLs from an earlier version of this pipeline (the PR #37-era `english`/`language` column suffixes), delete `eval_unsloth_artifacts/datasets/*.jsonl` and rerun preprocess before running evaluate. The current schema uses `prompt_{template_id}_{instruction_lang}` columns.
 

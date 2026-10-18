@@ -18,6 +18,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import refresh_seed_results as rsr  # noqa: E402
@@ -43,7 +44,7 @@ EVAL_MATRIX = {
     },
     "condition-3-zh-5k": {
         "repo": LORA_REPO,
-        "subfolder_template": f"{BASE_NS}/condition-3-zh-5k-native-code-seed{{seed}}",
+        "subfolder_template": f"{BASE_NS}/condition-3-zh-5k-seed{{seed}}",
         "seeds": [42],
         "dataset_langs": ["en", "zh", "es", "ur"],
         "instruction_langs": ["en", "zh"],
@@ -82,7 +83,7 @@ class LadderTests(unittest.TestCase):
         self.assertEqual(m["condition-2-ur-20k"]["seeds"], ["42", "123"])
         self.assertEqual(
             m["condition-3-zh-5k"]["subfolder_template"],
-            "tiny-aya-base/condition-3-zh-5k-native-code-seed{seed}",
+            "tiny-aya-base/condition-3-zh-5k-seed{seed}",
         )
 
     def test_real_notebook_ladder_matches_the_tables_condition_list(self):
@@ -97,6 +98,33 @@ class LadderTests(unittest.TestCase):
         for cond, entry in matrix.items():
             self.assertTrue(entry["seeds"], cond)
             self.assertEqual(len(rsr.expected_cells(entry)) % 8, 0, cond)
+
+    def test_real_notebook_adapter_folders_follow_the_naming_rule(self):
+        """Every adapter folder is ``{data config}-seed{seed}``, the name the
+        training notebook uploads under, so no seed needs a rename on upload.
+        The data config is the condition key, plus the generator-model slug for
+        condition 5. A folder carrying any other suffix (cond-3 carried
+        ``-native-code`` until October 2026) breaks the eval load."""
+        analysis_scripts = str(Path(__file__).resolve().parent.parent.parent / "analysis" / "scripts")
+        with mock.patch.object(sys, "path", [analysis_scripts, *sys.path]):
+            import build_cond5_idx_ledger as cond5  # noqa: E402
+
+        matrix = rsr.load_eval_matrix()
+        adapters = {c: e for c, e in matrix.items() if e["subfolder_template"] is not None}
+        # Guard against a vacuous pass: both rule branches must be exercised.
+        self.assertTrue(any(c.startswith("condition-5-") for c in adapters), sorted(matrix))
+        self.assertTrue(any(not c.startswith("condition-5-") for c in adapters), sorted(matrix))
+        for cond, entry in adapters.items():
+            tmpl = entry["subfolder_template"]
+            with self.subTest(condition=cond):
+                base_ns, folder = tmpl.split("/")
+                self.assertEqual(base_ns, "tiny-aya-base")
+                self.assertTrue(folder.endswith("-seed{seed}"), folder)
+                data_config = folder.removesuffix("-seed{seed}")
+                allowed = {cond}
+                if cond.startswith("condition-5-"):
+                    allowed = {f"{cond}-{cond5.MODEL_SLUG}"}
+                self.assertIn(data_config, allowed)
 
     def test_expected_cells_follow_the_registered_languages(self):
         entry = {"dataset_langs": ["en", "ur"], "instruction_langs": ["ur"]}
@@ -171,7 +199,7 @@ class ClassifyTests(unittest.TestCase):
         self.assertIsNone(rsr.reference_seed("c", "42", [rows[0]], e))
 
     def test_unregistered_seed_on_hub_appears_in_status(self):
-        lora = {"tiny-aya-base/condition-3-zh-5k-native-code-seed123/adapter_config.json"}
+        lora = {"tiny-aya-base/condition-3-zh-5k-seed123/adapter_config.json"}
         inv = self._inv(set(), lora)
         rows = rsr.build_status(self.matrix, inv, set())
         states = {(r["condition"], r["seed"]): r for r in rows}
