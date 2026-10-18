@@ -14,6 +14,7 @@ label.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -125,6 +126,44 @@ class LadderTests(unittest.TestCase):
                 if cond.startswith("condition-5-"):
                     allowed = {f"{cond}-{cond5.MODEL_SLUG}"}
                 self.assertIn(data_config, allowed)
+
+    def test_picker_lists_the_registered_seeds_and_the_readme_never_runs_ahead(self):
+        """The eval notebook's picker comment is what the person at Kaggle
+        reads, so it lists exactly the seeds EVAL_MATRIX registers. The
+        evaluation README's matrix describes seeds with results and is updated
+        when they land, so it may trail EVAL_MATRIX (a seed registered ahead of
+        its runs) but never list a seed the notebook does not register, and its
+        session total matches its own table."""
+        matrix = rsr.load_eval_matrix()
+        nb = json.loads(rsr.NOTEBOOK.read_text(encoding="utf-8"))
+        picker_src = next(
+            "".join(c["source"]) for c in nb["cells"]
+            if "# Available conditions and their registered seeds" in "".join(c["source"])
+        )
+        picker_rows = [
+            (m.group(1), [s.strip() for s in m.group(2).split(",")])
+            for m in re.finditer(r"^#\s+(baseline|condition-\S+)\s+seeds?: (.+)$", picker_src, re.M)
+        ]
+        readme = (Path(__file__).resolve().parent.parent / "README.md").read_text(encoding="utf-8")
+        table_rows = [
+            (m.group(1), [s.strip() for s in m.group(2).split(",")])
+            for m in re.finditer(r"^\|\s*(condition-\S+)\s*\|\s*([0-9, ]+?)\s*\|", readme, re.M)
+        ]
+        # A second row for one condition would otherwise win silently.
+        self.assertEqual(len(picker_rows), len({c for c, _ in picker_rows}), picker_rows)
+        self.assertEqual(len(table_rows), len({c for c, _ in table_rows}), table_rows)
+        picker, table = dict(picker_rows), dict(table_rows)
+        self.assertEqual(set(picker), set(matrix))
+        self.assertEqual(set(table), set(matrix) - {"baseline"})
+        for cond, entry in matrix.items():
+            with self.subTest(condition=cond):
+                self.assertEqual(picker[cond], entry["seeds"])
+                if cond != "baseline":
+                    self.assertTrue(set(table[cond]) <= set(entry["seeds"]), f"README lists {table[cond]}, EVAL_MATRIX {entry['seeds']}")
+        sweep = re.search(r"the full sweep is \*\*(\d+) Kaggle sessions\*\*", readme)
+        self.assertIsNotNone(sweep, "evaluation README states no session count")
+        assert sweep is not None
+        self.assertEqual(int(sweep.group(1)), 1 + sum(len(s) for s in table.values()), "README session total vs its own table")
 
     def test_expected_cells_follow_the_registered_languages(self):
         entry = {"dataset_langs": ["en", "ur"], "instruction_langs": ["ur"]}
