@@ -109,7 +109,7 @@ From the saved preprocess notebook version, use **Output → New Dataset** (or *
 
    No silent default — the script will raise `RuntimeError` if this is unset, with a message pointing you here.
 
-4. **Set `CONDITION` and `SEED`** in the picker cell. Use `SEED = "none"` for baseline, otherwise one of the registered seeds for that condition.
+4. **Set `CONDITION` and `SEED`** in the picker cell, the notebook's first cell. Both ship empty, with examples in comments, and the cell raises an error until both are set, so a notebook run as it is stops before installing anything. Use `SEED = "none"` for baseline, otherwise one of the registered seeds for that condition.
 
 5. **Run the launcher cell.** Two subprocesses spawn — GPU 0 runs `template1`, GPU 1 runs `template2` — and a backgrounded `tail -F` streams both log files back to the cell output so you can watch progress live. The cell blocks until both subprocesses finish, then prints `=== Both templates done ===`.
 
